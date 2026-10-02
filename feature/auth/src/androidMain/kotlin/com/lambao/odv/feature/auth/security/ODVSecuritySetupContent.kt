@@ -5,7 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -48,19 +52,29 @@ internal fun ODVSecuritySetupContent(
     BackHandler(enabled = state.isSaving) {}
 
     Box(modifier.fillMaxSize()) {
-        ODVScaffold { contentPadding ->
-            Column(Modifier.fillMaxSize().padding(bottom = contentPadding.calculateBottomPadding())) {
+        ODVScaffold(
+            // Header cố định: icon khóa + StepBar không cuộn theo nội dung (cùng cách với màn Kết nối).
+            topBar = {
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ODVIcon(ODVIcon.Lock, contentDescription = null, tint = colors.voltText, size = 40.dp)
+                    ODVStepBar(stringResource(R.string.security_step), step = 2, total = 2, modifier = Modifier.weight(1f))
+                }
+            },
+        ) { contentPadding ->
+            // Bàn phím hệ thống (nhập PIN ở Lát 2 dùng bàn phím tự vẽ nhưng vẫn giữ cho đồng nhất với màn Kết nối).
+            val bottom = maxOf(contentPadding.calculateBottomPadding(), WindowInsets.ime.asPaddingValues().calculateBottomPadding())
+            Column(Modifier.fillMaxSize().padding(bottom = bottom)) {
                 Column(
                     Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                        .padding(start = 16.dp, end = 16.dp, top = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        ODVIcon(ODVIcon.Lock, contentDescription = null, tint = colors.voltText, size = 40.dp)
-                        ODVStepBar(stringResource(R.string.security_step), step = 2, total = 2, modifier = Modifier.weight(1f))
-                    }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.security_title), style = type.display, color = colors.ink)
                         Text(stringResource(R.string.security_subtitle), style = type.body, color = colors.inkMuted)

@@ -9,7 +9,7 @@ object DebugTools {
     val koinModules: List<Module> = emptyList()
 
     /** Kermit mặc định có writer ra Logcat: gỡ hết để bản release không ghi log (CH-06). */
-    fun installLogging() = Logger.setLogWriters(emptyList())
+    fun install() = Logger.setLogWriters(emptyList())
 
     @Composable
     fun Overlay() = Unit

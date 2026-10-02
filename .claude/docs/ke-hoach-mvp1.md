@@ -53,10 +53,10 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 ### Lát D: Công cụ debug (chen giữa, không đổi thứ tự các lát)
 
 - Thêm sau Lát 1 theo yêu cầu: kiểm tay từ Lát 1 trở đi cần nhìn request/log ngay trên máy. ADR-0012.
-- `:tools:debug` (chỉ bản debug): nút bọ nổi kéo thả → `DebugActivity` (FLAG_SECURE) với 3 tab: Log API, Log local, Lưu trữ (SharedPreferences, DataStore, Room chỉ đọc).
+- `:tools:debug` (chỉ bản debug): nút bọ nổi kéo thả → `DebugActivity` (không FLAG_SECURE) với 4 tab: Log API, Log local, Lưu trữ (SharedPreferences, DataStore, Room chỉ đọc), Khác (mở Foundations gallery).
 - Kermit trong `:core:common`; `HttpTrafficRecorder` trong `:core:network` (làm sạch trước khi ghi; không ghi body endpoint token).
 - Thay hàm `withRetry` tự viết bằng plugin `HttpRequestRetry` của Ktor.
-- Sửa Run mở nhầm Foundations gallery: khai báo lại `MainActivity` ở đầu manifest debug.
+- Chỉ còn MỘT icon launcher: Foundations gallery bỏ LAUNCHER, mở từ tab "Khác" của màn Debug.
 - **Kiểm tay:** nút bọ hiện trên mọi màn và kéo được; tab API thấy request Graph (không có Authorization/token); tab Log thấy log kết nối; tab Lưu trữ liệt kê prefs; bản release không có nút bọ.
 
 ### Lát 2: Mã PIN và màn Khóa

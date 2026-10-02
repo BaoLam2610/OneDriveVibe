@@ -77,7 +77,7 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 :core:common                  [KMP] AppResult/AppError, DispatcherProvider, BaseMviViewModel, Kermit (api)
 :core:domain                  [KMP] entity, interface repository, use case. Kotlin thuần
 :core:data                    [KMP] repository impl, mapper, DataStore
-:core:network                 [KMP] Ktor client (HttpRequestRetry), DTO Graph, token, HttpTrafficRecorder (log API đã làm sạch)
+:core:network                 [KMP] Ktor client (HttpRequestRetry), ApiService (lớp cơ sở: token, 401, ghi lưu lượng) và GraphApi, DTO Graph, HttpTrafficRecorder
 :core:database                [KMP] Room database, DAO, schema
 :core:security                [KMP] expect/actual: SecretStore (Keystore | Keychain), dẫn xuất khóa từ PIN
 :core:designsystem            [KMP, Compose] token, theme, icon, component dùng chung
@@ -90,7 +90,7 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 :feature:pdfviewer            truyện PDF
 :feature:settings             cài đặt
 
-:tools:debug                  [Android, chỉ bản debug] nút bọ nổi, DebugActivity: log API, log local, lưu trữ (ADR-0012)
+:tools:debug                  [Android, chỉ bản debug] nút bọ nổi, DebugActivity: log API, log local, lưu trữ, công cụ khác (ADR-0012)
 ```
 
 - Module core dùng `kotlin("multiplatform")` nhưng **chỉ target Android** ở MVP1 (ADR-0001). MVP2 chỉ cần thêm `iosArm64()` + `iosSimulatorArm64()` (`iosX64` đã lỗi thời) và viết `actual`.

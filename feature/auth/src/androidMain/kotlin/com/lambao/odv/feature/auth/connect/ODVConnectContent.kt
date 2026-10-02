@@ -46,7 +46,7 @@ import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.feature.auth.R
 
 /**
- * Giao diện màn Kết nối (thiet-ke-ui.md mục 5.1): padding 48/16/32, đầu trang là mark 40 + StepBar 1/2, tiêu đề `display`,
+ * Giao diện màn Kết nối (thiet-ke-ui.md mục 5.1): padding 48/16/32; header CỐ ĐỊNH (mark 40 + StepBar 1/2) nằm ở topBar của ODVScaffold nên không cuộn; tiêu đề `display`,
  * form cách đầu trang 28 gồm 4 ô cách nhau 16, nút "Kết nối" toàn chiều rộng sát đáy.
  * Không giữ state; cả dialog lỗi (K5) và sheet thành công (K4) đều dựng từ [state].
  */
@@ -64,7 +64,19 @@ internal fun ODVConnectContent(
     BackHandler(enabled = state.isConnecting) {}
 
     Box(modifier.fillMaxSize()) {
-        ODVScaffold { contentPadding ->
+        ODVScaffold(
+            // Header cố định: Logo + StepBar không cuộn theo form (thiet-ke-ui.md mục 5.1).
+            topBar = {
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ODVLogo(size = 40.dp)
+                    ODVStepBar(stringResource(R.string.connect_step), step = 1, total = 2, modifier = Modifier.weight(1f))
+                }
+            },
+        ) { contentPadding ->
             val keyboardBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
             val bottom = maxOf(contentPadding.calculateBottomPadding(), keyboardBottom)
             Column(Modifier.fillMaxSize().padding(bottom = bottom)) {
@@ -72,15 +84,11 @@ internal fun ODVConnectContent(
                     Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(start = 16.dp, end = 16.dp, top = 24.dp),
+                        .padding(start = 16.dp, end = 16.dp),
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        ODVLogo(size = 40.dp)
-                        ODVStepBar(stringResource(R.string.connect_step), step = 1, total = 2, modifier = Modifier.weight(1f))
-                    }
                     Text(
                         stringResource(R.string.connect_title),
-                        modifier = Modifier.padding(top = 12.dp),
+                        modifier = Modifier.padding(top = 4.dp),
                         style = type.display,
                         color = colors.ink,
                     )

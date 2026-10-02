@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
-        <!-- Không exported: chỉ nút bọ trong app mở được. Màn tự đặt FLAG_SECURE vì log có UPN và đường dẫn tệp. -->
+        <!-- Không exported: chỉ nút bọ trong app mở được. Cố ý không đặt FLAG_SECURE để chụp màn hình báo lỗi được (ADR-0012); dữ liệu đã làm sạch ở nguồn. -->
         <activity
             android:name="com.lambao.odv.tools.debug.DebugActivity"
             android:exported="false"

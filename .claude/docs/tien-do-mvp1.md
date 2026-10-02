@@ -44,8 +44,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 - [x] ADR-0012, Kermit trong `:core:common`
 - [x] `HttpTrafficRecorder` + làm sạch trong `:core:network`; thay `withRetry` bằng `HttpRequestRetry`
-- [x] `:tools:debug`: bộ đệm log/API, `DebugActivity` 3 tab, nút bọ nổi
-- [x] `DebugTools` bản debug/release; sửa Run mở nhầm gallery (MainActivity đầu manifest debug)
+- [x] `:tools:debug`: bộ đệm log/API, `DebugActivity` 4 tab (API, Log, Lưu trữ, Khác), nút bọ nổi
+- [x] `DebugTools` bản debug/release; một app duy nhất, gallery mở từ tab "Khác"
 - [x] Review Kotlin + bảo mật
 - [ ] Kiểm tay
 
@@ -116,3 +116,4 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-02 | Lát 0: dựng khung app (catalog thư viện, common, MVI, Koin, Navigation 3, VI/EN, tắt backup, tech-stack.md); đã review, chờ kiểm tay |
 | 2026-10-02 | Lát 1: dựng network (token single-flight, retry), security (Keystore AES-GCM), domain/data, feature:auth, feature:browser, điều hướng khởi động; chờ review và build |
 | 2026-10-02 | Lát D (chen sau Lát 1): công cụ debug `:tools:debug` + Kermit + HttpRequestRetry, sửa Run mở nhầm gallery; ADR-0012 |
+| 2026-10-02 | Sửa lỗi: thêm `ApiService` làm lớp cơ sở cho `GraphApi`; gộp gallery vào Debug (một app), bỏ FLAG_SECURE màn Debug, nút X đóng Activity; header Kết nối/Bảo mật cố định |

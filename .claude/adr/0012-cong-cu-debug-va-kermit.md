@@ -8,8 +8,8 @@
 Kiểm thử là thủ công trên thiết bị (ADR-0009), nên cần nhìn được request Graph, log của app và dữ liệu local ngay trên máy mà không phải nối Logcat hay adb. Đồng thời CH-06 cấm ghi Client Secret, access token, header `Authorization` vào log, và Ktor `Logging` mặc định in cả những thứ đó. Cần một chỗ ghi log có kiểm soát, và chắc chắn không lọt vào bản release.
 
 ## Quyết định
-1. **Module `:tools:debug`** (Android), gắn vào `:androidApp` bằng `debugImplementation`. Có `DebugActivity` (FLAG_SECURE) với 3 tab: **API** (request đã làm sạch), **Log** (log local), **Lưu trữ** (SharedPreferences, DataStore, SQLite/Room chỉ đọc, tên tệp kho bí mật). Mở từ nút nổi hình con bọ cánh cứng, kéo thả được, đặt chồng lên mọi màn.
-2. **Cổng vào `DebugTools`** có hai bản cùng API: `androidApp/src/debug` (nối `:tools:debug`) và `androidApp/src/release` (rỗng). Code ở `src/main` chỉ biết `DebugTools`.
+1. **Module `:tools:debug`** (Android), gắn vào `:androidApp` bằng `debugImplementation`. Có `DebugActivity` với 4 tab: **API** (request đã làm sạch), **Log** (log local), **Lưu trữ** (SharedPreferences, DataStore, SQLite/Room chỉ đọc, tên tệp kho bí mật), **Khác** (công cụ riêng của app đăng ký qua `DebugActions`, hiện có Foundations gallery). Nút X góc phải và mũi tên quay lại đều đóng Activity. Không đặt FLAG_SECURE (cần chụp màn hình để báo lỗi; dữ liệu đã làm sạch ở nguồn). Mở từ nút nổi hình con bọ cánh cứng, kéo thả được, đặt chồng lên mọi màn.
+2. **Cổng vào `DebugTools`** (`install()`, `koinModules`, `Overlay()`) có hai bản cùng API: `androidApp/src/debug` (nối `:tools:debug`) và `androidApp/src/release` (rỗng). Code ở `src/main` chỉ biết `DebugTools`.
 3. **Log local dùng Kermit** (`:core:common` xuất `api`). Bản debug cài `LogWriter` đẩy vào bộ đệm của màn Debug và Logcat; bản release gỡ mọi writer nên không ghi gì.
 4. **Log API qua `HttpTrafficRecorder`** (interface trong `:core:network`), không qua plugin Ktor `Logging`. Chỉ bản debug có bản cài. `:core:network` tự làm sạch trước khi gọi recorder: bỏ `Authorization`, **không ghi body của endpoint token**, che `downloadUrl`/`tempauth`/`access_token`, cắt body ở 16 KB.
 5. **Retry cấu hình bằng plugin `HttpRequestRetry` của Ktor** trong `createHttpClient` (lỗi mạng, timeout, `429`, `5xx`; tối đa 2 lần; `Retry-After` giới hạn 60 giây), thay cho hàm `withRetry` tự viết. `401` vẫn do `GraphApi` xử lý (lấy token mới, thử lại một lần, TK-02).
@@ -39,4 +39,5 @@ Chuỗi trong `:tools:debug` để trực tiếp (như gallery): đây là công
 - Recorder chỉ thấy kết quả cuối của mỗi request (sau retry), không thấy từng lần thử.
 ### Rủi ro
 - Quên làm sạch khi thêm endpoint mới (vd. tải tệp có `tempauth`). Giảm thiểu: `includeBody` mặc định là quyết định rõ ràng ở nơi gọi, và `sanitizeUrl`/`sanitizeBody` che các khóa đã biết; endpoint mới phải được xem lại trong review bảo mật.
-- Màn Debug đọc được UPN và đường dẫn tệp: chỉ có ở bản debug và đặt FLAG_SECURE.
+- Màn Debug đọc được UPN và đường dẫn tệp và không chặn chụp màn hình: chỉ có ở bản debug; không chia sẻ ảnh chụp màn hình Debug ra ngoài.
+- Một app duy nhất: Foundations gallery không còn là icon launcher thứ hai mà mở từ tab "Khác" (trước đó Run mở nhầm gallery).

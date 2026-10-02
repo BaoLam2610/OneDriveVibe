@@ -30,6 +30,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import co.touchlab.kermit.Severity
 import com.lambao.odv.core.designsystem.component.ODVAppBar
+import com.lambao.odv.core.designsystem.component.ODVButton
+import com.lambao.odv.core.designsystem.component.ODVButtonSize
+import com.lambao.odv.core.designsystem.component.ODVButtonStyle
 import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVIconButton
@@ -58,27 +61,65 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
             ODVAppBar(
                 title = "Debug",
                 navigation = { ODVIconButton(ODVIcon.ArrowLeft, "Quay lại", onBack) },
-                actions = {
-                    when (tab) {
-                        0 -> ODVIconButton(ODVIcon.Close, "Xóa log API", { ApiTrafficStore.clear() })
-                        1 -> ODVIconButton(ODVIcon.Close, "Xóa log local", { DebugLogStore.clear() })
-                        else -> ODVIconButton(ODVIcon.Sync, "Làm mới", { storageRefresh++ })
-                    }
-                },
+                // X ở góc phải đóng màn Debug (finish Activity). Xóa/làm mới nằm ở thanh công cụ của từng tab.
+                actions = { ODVIconButton(ODVIcon.Close, "Đóng", onBack) },
             )
         },
     ) { padding ->
         Column(Modifier.fillMaxSize()) {
             ODVTabs(
-                tabs = listOf(ODVTab("API", ODVIcon.Sync), ODVTab("Log", ODVIcon.List), ODVTab("Lưu trữ", ODVIcon.Folder)),
+                tabs = listOf(
+                    ODVTab("API", ODVIcon.Sync),
+                    ODVTab("Log", ODVIcon.List),
+                    ODVTab("Lưu trữ", ODVIcon.Folder),
+                    ODVTab("Khác", ODVIcon.Tune),
+                ),
                 selectedIndex = tab,
                 onSelect = { tab = it },
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             )
             when (tab) {
+                0 -> ToolRow("Xóa log API") { ApiTrafficStore.clear() }
+                1 -> ToolRow("Xóa log local") { DebugLogStore.clear() }
+                2 -> ToolRow("Làm mới") { storageRefresh++ }
+            }
+            when (tab) {
                 0 -> ApiTab(padding)
                 1 -> LogTab(padding)
-                else -> StorageTab(padding, storageRefresh)
+                2 -> StorageTab(padding, storageRefresh)
+                else -> OthersTab(padding)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ToolRow(label: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        ODVButton(label, onClick, style = ODVButtonStyle.Secondary, size = ODVButtonSize.Sm)
+    }
+}
+
+// ---------- Tab Khác ----------
+
+@Composable
+private fun OthersTab(padding: PaddingValues) {
+    val context = LocalContext.current
+    val actions = DebugActions.items
+    if (actions.isEmpty()) {
+        EmptyTab("Chưa có công cụ nào", "Công cụ riêng của app đăng ký qua DebugActions.register.")
+        return
+    }
+    LazyColumn(contentPadding = padding) {
+        items(actions, key = { it.title }) { action ->
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { action.onClick(context) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Text(action.title, style = ODVTheme.typography.bodyStrong, color = ODVTheme.colors.ink)
+                Text(action.description, style = ODVTheme.typography.caption, color = ODVTheme.colors.inkMuted)
             }
         }
     }
