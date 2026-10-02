@@ -2,6 +2,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
+        <!--
+            Khai báo lại MainActivity ở đầu manifest debug. Android Studio chọn activity LAUNCHER xuất hiện đầu tiên trong
+            manifest đã gộp; manifest debug được gộp trước nên nếu chỉ có gallery ở đây thì Run luôn mở gallery.
+            Intent-filter giống bản ở src/main nên bị gộp, không tạo icon launcher thứ ba.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Chỉ có ở bản debug: màn Foundations gallery để so mắt với canvas thiết kế. Hiện thành icon launcher thứ hai. -->
         <activity
             android:name=".gallery.FoundationsGalleryActivity"

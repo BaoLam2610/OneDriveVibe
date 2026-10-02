@@ -5,12 +5,16 @@ import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.repository.DriveRepository
 import com.lambao.odv.feature.auth.PendingConnection
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.launch
 
 class ConnectViewModel(
     private val drives: DriveRepository,
     private val pending: PendingConnection,
 ) : BaseMviViewModel<ConnectState, ConnectIntent, ConnectEffect>(ConnectState()) {
+
+    // Chỉ log kết quả, tuyệt đối không log giá trị các ô hay config (CH-06).
+    private val log = Logger.withTag("Connect")
 
     override fun onIntent(intent: ConnectIntent) {
         when (intent) {
@@ -54,12 +58,15 @@ class ConnectViewModel(
         setState { copy(isConnecting = true, failure = null, revealed = emptySet()) }
         viewModelScope.launch {
             when (val result = drives.verifyConnection(state.toConfig())) {
-                is AppResult.Success -> setState {
-                    copy(isConnecting = false, connected = ConnectedDrive(result.value, state.upn))
+                is AppResult.Success -> {
+                    log.i { "Kết nối thành công" }
+                    setState { copy(isConnecting = false, connected = ConnectedDrive(result.value, state.upn)) }
                 }
-                is AppResult.Failure -> setState {
+                is AppResult.Failure -> {
+                    val failure = result.error.toConnectFailure()
+                    log.w { "Kết nối thất bại: ${failure.kind} code=${failure.code}" }
                     // KN-09: giữ nguyên giá trị đã nhập để sửa.
-                    copy(isConnecting = false, failure = result.error.toConnectFailure())
+                    setState { copy(isConnecting = false, failure = failure) }
                 }
             }
         }

@@ -16,6 +16,7 @@ import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
 import io.ktor.http.isSuccess
 import io.ktor.http.takeFrom
+import kotlin.time.TimeSource
 
 private const val GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 private const val CHILDREN_SELECT = "id,name,size,folder,file,video,package"
@@ -26,11 +27,12 @@ private const val CHILDREN_PAGE_SIZE = 200
  *
  * - Tự gắn `Authorization: Bearer` từ [TokenProvider]; bearer không bao giờ vào log (CH-06).
  * - `401`: bỏ token, lấy token mới và thử lại đúng một lần (TK-02).
- * - Lỗi tạm thời (mạng, `429`, `5xx`) thử lại có backoff theo [withRetry] (TK-05, TK-06).
+ * - Lỗi tạm thời (mạng, `429`, `5xx`) thử lại do plugin HttpRequestRetry của client lo (xem [createHttpClient], TK-05, TK-06).
  */
 class GraphApi internal constructor(
     private val http: HttpClient,
     private val tokens: TokenProvider,
+    private val recorder: HttpTrafficRecorder? = null,
 ) {
 
     /** Kiểm tra kết nối: `GET /users/{upn}/drive?$select=id,driveType,quota` (KN-07). */
@@ -88,7 +90,7 @@ class GraphApi internal constructor(
                 is AppResult.Success -> result.value
                 is AppResult.Failure -> return result
             }
-            val result = withRetry { send(token, build) }
+            val result = send(token, build)
             val unauthorized = result is AppResult.Failure && (result.error as? AppError.Http)?.status == 401
             if (unauthorized && !tokenRefreshed) {
                 tokenRefreshed = true
@@ -100,14 +102,18 @@ class GraphApi internal constructor(
     }
 
     private suspend fun send(token: String, build: HttpRequestBuilder.() -> Unit): AppResult<HttpResponse> {
+        val started = TimeSource.Monotonic.markNow()
         val response = try {
             http.get {
                 build()
                 bearerAuth(token)
             }
         } catch (e: Throwable) {
-            return AppResult.Failure(e.toAppError())
+            val error = e.toAppError()
+            recorder?.record(failedTrafficEntry("GET", GRAPH_BASE, started.elapsedNow().inWholeMilliseconds, error::class.simpleName.orEmpty()))
+            return AppResult.Failure(error)
         }
+        recorder?.record(response.toTrafficEntry(started.elapsedNow().inWholeMilliseconds, includeBody = true))
         return if (response.status.isSuccess()) AppResult.Success(response) else AppResult.Failure(response.toGraphError())
     }
 

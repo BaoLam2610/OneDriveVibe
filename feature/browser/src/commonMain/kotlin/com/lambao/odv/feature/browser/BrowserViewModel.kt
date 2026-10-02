@@ -5,6 +5,7 @@ import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.repository.DriveRepository
+import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -21,6 +22,7 @@ class BrowserViewModel(
     // Lát 3 bỏ đi vì Room là nguồn dữ liệu.
     private val cache = mutableMapOf<String?, List<DriveItem>>()
     private var loadJob: Job? = null
+    private val log = Logger.withTag("Browser")
 
     init {
         load()
@@ -62,9 +64,14 @@ class BrowserViewModel(
                 is AppResult.Success -> {
                     val visible = result.value.toVisibleItems()
                     cache[folderId] = visible
+                    log.d { "Tải thư mục: ${result.value.size} mục, hiển thị ${visible.size}" }
                     setState { copy(items = visible, isLoading = false) }
                 }
-                is AppResult.Failure -> setState { copy(isLoading = false, error = result.error.toBrowserError()) }
+                is AppResult.Failure -> {
+                    val error = result.error.toBrowserError()
+                    log.w { "Tải thư mục thất bại: ${error.kind} code=${error.code}" }
+                    setState { copy(isLoading = false, error = error) }
+                }
             }
         }
     }

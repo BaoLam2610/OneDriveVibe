@@ -43,4 +43,7 @@ include(":core:designsystem")
 include(":feature:auth")
 include(":feature:browser")
 
+// Công cụ chỉ cho bản debug (ADR-0012). androidApp gắn bằng debugImplementation.
+include(":tools:debug")
+
 // Đã bỏ :shared (module mẫu của template KMP). Phần dùng chung nay nằm ở các module :core:*.

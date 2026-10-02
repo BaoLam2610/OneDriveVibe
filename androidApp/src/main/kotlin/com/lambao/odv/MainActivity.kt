@@ -4,8 +4,12 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 import com.lambao.odv.core.designsystem.theme.ODVTheme
+import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.navigation.ODVNavDisplay
 
 // AppCompatActivity thay ComponentActivity của template: AppCompatDelegate.setApplicationLocales() chỉ áp dụng ngay
@@ -24,6 +28,10 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun ODVApp() {
     ODVTheme {
-        ODVNavDisplay()
+        Box(Modifier.fillMaxSize()) {
+            ODVNavDisplay()
+            // Nút bọ nổi chỉ có ở bản debug; bản release là hàm rỗng (ADR-0012).
+            DebugTools.Overlay()
+        }
     }
 }

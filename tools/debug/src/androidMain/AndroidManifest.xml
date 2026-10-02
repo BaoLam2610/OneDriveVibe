@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Không exported: chỉ nút bọ trong app mở được. Màn tự đặt FLAG_SECURE vì log có UPN và đường dẫn tệp. -->
+        <activity
+            android:name="com.lambao.odv.tools.debug.DebugActivity"
+            android:exported="false"
+            android:label="OneDriveVibe Debug" />
+    </application>
+
+</manifest>

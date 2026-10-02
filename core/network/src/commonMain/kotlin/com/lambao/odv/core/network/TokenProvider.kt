@@ -11,6 +11,7 @@ import io.ktor.http.appendPathSegments
 import io.ktor.http.isSuccess
 import io.ktor.http.parameters
 import io.ktor.http.takeFrom
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration.Companion.minutes
@@ -34,23 +35,31 @@ private val REFRESH_MARGIN = 5.minutes
  */
 class TokenProvider internal constructor(
     private val http: HttpClient,
+    private val recorder: HttpTrafficRecorder? = null,
     private val timeSource: TimeSource = TimeSource.Monotonic,
 ) {
     private class Cached(val owner: GraphCredentials, val value: String, val expiresAt: TimeMark)
 
     private val mutex = Mutex()
+    // @Volatile: clear() ghi không qua mutex để khóa app xóa token ngay, không phải chờ lần lấy token đang retry (CH-03).
+    @Volatile
     private var cached: Cached? = null
+
+    // Tăng mỗi lần clear(): lần lấy token đang bay lúc khóa app không được ghi token vào cache sau khi đã xóa.
+    @Volatile
+    private var generation = 0
 
     /** Token còn dùng được cho [credentials]; gọi endpoint nếu chưa có, sắp hết hạn, hoặc credentials đã đổi. */
     suspend fun token(credentials: GraphCredentials): AppResult<String> = mutex.withLock {
+        val startGeneration = generation
         val current = cached
         if (current != null && current.owner.sameApp(credentials) && !(current.expiresAt - REFRESH_MARGIN).hasPassedNow()) {
             return@withLock AppResult.Success(current.value)
         }
         // Lấy token mới thất bại thì giữ nguyên cache cũ: token cũ còn hạn vẫn dùng được cho lần gọi sau.
-        when (val fetched = withRetry { fetch(credentials) }) {
+        when (val fetched = fetch(credentials)) {
             is AppResult.Success -> {
-                cached = Cached(credentials, fetched.value.value, fetched.value.expiresAt)
+                if (startGeneration == generation) cached = Cached(credentials, fetched.value.value, fetched.value.expiresAt)
                 AppResult.Success(fetched.value.value)
             }
             is AppResult.Failure -> fetched
@@ -64,11 +73,15 @@ class TokenProvider internal constructor(
     }
 
     /** Xóa token khỏi bộ nhớ khi khóa app hoặc ngắt kết nối (CH-03). */
-    suspend fun clear() = mutex.withLock { cached = null }
+    fun clear() {
+        generation++
+        cached = null
+    }
 
     private class Fetched(val value: String, val expiresAt: TimeMark)
 
     private suspend fun fetch(credentials: GraphCredentials): AppResult<Fetched> {
+        val started = timeSource.markNow()
         val response = try {
             http.post {
                 url {
@@ -87,8 +100,19 @@ class TokenProvider internal constructor(
                 )
             }
         } catch (e: Throwable) {
-            return AppResult.Failure(e.toAppError())
+            val error = e.toAppError()
+            recorder?.record(
+                failedTrafficEntry(
+                    "POST",
+                    "$TOKEN_ENDPOINT/${credentials.tenantId}/oauth2/v2.0/token",
+                    started.elapsedNow().inWholeMilliseconds,
+                    error::class.simpleName.orEmpty(),
+                ),
+            )
+            return AppResult.Failure(error)
         }
+        // includeBody = false: body request chứa client_secret, body response chứa access_token (CH-06).
+        recorder?.record(response.toTrafficEntry(started.elapsedNow().inWholeMilliseconds, includeBody = false))
         if (!response.status.isSuccess()) return AppResult.Failure(response.toTokenError())
         return try {
             val dto = response.body<TokenResponseDto>()

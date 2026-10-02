@@ -48,6 +48,8 @@ dependencies {
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
+    // ADR-0012: công cụ debug chỉ có trong bản debug.
+    debugImplementation(project(":tools:debug"))
 }
 
 android {

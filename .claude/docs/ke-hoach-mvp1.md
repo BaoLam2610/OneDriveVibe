@@ -20,6 +20,7 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 |---|---|---|---|
 | 0 | Bộ khung app, chưa có tính năng | 0002, 0003, 0004, 0011 | common, androidApp |
 | 1 | Kết nối → Danh sách thư mục gốc (luồng xuyên suốt đầu tiên) | 0005, 0006, một phần 0008 | network, security, data, domain, feature:auth, feature:browser |
+| D | Công cụ debug: nút bọ nổi, màn Debug (log API, log local, lưu trữ), Kermit, retry bằng `HttpRequestRetry` | 0012 | tools:debug, common, network |
 | 2 | Mã PIN và màn Khóa | phần còn lại của 0008 | security, feature:auth |
 | 3 | Đồng bộ delta và offline | 0007 | database, data, feature:browser |
 | 4 | Thumbnail, bộ nhớ đệm, tab Thư viện | | data, feature:library |
@@ -48,6 +49,15 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 - `:feature:browser`: tab Thư mục gọi thẳng API (TM-07), vào thư mục con, Breadcrumb, Back.
 - Điều hướng khởi động theo luồng tổng thể (mục 2 đặc tả): chưa có config → Kết nối; có config → Danh sách.
 - **Kiểm tay:** nhập 4 trường đúng/sai (từng mã lỗi); thấy cây thư mục thật; tắt rồi mở lại app vào thẳng Danh sách.
+
+### Lát D: Công cụ debug (chen giữa, không đổi thứ tự các lát)
+
+- Thêm sau Lát 1 theo yêu cầu: kiểm tay từ Lát 1 trở đi cần nhìn request/log ngay trên máy. ADR-0012.
+- `:tools:debug` (chỉ bản debug): nút bọ nổi kéo thả → `DebugActivity` (FLAG_SECURE) với 3 tab: Log API, Log local, Lưu trữ (SharedPreferences, DataStore, Room chỉ đọc).
+- Kermit trong `:core:common`; `HttpTrafficRecorder` trong `:core:network` (làm sạch trước khi ghi; không ghi body endpoint token).
+- Thay hàm `withRetry` tự viết bằng plugin `HttpRequestRetry` của Ktor.
+- Sửa Run mở nhầm Foundations gallery: khai báo lại `MainActivity` ở đầu manifest debug.
+- **Kiểm tay:** nút bọ hiện trên mọi màn và kéo được; tab API thấy request Graph (không có Authorization/token); tab Log thấy log kết nối; tab Lưu trữ liệt kê prefs; bản release không có nút bọ.
 
 ### Lát 2: Mã PIN và màn Khóa
 
@@ -103,6 +113,8 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 | Phát video | Media3 ExoPlayer + `SimpleCache` | |
 | PDF | `PdfRenderer` của Android | |
 | Đồng bộ chạy nền | Coroutine trong app | Thêm WorkManager khi cần đồng bộ lúc app đã đóng |
+| Log local | Kermit 2.2.0 | Bản debug đẩy vào màn Debug; release không writer (ADR-0012) |
+| Retry mạng | Plugin `HttpRequestRetry` của Ktor | Thay hàm `withRetry` tự viết (ADR-0012) |
 
 ## 4. Bỏ so với quy trình `/orch-build-mvp`
 

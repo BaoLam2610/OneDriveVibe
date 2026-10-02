@@ -40,6 +40,15 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 - [x] Review Kotlin + bảo mật
 - [ ] Kiểm tay
 
+## Lát D: Công cụ debug (chen sau Lát 1, ADR-0012)
+
+- [x] ADR-0012, Kermit trong `:core:common`
+- [x] `HttpTrafficRecorder` + làm sạch trong `:core:network`; thay `withRetry` bằng `HttpRequestRetry`
+- [x] `:tools:debug`: bộ đệm log/API, `DebugActivity` 3 tab, nút bọ nổi
+- [x] `DebugTools` bản debug/release; sửa Run mở nhầm gallery (MainActivity đầu manifest debug)
+- [x] Review Kotlin + bảo mật
+- [ ] Kiểm tay
+
 ## Lát 2: Mã PIN và màn Khóa
 
 - [ ] Argon2id + Keystore
@@ -106,3 +115,4 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-02 | Duyệt kế hoạch MVP1 |
 | 2026-10-02 | Lát 0: dựng khung app (catalog thư viện, common, MVI, Koin, Navigation 3, VI/EN, tắt backup, tech-stack.md); đã review, chờ kiểm tay |
 | 2026-10-02 | Lát 1: dựng network (token single-flight, retry), security (Keystore AES-GCM), domain/data, feature:auth, feature:browser, điều hướng khởi động; chờ review và build |
+| 2026-10-02 | Lát D (chen sau Lát 1): công cụ debug `:tools:debug` + Kermit + HttpRequestRetry, sửa Run mở nhầm gallery; ADR-0012 |

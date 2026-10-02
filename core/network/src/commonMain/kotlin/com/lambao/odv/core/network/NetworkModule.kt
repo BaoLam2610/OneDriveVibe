@@ -5,6 +5,7 @@ import org.koin.dsl.module
 /** Binding Koin của `:core:network`. Ghép ở MainApplication. */
 val networkModule = module {
     single { createHttpClient() }
-    single { TokenProvider(get()) }
-    single { GraphApi(get(), get()) }
+    // HttpTrafficRecorder chỉ có ở bản debug (module :tools:debug); bản release không có nên recorder = null.
+    single { TokenProvider(get(), getOrNull()) }
+    single { GraphApi(get(), get(), getOrNull()) }
 }

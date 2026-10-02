@@ -40,7 +40,7 @@ Cột **Trạng thái**: *đang dùng* = đã gắn vào module; *catalog* = đ�
 | Chạy nền | Coroutine trong app; thêm WorkManager khi cần đồng bộ lúc app đã đóng | | Delta sync, tải | Android, iOS: BGTaskScheduler | Lát 3 |
 | Ngày giờ | kotlinx-datetime | | Thư viện theo ngày, ngày chụp | Common | khi dùng tới (Lát 3–4) |
 | File I/O | kotlinx-io (hoặc Okio) | | Cache file, thay `java.io.File` trong code chung | Common | khi dùng tới (Lát 4, 7) |
-| Log | Kermit | | Log | Common | Lát 1 |
+| Log | Kermit | 2.2.0 | Log local; bản debug thêm LogWriter đẩy vào màn Debug, bản release gỡ hết writer (ADR-0012) | Common | đang dùng (`:core:common`, api) |
 | Đa ngôn ngữ | Android `res/` (`values` = VI mặc định, `values-en`) + AppCompat `setApplicationLocales` + `locales_config.xml` | AppCompat 1.8.0 | VI + EN (ADR-0011), §5.5 | Android (MVP2: §5.5) | đang dùng (`:androidApp`) |
 | Phân tích tĩnh | Ktlint (qua Spotless) + Detekt + compose-rules | | Chất lượng code | | chưa làm (§7) |
 | Hiệu năng | R8 + Baseline Profiles | | Bản release | Android | trước khi phát hành |
@@ -74,10 +74,10 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 :androidApp                   Android app: Compose, Navigation 3, khởi động Koin (ADR-0010 gọi là :app; giữ tên template)
 :build-logic                  convention plugin
 
-:core:common                  [KMP] AppResult/AppError, DispatcherProvider, BaseMviViewModel (Kermit thêm ở Lát 1)
+:core:common                  [KMP] AppResult/AppError, DispatcherProvider, BaseMviViewModel, Kermit (api)
 :core:domain                  [KMP] entity, interface repository, use case. Kotlin thuần
 :core:data                    [KMP] repository impl, mapper, DataStore
-:core:network                 [KMP] Ktor client, DTO Graph, token, retry/throttling
+:core:network                 [KMP] Ktor client (HttpRequestRetry), DTO Graph, token, HttpTrafficRecorder (log API đã làm sạch)
 :core:database                [KMP] Room database, DAO, schema
 :core:security                [KMP] expect/actual: SecretStore (Keystore | Keychain), dẫn xuất khóa từ PIN
 :core:designsystem            [KMP, Compose] token, theme, icon, component dùng chung
@@ -89,6 +89,8 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 :feature:imageviewer          xem ảnh, zoom
 :feature:pdfviewer            truyện PDF
 :feature:settings             cài đặt
+
+:tools:debug                  [Android, chỉ bản debug] nút bọ nổi, DebugActivity: log API, log local, lưu trữ (ADR-0012)
 ```
 
 - Module core dùng `kotlin("multiplatform")` nhưng **chỉ target Android** ở MVP1 (ADR-0001). MVP2 chỉ cần thêm `iosArm64()` + `iosSimulatorArm64()` (`iosX64` đã lỗi thời) và viết `actual`.
@@ -189,7 +191,7 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 - Màn Kết nối, kiểm tra định dạng và bảng lỗi: `dac-ta-nghiep-vu.md` §3.1.
 
 ### 5.2 Mạng
-- Retry `429`/`503` theo header `Retry-After` (Ktor `HttpRequestRetry`); `401` lấy token mới và thử lại **một** lần; không retry `400`/`403`/`404` (`onedrive-graph-api.md` §9).
+- Retry cấu hình bằng plugin `HttpRequestRetry` của Ktor trong `createHttpClient` (không còn hàm tự viết): lỗi mạng, timeout, `429`, `5xx`, tối đa 2 lần, chờ đúng `Retry-After` (giới hạn 60 giây). `401` do `GraphApi` xử lý: lấy token mới và thử lại **một** lần (chỉ bỏ đúng token bị từ chối); không retry `400`/`403`/`404` (`onedrive-graph-api.md` §9).
 - Offline-first (ADR-0007): UI đọc Room; `sync()` là luồng riêng. Ngoại lệ duy nhất là TM-07 (Lát 1 gọi thẳng API khi chưa có Room).
 - Delta query (`/drive/root/delta`), lưu `deltaLink` và trang đang quét dở trong Room (DB-04); `410 resyncRequired` thì quét lại từ đầu.
 - Phân trang theo `@odata.nextLink`. Paging 3 chỉ cân nhắc cho danh sách đọc từ Room.
@@ -209,7 +211,7 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 - Thư viện Argon2id đặt sau interface để thay được.
 - `FLAG_SECURE` cho màn Kết nối, Khóa, nhập PIN, Cài đặt; ẩn nội dung ở danh sách app gần đây.
 - **CH-04 (đã làm ở Lát 0):** `allowBackup="false"`, `fullBackupContent="false"`, `dataExtractionRules` loại trừ mọi miền cho cả `cloud-backup` và `device-transfer` (Android 12+ bỏ qua `allowBackup` khi chuyển máy).
-- **CH-06:** Ktor `Logging` che `Authorization` bằng `sanitizeHeader`, **không bao giờ** log body request lấy token (chứa `client_secret`), tắt log body ở release.
+- **CH-06:** không cài Ktor `Logging`. Log API cho màn Debug đi qua `HttpTrafficRecorder` (chỉ bản debug), `:core:network` làm sạch trước khi ghi: bỏ `Authorization`, **không ghi body endpoint token** (chứa `client_secret`/`access_token`), che `downloadUrl`/`tempauth`, cắt body 16 KB (ADR-0012). `followRedirects = false` để bearer không bị gửi sang máy chủ khác.
 
 ### 5.5 Đa ngôn ngữ (ADR-0011)
 - **VI (mặc định) + EN.** Thêm ngôn ngữ: thêm `res/values-xx`, một dòng trong `locales_config.xml` và trong `localeFilters`.
@@ -247,7 +249,7 @@ Tiến độ theo lát xem `tien-do-mvp1.md`; mục này chỉ theo dõi phần 
 - [ ] Plugin `quality` (ktlint qua Spotless + detekt + compose-rules): chưa có lát nào nhận; người dùng tự chạy, Claude không chạy (CLAUDE.local.md)
 - [x] `libs.versions.toml` pin phiên bản các thư viện Lát 0 khai báo (§1)
 - [x] Skeleton module theo §3
-- [ ] Ktor client + token + retry + Kermit + che log (Lát 1)
+- [x] Ktor client + token + retry (`HttpRequestRetry`) + Kermit + log API đã làm sạch (Lát 1, Lát D)
 - [ ] Room KMP `BundledSQLiteDriver`, export schema (Lát 3)
 - [ ] `SecretStore` (Keystore) (Lát 1) + dẫn xuất khóa từ PIN Argon2id (Lát 2)
 - [ ] CI (nếu dùng): build, ktlint, detekt, không có bước test
@@ -263,8 +265,8 @@ Bản tech stack đầu định nghĩa foundation 8 hạng mục. Kế hoạch M
 |---|---|---|
 | 1 | Khởi tạo, `libs.versions.toml`, `build-logic` | Xong (`odv.kmp.library`); `odv.kmp.feature` ở Lát 1; `quality` chưa làm |
 | 2 | Skeleton module | Xong |
-| 3 | `:core:common`: `AppResult` / `AppError`, dispatcher, Kermit | Xong ở Lát 0, trừ Kermit (Lát 1) |
-| 4 | `:core:network`: Ktor, token Client Credentials (gộp lấy token, TK-03), retry 429/503, che `Authorization` | Lát 1 |
+| 3 | `:core:common`: `AppResult` / `AppError`, dispatcher, Kermit | Xong (Kermit ở Lát D) |
+| 4 | `:core:network`: Ktor, token Client Credentials (gộp lấy token, TK-03), retry bằng `HttpRequestRetry`, không log `Authorization` | Xong ở Lát 1 + Lát D |
 | 5 | `:core:database`: Room KMP, `version = 1`, 2 bảng lõi | Lát 3 |
 | 6 | `:core:security`: `SecretStore` (Keystore), Argon2id | Lát 1 (Keystore), Lát 2 (Argon2id) |
 | 7 | `:core:designsystem`: theme từ `odv-tokens.json`, không dynamic color | Xong (Foundations) |
@@ -297,7 +299,7 @@ Tổng hợp từ rà soát skill `android-clean-architecture` và `compose-mult
 | `onEvent`, lỗi lưu `state.error: String?` | `onIntent()` + kênh Effect; lỗi trong state là `UiError` có cấu trúc, **không lưu `e.message`** |
 
 ### Điểm không an toàn trong ví dụ của skill (không chép nguyên)
-1. Ktor `Logging { level = HEADERS }` in cả `Authorization` → vi phạm CH-06. Dùng `sanitizeHeader`, tắt ở release, không log body request lấy token.
+1. Ktor `Logging { level = HEADERS }` in cả `Authorization` → vi phạm CH-06. Dự án không cài plugin này; log API đi qua `HttpTrafficRecorder` (ADR-0012).
 2. `runCatching` trong repository bắt cả `CancellationException` → ném lại hoặc dùng `AppResult`.
 3. Theme `dynamicColor = true` → tắt (màu từ `odv-tokens.json`); `Build.VERSION`/`LocalContext` không đặt trong `commonMain`.
 4. `rememberSystemUiController` (Accompanist) đã deprecated → `enableEdgeToEdge()` + `WindowInsetsControllerCompat` (VD-07).
@@ -311,7 +313,7 @@ Tổng hợp từ rà soát skill `android-clean-architecture` và `compose-mult
 ### Quy ước nhỏ
 - **Màu:** không dynamic color; màu chỉ từ `ODVTheme.colors`, không viết hex trong màn hình. Theme XML `Theme.OneDriveVibe` (AppCompat) không đặt màu.
 - **Tên:** code UI có tiền tố `ODV` (`ODVSplashScreen`, `ODVNavDisplay`); code không phải UI thì không (`AppRoute`, `MainApplication`). `OneDriveVibe` chỉ là tên app.
-- **Log:** Koin mức `ERROR`; không bao giờ log Client Secret, access token, PIN, config đã giải mã (CH-06).
+- **Log:** dùng `Logger.withTag("Tên")` của Kermit; Koin mức `ERROR`; không bao giờ log Client Secret, access token, PIN, config đã giải mã, giá trị ô nhập (CH-06). Chỉ log kết quả và mã lỗi. Bản release không có writer nào (ADR-0012).
 - **Dispatcher:** tiêm `DispatcherProvider`, không gọi `Dispatchers.IO` trong code dùng chung.
 - **Bỏ hoặc đổi so với template/ADR:** ghi comment trong code nêu lý do và ADR liên quan.
 
