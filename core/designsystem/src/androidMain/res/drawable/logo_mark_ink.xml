@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo một màu ink, dùng trên nền volt. Dùng tint để đổi màu nếu cần. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:fillColor="#FF101217"
+        android:pathData="M20 6H39V22A3 3 0 0 0 42 25H58V44A14 14 0 0 1 44 58H20A14 14 0 0 1 6 44V20A14 14 0 0 1 20 6ZM27.02 22.78L43.02 32.28A2 2 0 0 1 43.02 35.72L43.02 35.72L27.02 45.22A2 2 0 0 1 24.00 43.50L24.00 43.50L24.00 24.50A2 2 0 0 1 27.02 22.78Z" 
+        android:fillType="evenOdd" />
+    <path
+        android:fillColor="#FF101217"
+        android:pathData="M42 6V18A4 4 0 0 0 46 22H58Z"
+        android:strokeColor="#FF101217"
+        android:strokeWidth="1.5"
+        android:strokeLineJoin="round" />
+</vector>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Chỉ có ở bản debug: màn Foundations gallery để so mắt với canvas thiết kế. Hiện thành icon launcher thứ hai. -->
+        <activity
+            android:name=".gallery.FoundationsGalleryActivity"
+            android:exported="true"
+            android:label="OneDriveVibe Gallery">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
