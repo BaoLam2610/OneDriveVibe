@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+        CH-04: tắt sao lưu tự động. allowBackup="false" chặn sao lưu đến Android 11;
+        dataExtractionRules chặn cả sao lưu đám mây lẫn chuyển máy trên Android 12+.
+        localeConfig (ADR-0011): khai báo VI/EN cho bộ chọn ngôn ngữ theo app của hệ thống (Android 13+).
+    -->
     <application
-        android:allowBackup="true"
+        android:name=".MainApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.OneDriveVibe"
+        tools:targetApi="33">
         <activity
             android:exported="true"
             android:name=".MainActivity">
@@ -17,6 +28,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            ADR-0011: Android 12 trở xuống không tự lưu ngôn ngữ đã chọn trong app; AppCompat lưu giúp qua service này
+            (autoStoreLocales). Android 13+ do hệ thống lưu.
+        -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
     </application>
 
 </manifest>

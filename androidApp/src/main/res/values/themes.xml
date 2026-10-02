@@ -1,0 +1,7 @@
+<resources>
+    <!--
+        Theme cửa sổ cho AppCompatActivity (ADR-0011 cần AppCompat để đổi ngôn ngữ trong app).
+        Giao diện thật vẽ bằng Compose qua ODVTheme; theme này không đặt màu.
+    -->
+    <style name="Theme.OneDriveVibe" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>

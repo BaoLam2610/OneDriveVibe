@@ -66,4 +66,4 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 - **Gradle và build do người dùng tự chạy thủ công.** Không chạy `./gradlew` hay lệnh build. Chỉ sửa file rồi báo lại.
 - Kiểm thử là thủ công trên thiết bị (ADR-0009). Các phần dễ hỏng âm thầm cần dặn người dùng kiểm tra tay: làm mới token, khóa PIN và mã hóa config, tua video, PDF nhiều trang.
 - Khi bỏ hoặc đổi thứ gì so với template/ADR, ghi comment trong code nói rõ lý do và ADR liên quan.
-- Quy ước nhỏ (tắt dynamic color, che header log...) dự kiến ở `tech-stack.md` §9, file này chưa được tạo.
+- Thư viện, phiên bản và quy ước nhỏ (tắt dynamic color, che header log...) ở `.claude/docs/tech-stack.md` (§9 là quy ước nhỏ, §3 là API tránh dùng trong `commonMain`).

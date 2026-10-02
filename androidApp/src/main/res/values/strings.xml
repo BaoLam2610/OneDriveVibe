@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">OneDriveVibe</string>
+    <!-- ADR-0011: values/ là Tiếng Việt (ngôn ngữ mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai. -->
+    <string name="app_name" translatable="false">OneDriveVibe</string>
+
+    <!-- Splash (thiet-ke-ui.md mục 5.1) -->
+    <string name="splash_tagline">Phim · Ảnh · Truyện trên OneDrive</string>
 </resources>

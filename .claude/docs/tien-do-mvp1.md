@@ -7,8 +7,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 ## Đang làm
 
 - **Lát:** 0, Bộ khung app
-- **Bước:** chưa bắt đầu
-- **Ghi chú:**
+- **Bước:** code xong, đã review; chờ người dùng build và kiểm tay
+- **Ghi chú:** đổi ngôn ngữ ở Lát 0 kiểm qua Cài đặt hệ thống (Android 13+), vì màn Cài đặt làm ở Lát 9. `UiError` làm ở Lát 1.
 
 ## Đã xong trước kế hoạch
 
@@ -17,15 +17,15 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Lát 0: Bộ khung app
 
-- [ ] Khai báo thư viện trong `libs.versions.toml` và build file
-- [ ] `:core:common`: `AppError`, `Result`, dispatcher
-- [ ] `BaseMviViewModel`
-- [ ] Khởi động Koin
-- [ ] Navigation 3: `NavDisplay`, route rỗng
-- [ ] Đa ngôn ngữ VI/EN
-- [ ] Tắt sao lưu tự động (CH-04)
-- [ ] `.claude/docs/tech-stack.md`
-- [ ] Review (`/ecc:kotlin-review`)
+- [x] Khai báo thư viện trong `libs.versions.toml` và build file
+- [x] `:core:common`: `AppError`, `Result`, dispatcher
+- [x] `BaseMviViewModel`
+- [x] Khởi động Koin
+- [x] Navigation 3: `NavDisplay`, route rỗng
+- [x] Đa ngôn ngữ VI/EN
+- [x] Tắt sao lưu tự động (CH-04)
+- [x] `.claude/docs/tech-stack.md`
+- [x] Review (`/ecc:kotlin-review`)
 - [ ] Kiểm tay
 
 ## Lát 1: Kết nối → Danh sách thư mục gốc
@@ -104,3 +104,4 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | Ngày | Việc |
 |---|---|
 | 2026-10-02 | Duyệt kế hoạch MVP1 |
+| 2026-10-02 | Lát 0: dựng khung app (catalog thư viện, common, MVI, Koin, Navigation 3, VI/EN, tắt backup, tech-stack.md); đã review, chờ kiểm tay |

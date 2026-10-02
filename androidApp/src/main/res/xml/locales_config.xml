@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ADR-0011, CD-10: ngôn ngữ app hỗ trợ. Android 13+ hiện danh sách này trong Cài đặt hệ thống > Ứng dụng > Ngôn ngữ. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="vi" />
+    <locale android:name="en" />
+</locale-config>
