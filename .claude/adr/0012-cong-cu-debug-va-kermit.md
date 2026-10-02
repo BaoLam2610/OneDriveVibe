@@ -1,7 +1,7 @@
 # ADR-0012: Công cụ debug trong app (module `:tools:debug`) và log bằng Kermit
 
 **Ngày**: 2026-10-02
-**Trạng thái**: accepted
+**Trạng thái**: accepted (quyết định số 4 được ADR-0013 thay thế một phần)
 **Người quyết định**: LamBao
 
 ## Bối cảnh

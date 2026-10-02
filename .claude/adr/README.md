@@ -20,6 +20,7 @@ Mỗi ADR ghi **một quyết định kiến trúc**: bối cảnh, quyết đ�
 | [0010](0010-chia-module.md) | Chia module: tách nhỏ phần core, module feature tạo khi bắt đầu làm feature đó | accepted | 2026-10-02 |
 | [0011](0011-da-ngon-ngu-vi-en.md) | Đa ngôn ngữ VI + EN qua Android `res/`, domain không chứa chuỗi hiển thị | accepted | 2026-10-02 |
 | [0012](0012-cong-cu-debug-va-kermit.md) | Công cụ debug trong app (`:tools:debug`, chỉ bản debug), log bằng Kermit, retry bằng `HttpRequestRetry` | accepted | 2026-10-02 |
+| [0013](0013-log-api-debug-day-du-khong-che.md) | Log API ở bản debug hiển thị đầy đủ (không che), che là tùy chọn; thay thế một phần ADR-0012 | accepted | 2026-10-02 |
 
 ## Quy ước
 - Đánh số tăng dần, không dùng lại số. Tên file: `NNNN-tieu-de-khong-dau.md`.

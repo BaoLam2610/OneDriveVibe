@@ -6,8 +6,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import com.lambao.odv.core.designsystem.component.LocalODVTopOverlay
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.navigation.ODVNavDisplay
@@ -28,10 +30,14 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun ODVApp() {
     ODVTheme {
-        Box(Modifier.fillMaxSize()) {
-            ODVNavDisplay()
-            // Nút bọ nổi chỉ có ở bản debug; bản release là hàm rỗng (ADR-0012).
-            DebugTools.Overlay()
+        // Lớp phủ nổi của công cụ debug: Dialog/BottomSheet đọc LocalODVTopOverlay để vẽ lại nút bọ phía trên chúng. Bản
+        // release cung cấp null nên không có gì được vẽ (ADR-0012).
+        CompositionLocalProvider(LocalODVTopOverlay provides DebugTools.topOverlay) {
+            Box(Modifier.fillMaxSize()) {
+                ODVNavDisplay()
+                // Nút bọ nổi chỉ có ở bản debug; bản release là hàm rỗng.
+                DebugTools.Overlay()
+            }
         }
     }
 }

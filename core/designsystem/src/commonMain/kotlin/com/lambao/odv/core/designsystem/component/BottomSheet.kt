@@ -83,6 +83,8 @@ fun ODVBottomSheet(
             )
             content()
         }
+        // Đặt TRONG nội dung sheet vì lý do như ODVDialog: cửa sổ con của cửa sổ sheet thì mới nằm trên sheet.
+        ODVTopOverlayInWindow()
     }
 }
 

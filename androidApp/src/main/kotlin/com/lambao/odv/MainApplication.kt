@@ -18,7 +18,7 @@ class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         // Trước startKoin để log khởi động cũng vào màn Debug. Release gỡ hết writer (ADR-0012, CH-06).
-        DebugTools.install()
+        DebugTools.install(this)
         // ADR-0004: khởi động Koin một lần cho cả app. Thêm module của từng tầng/feature vào `modules(...)`.
         startKoin {
             // Chỉ log lỗi: Koin không được in giá trị đã tiêm (có thể là config hay token, CH-06).

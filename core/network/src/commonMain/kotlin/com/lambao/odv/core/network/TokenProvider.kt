@@ -8,6 +8,7 @@ import io.ktor.client.request.forms.FormDataContent
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.appendPathSegments
+import io.ktor.http.formUrlEncode
 import io.ktor.http.isSuccess
 import io.ktor.http.parameters
 import io.ktor.http.takeFrom
@@ -82,22 +83,19 @@ class TokenProvider internal constructor(
 
     private suspend fun fetch(credentials: GraphCredentials): AppResult<Fetched> {
         val started = timeSource.markNow()
+        val form = parameters {
+            append("client_id", credentials.clientId)
+            append("client_secret", credentials.clientSecret)
+            append("scope", GRAPH_SCOPE)
+            append("grant_type", "client_credentials")
+        }
         val response = try {
             http.post {
                 url {
                     takeFrom(TOKEN_ENDPOINT)
                     appendPathSegments(credentials.tenantId, "oauth2", "v2.0", "token")
                 }
-                setBody(
-                    FormDataContent(
-                        parameters {
-                            append("client_id", credentials.clientId)
-                            append("client_secret", credentials.clientSecret)
-                            append("scope", GRAPH_SCOPE)
-                            append("grant_type", "client_credentials")
-                        },
-                    ),
-                )
+                setBody(FormDataContent(form))
             }
         } catch (e: Throwable) {
             val error = e.toAppError()
@@ -107,12 +105,13 @@ class TokenProvider internal constructor(
                     "$TOKEN_ENDPOINT/${credentials.tenantId}/oauth2/v2.0/token",
                     started.elapsedNow().inWholeMilliseconds,
                     error::class.simpleName.orEmpty(),
+                    requestBody = form.formUrlEncode(),
                 ),
             )
             return AppResult.Failure(error)
         }
-        // includeBody = false: body request chứa client_secret, body response chứa access_token (CH-06).
-        recorder?.record(response.toTrafficEntry(started.elapsedNow().inWholeMilliseconds, includeBody = false))
+        // Ghi đầy đủ kể cả body (có client_secret, access_token) để gỡ lỗi: chỉ bản debug có recorder, chỉ trong bộ nhớ (ADR-0013).
+        recorder?.record(response.toTrafficEntry(started.elapsedNow().inWholeMilliseconds, requestBody = form.formUrlEncode()))
         if (!response.status.isSuccess()) return AppResult.Failure(response.toTokenError())
         return try {
             val dto = response.body<TokenResponseDto>()

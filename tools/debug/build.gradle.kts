@@ -24,6 +24,8 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.koin.core)
+            // JsonTree: parse và in đẹp JSON trong màn chi tiết log API.
+            implementation(libs.kotlinx.serialization.json)
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)

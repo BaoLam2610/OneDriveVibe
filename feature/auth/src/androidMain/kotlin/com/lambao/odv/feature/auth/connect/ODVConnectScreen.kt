@@ -25,7 +25,7 @@ fun ODVConnectScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusRequesters = remember { ConnectField.entries.associateWith { FocusRequester() } }
 
-    ODVSecureWindow()
+    ODVSecureWindow(enabled = false)
     // KN-03: app xuống nền thì che lại mọi ô đang hiện ký tự.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.onIntent(ConnectIntent.HideAll) }
     ODVCollectEffects(viewModel.effects) { effect ->

@@ -1,6 +1,8 @@
 package com.lambao.odv.tools.debug
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +25,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -36,12 +37,17 @@ import com.lambao.odv.core.designsystem.component.ODVButtonStyle
 import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVIconButton
+import com.lambao.odv.core.designsystem.component.ODVRadioRow
 import com.lambao.odv.core.designsystem.component.ODVScaffold
+import com.lambao.odv.core.designsystem.component.ODVSearchBar
+import com.lambao.odv.core.designsystem.component.ODVSecureMode
+import com.lambao.odv.core.designsystem.component.ODVSwitchRow
 import com.lambao.odv.core.designsystem.component.ODVTab
 import com.lambao.odv.core.designsystem.component.ODVTabs
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -51,19 +57,62 @@ private val timeFormat = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
 
 private fun formatTime(ms: Long): String = timeFormat.format(Date(ms))
 
-/** Màn Debug: Tabs rồi nội dung từng tab. Chuỗi để trực tiếp vì chỉ dùng khi phát triển (ADR-0012). */
+private const val TAB_API = 0
+private const val TAB_LOG = 1
+private const val TAB_STORAGE = 2
+
+/**
+ * Màn Debug: Tabs rồi nội dung từng tab; bấm một request ở tab API mở màn chi tiết. Chuỗi để trực tiếp vì chỉ dùng khi
+ * phát triển (ADR-0012). Tìm kiếm có ở tab API và Log; Lưu trữ và Khác để sau.
+ */
 @Composable
 internal fun ODVDebugScreen(onBack: () -> Unit) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var tab by rememberSaveable { mutableIntStateOf(TAB_API) }
+    var selectedId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var searching by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
     var storageRefresh by remember { mutableIntStateOf(0) }
+    val maskTraffic by DebugSettings.maskTraffic.collectAsState()
+    val requests by ApiTrafficStore.requests.collectAsState()
+
+    val selected = selectedId?.let { id -> requests.firstOrNull { it.id == id } }
+    if (selected != null) {
+        BackHandler { selectedId = null }
+        ODVApiDetailScreen(request = selected, maskTraffic = maskTraffic, onBack = { selectedId = null })
+        return
+    }
+
+    val searchable = tab == TAB_API || tab == TAB_LOG
+    BackHandler(enabled = searching) {
+        searching = false
+        query = ""
+    }
+
     ODVScaffold(
         topBar = {
-            ODVAppBar(
-                title = "Debug",
-                navigation = { ODVIconButton(ODVIcon.ArrowLeft, "Quay lại", onBack) },
-                // X ở góc phải đóng màn Debug (finish Activity). Xóa/làm mới nằm ở thanh công cụ của từng tab.
-                actions = { ODVIconButton(ODVIcon.Close, "Đóng", onBack) },
-            )
+            if (searching && searchable) {
+                ODVSearchBar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    placeholder = if (tab == TAB_API) "Tìm trong mọi request" else "Tìm trong log",
+                    backContentDescription = "Đóng tìm kiếm",
+                    onBack = {
+                        searching = false
+                        query = ""
+                    },
+                    clearContentDescription = "Xóa từ khóa",
+                )
+            } else {
+                ODVAppBar(
+                    title = "Debug",
+                    navigation = { ODVIconButton(ODVIcon.ArrowLeft, "Quay lại", onBack) },
+                    // X ở góc phải đóng màn Debug (finish Activity). Xóa/làm mới nằm ở thanh công cụ của từng tab.
+                    actions = {
+                        if (searchable) ODVIconButton(ODVIcon.Search, "Tìm kiếm", { searching = true })
+                        ODVIconButton(ODVIcon.Close, "Đóng", onBack)
+                    },
+                )
+            }
         },
     ) { padding ->
         Column(Modifier.fillMaxSize()) {
@@ -75,18 +124,25 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
                     ODVTab("Khác", ODVIcon.Tune),
                 ),
                 selectedIndex = tab,
-                onSelect = { tab = it },
+                // Đổi tab thì đóng tìm kiếm: từ khóa của tab này không có nghĩa ở tab kia. Làm ở đây thay vì LaunchedEffect(tab) để
+                // quay lại từ màn chi tiết không xóa mất từ khóa.
+                onSelect = {
+                    tab = it
+                    searching = false
+                    query = ""
+                },
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
             )
+            val activeQuery = if (searching) query else ""
             when (tab) {
-                0 -> ToolRow("Xóa log API") { ApiTrafficStore.clear() }
-                1 -> ToolRow("Xóa log local") { DebugLogStore.clear() }
-                2 -> ToolRow("Làm mới") { storageRefresh++ }
+                TAB_API -> ToolRow("Xóa log API") { ApiTrafficStore.clear() }
+                TAB_LOG -> ToolRow("Xóa log local") { DebugLogStore.clear() }
+                TAB_STORAGE -> ToolRow("Làm mới") { storageRefresh++ }
             }
             when (tab) {
-                0 -> ApiTab(padding)
-                1 -> LogTab(padding)
-                2 -> StorageTab(padding, storageRefresh)
+                TAB_API -> ApiTab(padding, requests, activeQuery, maskTraffic) { selectedId = it }
+                TAB_LOG -> LogTab(padding, activeQuery)
+                TAB_STORAGE -> StorageTab(padding, storageRefresh)
                 else -> OthersTab(padding)
             }
         }
@@ -100,51 +156,67 @@ private fun ToolRow(label: String, onClick: () -> Unit) {
     }
 }
 
-// ---------- Tab Khác ----------
+// ---------- Tab API ----------
+
+private class ApiSearchResult(val items: List<Pair<DebugRequest, Int>>, val totalMatches: Int)
 
 @Composable
-private fun OthersTab(padding: PaddingValues) {
-    val context = LocalContext.current
-    val actions = DebugActions.items
-    if (actions.isEmpty()) {
-        EmptyTab("Chưa có công cụ nào", "Công cụ riêng của app đăng ký qua DebugActions.register.")
+private fun ApiTab(
+    padding: PaddingValues,
+    requests: List<DebugRequest>,
+    query: String,
+    maskTraffic: Boolean,
+    onOpen: (Long) -> Unit,
+) {
+    if (requests.isEmpty()) {
+        EmptyTab("Chưa có request nào", "Dùng app để gọi Graph, request sẽ hiện ở đây.")
         return
     }
-    LazyColumn(contentPadding = padding) {
-        items(actions, key = { it.title }) { action ->
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { action.onClick(context) }
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            ) {
-                Text(action.title, style = ODVTheme.typography.bodyStrong, color = ODVTheme.colors.ink)
-                Text(action.description, style = ODVTheme.typography.caption, color = ODVTheme.colors.inkMuted)
+    // Tìm trong body lớn có thể nặng: chạy ngoài luồng chính để gõ phím không bị giật.
+    val result by produceState(ApiSearchResult(requests.asReversed().map { it to 0 }, 0), requests, query, maskTraffic) {
+        value = withContext(Dispatchers.Default) {
+            val ordered = requests.asReversed()
+            if (query.isEmpty()) {
+                ApiSearchResult(ordered.map { it to 0 }, 0)
+            } else {
+                // Cùng cách đếm với màn chi tiết (SectionCache) nên số ở danh sách và trong chi tiết luôn khớp nhau.
+                SectionCache.retain(requests.mapTo(HashSet()) { it.id })
+                val scored = ordered.map { request ->
+                    ensureActive()
+                    request to requestMatchCount(request, maskTraffic, query)
+                }.filter { it.second > 0 }
+                ApiSearchResult(scored, scored.sumOf { it.second })
+            }
+        }
+    }
+    Column(Modifier.fillMaxSize()) {
+        if (query.isNotEmpty()) {
+            SearchSummary("${result.items.size}/${requests.size} request · ${result.totalMatches} kết quả", result.totalMatches > 0)
+        }
+        if (result.items.isEmpty()) {
+            EmptyTab("Không có kết quả", "Không request nào chứa “$query”.")
+        } else {
+            LazyColumn(contentPadding = padding) {
+                items(result.items, key = { it.first.id }) { (request, count) ->
+                    RequestRow(request, count, query) { onOpen(request.id) }
+                }
             }
         }
     }
 }
 
-// ---------- Tab API ----------
-
 @Composable
-private fun ApiTab(padding: PaddingValues) {
-    val requests by ApiTrafficStore.requests.collectAsState()
-    if (requests.isEmpty()) {
-        EmptyTab("Chưa có request nào", "Dùng app để gọi Graph, request sẽ hiện ở đây (đã che Authorization, token và downloadUrl).")
-        return
-    }
-    var expanded by remember { mutableStateOf(emptySet<Long>()) }
-    LazyColumn(contentPadding = padding) {
-        items(requests.asReversed(), key = { it.id }) { request ->
-            val open = request.id in expanded
-            RequestRow(request, open) { expanded = if (open) expanded - request.id else expanded + request.id }
-        }
-    }
+private fun SearchSummary(text: String, found: Boolean) {
+    Text(
+        text,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+        style = ODVTheme.typography.captionStrong,
+        color = if (found) ODVTheme.colors.voltText else ODVTheme.colors.danger,
+    )
 }
 
 @Composable
-private fun RequestRow(request: DebugRequest, open: Boolean, onToggle: () -> Unit) {
+private fun RequestRow(request: DebugRequest, matches: Int, query: String, onClick: () -> Unit) {
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
     val entry = request.entry
@@ -158,7 +230,7 @@ private fun RequestRow(request: DebugRequest, open: Boolean, onToggle: () -> Uni
     Column(
         Modifier
             .fillMaxWidth()
-            .clickable(onClick = onToggle)
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -167,41 +239,16 @@ private fun RequestRow(request: DebugRequest, open: Boolean, onToggle: () -> Uni
             Text(status?.toString() ?: (entry.error ?: "-"), style = type.timecode, color = statusColor)
             Text("${entry.durationMs} ms", style = type.timecode, color = colors.inkMuted)
             Text(formatTime(request.timeMs), style = type.timecode, color = colors.inkFaint)
+            if (query.isNotEmpty()) Text("$matches khớp", style = type.timecode, color = colors.voltText)
         }
-        Text(entry.url, style = type.code, color = colors.inkMuted, maxLines = if (open) Int.MAX_VALUE else 2)
-        if (open) {
-            SelectionContainer {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (entry.requestHeaders.isNotEmpty()) {
-                        Block("Request header", entry.requestHeaders.joinToString("\n") { "${it.first}: ${it.second}" })
-                    }
-                    if (entry.responseHeaders.isNotEmpty()) {
-                        Block("Response header", entry.responseHeaders.joinToString("\n") { "${it.first}: ${it.second}" })
-                    }
-                    entry.responseBody?.let { Block("Response body", it) }
-                        ?: Block("Response body", "(không ghi: endpoint token hoặc lỗi trước khi nhận phản hồi)")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Block(title: String, text: String) {
-    val colors = ODVTheme.colors
-    val type = ODVTheme.typography
-    Column {
-        Text(title, style = type.captionStrong, color = colors.voltText)
-        Box(Modifier.horizontalScroll(rememberScrollState())) {
-            Text(text, style = type.code, color = colors.ink)
-        }
+        Text(entry.url, style = type.code, color = colors.inkMuted, maxLines = 2)
     }
 }
 
 // ---------- Tab Log ----------
 
 @Composable
-private fun LogTab(padding: PaddingValues) {
+private fun LogTab(padding: PaddingValues, query: String) {
     val lines by DebugLogStore.lines.collectAsState()
     var minSeverity by rememberSaveable { mutableStateOf(Severity.Verbose.name) }
     val min = Severity.valueOf(minSeverity)
@@ -214,12 +261,20 @@ private fun LogTab(padding: PaddingValues) {
                 ODVChip(label, selected = min == severity, onClick = { minSeverity = severity.name })
             }
         }
-        val visible = lines.filter { it.severity >= min }
-        if (visible.isEmpty()) {
-            EmptyTab("Chưa có log", "Log của app (Kermit) từ mức đã chọn sẽ hiện ở đây.")
+        val bySeverity = lines.filter { it.severity >= min }
+        val scored = if (query.isEmpty()) {
+            bySeverity.map { it to 0 }
+        } else {
+            bySeverity.map { it to countTextMatches("${it.tag} ${it.message} ${it.throwable.orEmpty()}", query) }.filter { it.second > 0 }
+        }
+        if (query.isNotEmpty()) {
+            SearchSummary("${scored.size}/${bySeverity.size} dòng · ${scored.sumOf { it.second }} kết quả", scored.isNotEmpty())
+        }
+        if (scored.isEmpty()) {
+            EmptyTab(if (query.isEmpty()) "Chưa có log" else "Không có kết quả", "Log của app (Kermit) từ mức đã chọn sẽ hiện ở đây.")
         } else {
             LazyColumn(contentPadding = padding) {
-                items(visible.asReversed(), key = { it.id }) { line -> LogRow(line) }
+                items(scored.asReversed(), key = { it.first.id }) { (line, _) -> LogRow(line) }
             }
         }
     }
@@ -308,6 +363,66 @@ private fun StorageTab(padding: PaddingValues, refresh: Int) {
         item { Note(if (data.secretFiles.isEmpty()) "Chưa có." else data.secretFiles.joinToString("\n")) }
     }
 }
+
+// ---------- Tab Khác ----------
+
+@Composable
+private fun OthersTab(padding: PaddingValues) {
+    val context = LocalContext.current
+    val secureMode by DebugSettings.secureMode.collectAsState()
+    val maskTraffic by DebugSettings.maskTraffic.collectAsState()
+    val actions = DebugActions.items
+    LazyColumn(contentPadding = padding) {
+        item { SectionTitle("FLAG_SECURE toàn app") }
+        item {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                ODVRadioRow(
+                    label = "Theo thiết kế",
+                    selected = secureMode == ODVSecureMode.ByDesign,
+                    onClick = { DebugSettings.setSecureMode(ODVSecureMode.ByDesign) },
+                    description = "Chỉ màn Kết nối, Khóa, nhập PIN, Cài đặt chặn chụp màn hình",
+                )
+                ODVRadioRow(
+                    label = "Luôn bật",
+                    selected = secureMode == ODVSecureMode.AlwaysOn,
+                    onClick = { DebugSettings.setSecureMode(ODVSecureMode.AlwaysOn) },
+                    description = "Mọi màn của app chặn chụp màn hình",
+                )
+                ODVRadioRow(
+                    label = "Luôn tắt",
+                    selected = secureMode == ODVSecureMode.AlwaysOff,
+                    onClick = { DebugSettings.setSecureMode(ODVSecureMode.AlwaysOff) },
+                    description = "Không màn nào chặn, kể cả màn nhạy cảm (để chụp/quay màn hình)",
+                )
+            }
+        }
+        item { SectionTitle("Log API") }
+        item {
+            ODVSwitchRow(
+                title = "Che dữ liệu nhạy cảm",
+                checked = maskTraffic,
+                onCheckedChange = { DebugSettings.setMaskTraffic(it) },
+                modifier = Modifier.padding(horizontal = 16.dp),
+                description = "Che Authorization, token, client_secret, downloadUrl khi hiển thị. Mặc định tắt: hiện đầy đủ.",
+            )
+        }
+        item { SectionTitle("Công cụ") }
+        if (actions.isEmpty()) item { Note("Chưa có công cụ nào đăng ký qua DebugActions.register.") }
+        items(actions, key = { it.title }) { action ->
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { action.onClick(context) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Text(action.title, style = ODVTheme.typography.bodyStrong, color = ODVTheme.colors.ink)
+                Text(action.description, style = ODVTheme.typography.caption, color = ODVTheme.colors.inkMuted)
+            }
+        }
+    }
+}
+
+// ---------- Thành phần chung ----------
 
 @Composable
 private fun SectionTitle(text: String) {

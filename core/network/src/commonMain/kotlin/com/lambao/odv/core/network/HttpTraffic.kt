@@ -7,8 +7,11 @@ import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CancellationException
 
 /**
- * Một request/response đã được **làm sạch** để hiện trong màn Debug (ADR-0012). Mọi trường đều an toàn để hiển thị:
- * không có `Authorization`, không có body của endpoint token, không có `downloadUrl`/`tempauth` (CH-06).
+ * Một request/response để gỡ lỗi trong màn Debug (ADR-0013). Chứa dữ liệu **đầy đủ, chưa che**: header `Authorization`,
+ * body request lấy token (có `client_secret`), body response (có `access_token`, `downloadUrl`...). Vì vậy:
+ * - chỉ bản debug có [HttpTrafficRecorder] cài đặt; bản release không ghi gì;
+ * - chỉ nằm trong bộ nhớ, không ghi xuống đĩa, không vào Logcat;
+ * - màn Debug mặc định hiện đầy đủ theo yêu cầu, có công tắc che lại: dùng [masked].
  */
 class HttpTrafficEntry(
     val method: String,
@@ -17,8 +20,9 @@ class HttpTrafficEntry(
     val status: Int?,
     val durationMs: Long,
     val requestHeaders: List<Pair<String, String>>,
+    /** Body request đã gửi: `form-urlencoded` với endpoint token, null với GET. */
+    val requestBody: String?,
     val responseHeaders: List<Pair<String, String>>,
-    /** Chỉ có với Graph, đã che và cắt; luôn null với endpoint token. */
     val responseBody: String?,
     /** Tên loại lỗi (vd. `Network`, `Timeout`), không chứa nội dung ngoại lệ. */
     val error: String?,
@@ -26,77 +30,78 @@ class HttpTrafficEntry(
 
 /**
  * Nơi nhận lưu lượng mạng để gỡ lỗi. Chỉ bản debug cài đặt (module `:tools:debug`); bản release không có bản cài nên
- * `:core:network` không ghi gì và không tốn công làm sạch.
+ * `:core:network` không ghi gì và không tốn công dựng bản ghi.
  */
 interface HttpTrafficRecorder {
     fun record(entry: HttpTrafficEntry)
 }
 
-private const val MAX_BODY_CHARS = 16 * 1024
-
-private val visibleRequestHeaders = setOf(HttpHeaders.Accept, HttpHeaders.ContentType)
-private val visibleResponseHeaders =
-    setOf(HttpHeaders.ContentType, HttpHeaders.ContentLength, HttpHeaders.RetryAfter, HttpHeaders.Date, "request-id", "client-request-id")
+// Giới hạn bộ nhớ cho một body (ký tự). Response một trang 200 mục chỉ cỡ trăm KB; vượt thì cắt và ghi rõ.
+private const val MAX_BODY_CHARS = 1_000_000
 
 // Không dùng dấu gạch ngược để tránh lỗi escape trong chuỗi Kotlin.
 private val secretQueryParam = Regex("([?&](?:tempauth|sig|access_token)=)[^&]*")
+private val secretFormField = Regex("((?:client_secret|access_token|refresh_token|id_token)=)[^&]*")
 private val secretJsonValue =
-    Regex("""("(?:@microsoft\.graph\.downloadUrl(?:NoAuth)?|access_token|client_secret|id_token)"\s*:\s*)"[^"]*"""")
+    Regex("""("(?:@microsoft\.graph\.downloadUrl(?:NoAuth)?|access_token|refresh_token|client_secret|id_token)"\s*:\s*)"[^"]*"""")
 
-/** Che giá trị nhạy cảm trong URL (query `tempauth`, `sig`, `access_token`). */
-internal fun sanitizeUrl(url: String): String = url.replace(secretQueryParam, "\$1***")
-
-/** Che `downloadUrl` và token trong body JSON rồi cắt ngắn. */
-internal fun sanitizeBody(body: String): String {
-    // Che cả URL nhúng trong các trường khác (thumbnail, webUrl có tempauth/sig) trước khi cắt ngắn.
-    val masked = body.replace(secretJsonValue, "\$1\"***\"").replace(secretQueryParam, "\$1***")
-    return if (masked.length > MAX_BODY_CHARS) masked.take(MAX_BODY_CHARS) + "\n… (cắt, còn ${masked.length - MAX_BODY_CHARS} ký tự)" else masked
-}
+private fun maskText(text: String): String = text
+    .replace(secretJsonValue, "\$1\"***\"")
+    .replace(secretFormField, "\$1***")
+    .replace(secretQueryParam, "\$1***")
 
 /**
- * Dựng bản ghi từ phản hồi. [includeBody] chỉ bật cho Graph; endpoint token tuyệt đối không ghi body vì nó chứa
- * `client_secret` (request) và `access_token` (response).
+ * Bản đã che của [HttpTrafficEntry]: `Authorization` thành `***`, `client_secret`/token/`downloadUrl`/`tempauth` thành `***`
+ * trong URL, body và header. Dùng khi người dùng bật công tắc che trong màn Debug.
  */
-internal suspend fun HttpResponse.toTrafficEntry(durationMs: Long, includeBody: Boolean): HttpTrafficEntry {
-    val body = if (includeBody) {
-        try {
-            sanitizeBody(bodyAsText())
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            null
-        }
-    } else {
+fun HttpTrafficEntry.masked() = HttpTrafficEntry(
+    method = method,
+    url = maskText(url),
+    status = status,
+    durationMs = durationMs,
+    requestHeaders = requestHeaders.map { (name, value) ->
+        name to if (name.equals(HttpHeaders.Authorization, ignoreCase = true) || name.equals("Cookie", ignoreCase = true)) "***" else maskText(value)
+    },
+    requestBody = requestBody?.let(::maskText),
+    responseHeaders = responseHeaders.map { (name, value) ->
+        name to if (name.equals("Set-Cookie", ignoreCase = true)) "***" else maskText(value)
+    },
+    responseBody = responseBody?.let(::maskText),
+    error = error,
+)
+
+/** Dựng bản ghi đầy đủ từ phản hồi. [requestBody] là body đã gửi (null nếu không có). */
+internal suspend fun HttpResponse.toTrafficEntry(durationMs: Long, requestBody: String?): HttpTrafficEntry {
+    val body = try {
+        bodyAsText().let { if (it.length > MAX_BODY_CHARS) it.take(MAX_BODY_CHARS) + "\n… (cắt, còn ${it.length - MAX_BODY_CHARS} ký tự)" else it }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
         null
     }
     return HttpTrafficEntry(
         method = request.method.value,
-        url = sanitizeUrl(request.url.toString()),
+        url = request.url.toString(),
         status = status.value,
         durationMs = durationMs,
-        requestHeaders = request.headers.entries().flatMap { (name, values) ->
-            when {
-                name.equals(HttpHeaders.Authorization, ignoreCase = true) -> listOf(name to "***")
-                visibleRequestHeaders.any { it.equals(name, ignoreCase = true) } -> values.map { name to it }
-                else -> emptyList()
-            }
-        },
-        responseHeaders = headers.entries().flatMap { (name, values) ->
-            if (visibleResponseHeaders.any { it.equals(name, ignoreCase = true) }) values.map { name to it } else emptyList()
-        },
+        requestHeaders = request.headers.entries().flatMap { (name, values) -> values.map { name to it } },
+        requestBody = requestBody,
+        responseHeaders = headers.entries().flatMap { (name, values) -> values.map { name to it } },
         responseBody = body,
         error = null,
     )
 }
 
-/** Bản ghi cho request lỗi trước khi có phản hồi. [url] đã là chuỗi đã làm sạch. */
-internal fun failedTrafficEntry(method: String, url: String, durationMs: Long, errorName: String) = HttpTrafficEntry(
-    method = method,
-    url = sanitizeUrl(url),
-    status = null,
-    durationMs = durationMs,
-    requestHeaders = emptyList(),
-    responseHeaders = emptyList(),
-    responseBody = null,
-    error = errorName,
-)
+/** Bản ghi cho request lỗi trước khi có phản hồi. */
+internal fun failedTrafficEntry(method: String, url: String, durationMs: Long, errorName: String, requestBody: String? = null) =
+    HttpTrafficEntry(
+        method = method,
+        url = url,
+        status = null,
+        durationMs = durationMs,
+        requestHeaders = emptyList(),
+        requestBody = requestBody,
+        responseHeaders = emptyList(),
+        responseBody = null,
+        error = errorName,
+    )

@@ -132,5 +132,8 @@ fun ODVDialog(
     ) {
         // Cửa sổ Dialog vừa khít nội dung nên bóng sẽ bị cắt: tắt elevated.
         ODVDialogCard(title, modifier, icon, tone, body, errorCode, alert, elevated = false, extra = extra, actions = actions)
+        // Đặt TRONG nội dung Dialog: Popup là cửa sổ con của cửa sổ chứa nó, nên chỉ khi nằm trong cửa sổ Dialog nó mới
+        // nằm trên Dialog (đặt ngoài thì thành cửa sổ con của Activity và bị Dialog đè).
+        ODVTopOverlayInWindow()
     }
 }

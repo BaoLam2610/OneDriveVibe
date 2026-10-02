@@ -18,7 +18,7 @@ import kotlin.time.TimeSource
  * - Gắn `Authorization: Bearer` từ [TokenProvider]; bearer không bao giờ vào log (CH-06).
  * - `401`: bỏ đúng token vừa bị từ chối, lấy token mới và thử lại đúng một lần (TK-02, TK-03).
  * - Lỗi tạm thời (mạng, `429`, `5xx`) do plugin HttpRequestRetry của client lo (xem [createHttpClient], TK-05, TK-06).
- * - Ghi lưu lượng đã làm sạch vào [HttpTrafficRecorder] nếu có (chỉ bản debug, ADR-0012).
+ * - Ghi lưu lượng đầy đủ, chưa che vào [HttpTrafficRecorder] nếu có (chỉ bản debug, ADR-0013).
  * - Đọc status và ánh xạ lỗi sang [AppError]; không để lộ nội dung lỗi của máy chủ.
  *
  * [baseUrl] là gốc duy nhất mà bearer được phép gửi tới; dùng [isOwnUrl] trước khi theo một URL do máy chủ trả về.
@@ -67,10 +67,12 @@ abstract class ApiService internal constructor(
             }
         } catch (e: Throwable) {
             val error = e.toAppError()
-            recorder?.record(failedTrafficEntry("GET", baseUrl, started.elapsedNow().inWholeMilliseconds, error::class.simpleName.orEmpty()))
+            // Dựng lại URL thật chỉ khi lỗi (configure không có tác dụng phụ) để màn Debug thấy đúng request đã thất bại.
+            val url = HttpRequestBuilder().apply(configure).url.buildString()
+            recorder?.record(failedTrafficEntry("GET", url, started.elapsedNow().inWholeMilliseconds, error::class.simpleName.orEmpty()))
             return AppResult.Failure(error)
         }
-        recorder?.record(response.toTrafficEntry(started.elapsedNow().inWholeMilliseconds, includeBody = true))
+        recorder?.record(response.toTrafficEntry(started.elapsedNow().inWholeMilliseconds, requestBody = null))
         return if (response.status.isSuccess()) AppResult.Success(response) else AppResult.Failure(response.toGraphError())
     }
 

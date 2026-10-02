@@ -23,7 +23,7 @@ private const val MAX_RETRY_AFTER_SECONDS = 60L
  * HttpClient dùng chung cho token và Graph (ADR-0006). Engine do nền tảng cung cấp qua classpath (OkHttp trên Android).
  *
  * Cố ý KHÔNG cài plugin Logging (CH-06): header `Authorization` và body request lấy token (chứa `client_secret`) không
- * được vào log. Lưu lượng cho màn Debug đi qua [HttpTrafficRecorder] (đã làm sạch), không qua plugin Logging.
+ * được vào log. Lưu lượng cho màn Debug đi qua [HttpTrafficRecorder] (chỉ bản debug, đầy đủ, ADR-0013), không qua plugin Logging.
  */
 internal fun createHttpClient(): HttpClient = HttpClient {
     // 4xx/5xx không ném ngoại lệ: GraphApi tự đọc status và ánh xạ sang AppError.

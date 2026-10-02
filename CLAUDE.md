@@ -10,7 +10,7 @@ App Android chỉ đọc OneDrive for Business qua Microsoft Graph: xem video, �
 | `.claude/docs/thiet-ke-ui.md` + `odv-tokens.json` | Giao diện: token, component, màn hình. Mục 1 là quy tắc bắt buộc khi dựng |
 | `.claude/docs/onedrive-graph-api.md` | Endpoint Graph, token, delta, mã lỗi |
 | `.claude/docs/onedrive-graph-responses.md` | Mẫu response thật (giá trị đã thay bằng mẫu) |
-| `.claude/adr/` | 12 quyết định kiến trúc. Muốn đổi thì viết ADR mới, không sửa ADR cũ |
+| `.claude/adr/` | 13 quyết định kiến trúc. Muốn đổi thì viết ADR mới, không sửa ADR cũ |
 | `.claude/docs/ke-hoach-mvp1.md` | Kế hoạch triển khai MVP1 theo lát cắt dọc, thư viện đã chọn |
 | `.claude/docs/tien-do-mvp1.md` | Đang ở lát nào, bước nào. Đọc đầu mỗi phiên, cập nhật khi bắt đầu hoặc xong một bước |
 
@@ -27,7 +27,7 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 - **Bảo mật config** (ADR-0008): AES-GCM, khóa dẫn xuất từ PIN bằng Argon2id + Android Keystore. **Không lưu PIN, không lưu hash PIN.** Access token chỉ giữ trong bộ nhớ.
 - **Không viết test tự động** (ADR-0009): không unit test, UI test, coverage. Đừng thêm junit, kotlin-test, MockK, Turbine, Kover.
 - **Đa ngôn ngữ VI + EN** (ADR-0011): chuỗi trong Android `res/values` (VI, mặc định) và `res/values-en`. `domain` và `data` không chứa chuỗi hiển thị; lỗi là kiểu có cấu trúc (`AppError` → `UiError`).
-- **Công cụ debug** (ADR-0012): module `:tools:debug` chỉ có trong bản debug (nút bọ nổi → màn Debug: log API, log local, lưu trữ). Log local dùng Kermit; log API đi qua `HttpTrafficRecorder` đã làm sạch, không dùng Ktor `Logging`. Release không ghi log nào.
+- **Công cụ debug** (ADR-0012, 0013): module `:tools:debug` chỉ có trong bản debug (nút bọ nổi luôn nằm trên cùng → màn Debug: log API có màn chi tiết + tìm kiếm + sao chép, log local, lưu trữ, tùy chọn FLAG_SECURE toàn app). Log local dùng Kermit; log API đi qua `HttpTrafficRecorder`, hiển thị **đầy đủ không che** (có công tắc che), chỉ trong bộ nhớ, không dùng Ktor `Logging`. Release không ghi log nào và không có recorder.
 
 ## Cấu trúc module (ADR-0001, ADR-0010)
 

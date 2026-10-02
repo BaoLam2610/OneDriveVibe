@@ -48,10 +48,10 @@ object DebugLogStore {
     }
 }
 
-/** Một request đã làm sạch kèm thời điểm nhận. */
+/** Một request (đầy đủ, chưa che, ADR-0013) kèm thời điểm nhận. */
 class DebugRequest(val id: Long, val timeMs: Long, val entry: HttpTrafficEntry)
 
-/** Bộ đệm vòng chứa lưu lượng API (Graph và token), mới nhất ở cuối. Dữ liệu đã được `:core:network` làm sạch (CH-06). */
+/** Bộ đệm vòng chứa lưu lượng API (Graph và token), mới nhất ở cuối. Dữ liệu đầy đủ, chưa che (ADR-0013), chỉ trong bộ nhớ. */
 object ApiTrafficStore : HttpTrafficRecorder {
     private var nextId = 0L
     private val _requests = MutableStateFlow<List<DebugRequest>>(emptyList())

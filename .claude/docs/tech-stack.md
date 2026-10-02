@@ -90,7 +90,7 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 :feature:pdfviewer            truyện PDF
 :feature:settings             cài đặt
 
-:tools:debug                  [Android, chỉ bản debug] nút bọ nổi, DebugActivity: log API, log local, lưu trữ, công cụ khác (ADR-0012)
+:tools:debug                  [Android, chỉ bản debug] nút bọ nổi (luôn trên cùng, kể cả trên Dialog/BottomSheet), DebugActivity: log API (có màn chi tiết, tìm kiếm, sao chép), log local, lưu trữ, tùy chọn FLAG_SECURE toàn app, công cụ khác (ADR-0012, 0013)
 ```
 
 - Module core dùng `kotlin("multiplatform")` nhưng **chỉ target Android** ở MVP1 (ADR-0001). MVP2 chỉ cần thêm `iosArm64()` + `iosSimulatorArm64()` (`iosX64` đã lỗi thời) và viết `actual`.
@@ -211,7 +211,7 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 - Thư viện Argon2id đặt sau interface để thay được.
 - `FLAG_SECURE` cho màn Kết nối, Khóa, nhập PIN, Cài đặt; ẩn nội dung ở danh sách app gần đây.
 - **CH-04 (đã làm ở Lát 0):** `allowBackup="false"`, `fullBackupContent="false"`, `dataExtractionRules` loại trừ mọi miền cho cả `cloud-backup` và `device-transfer` (Android 12+ bỏ qua `allowBackup` khi chuyển máy).
-- **CH-06:** không cài Ktor `Logging`. Log API cho màn Debug đi qua `HttpTrafficRecorder` (chỉ bản debug), `:core:network` làm sạch trước khi ghi: bỏ `Authorization`, **không ghi body endpoint token** (chứa `client_secret`/`access_token`), che `downloadUrl`/`tempauth`, cắt body 16 KB (ADR-0012). `followRedirects = false` để bearer không bị gửi sang máy chủ khác.
+- **CH-06:** không cài Ktor `Logging`. Log API cho màn Debug đi qua `HttpTrafficRecorder` (chỉ bản debug, chỉ trong bộ nhớ). Từ ADR-0013 bản ghi là **đầy đủ, chưa che** (kể cả `Authorization`, `client_secret`, token, `downloadUrl`); màn Debug hiện đầy đủ mặc định và có công tắc che (`HttpTrafficEntry.masked()`). Bản release không có recorder. `followRedirects = false` để bearer không bị gửi sang máy chủ khác.
 
 ### 5.5 Đa ngôn ngữ (ADR-0011)
 - **VI (mặc định) + EN.** Thêm ngôn ngữ: thêm `res/values-xx`, một dòng trong `locales_config.xml` và trong `localeFilters`.
@@ -313,7 +313,7 @@ Tổng hợp từ rà soát skill `android-clean-architecture` và `compose-mult
 ### Quy ước nhỏ
 - **Màu:** không dynamic color; màu chỉ từ `ODVTheme.colors`, không viết hex trong màn hình. Theme XML `Theme.OneDriveVibe` (AppCompat) không đặt màu.
 - **Tên:** code UI có tiền tố `ODV` (`ODVSplashScreen`, `ODVNavDisplay`); code không phải UI thì không (`AppRoute`, `MainApplication`). `OneDriveVibe` chỉ là tên app.
-- **Log:** dùng `Logger.withTag("Tên")` của Kermit; Koin mức `ERROR`; không bao giờ log Client Secret, access token, PIN, config đã giải mã, giá trị ô nhập (CH-06). Chỉ log kết quả và mã lỗi. Bản release không có writer nào (ADR-0012).
+- **Log:** dùng `Logger.withTag("Tên")` của Kermit (log local; không bao giờ đưa bí mật vào Kermit, kể cả khi log API đầy đủ ở màn Debug); Koin mức `ERROR`; không bao giờ log Client Secret, access token, PIN, config đã giải mã, giá trị ô nhập (CH-06). Chỉ log kết quả và mã lỗi. Bản release không có writer nào (ADR-0012).
 - **Dispatcher:** tiêm `DispatcherProvider`, không gọi `Dispatchers.IO` trong code dùng chung.
 - **Bỏ hoặc đổi so với template/ADR:** ghi comment trong code nêu lý do và ADR liên quan.
 

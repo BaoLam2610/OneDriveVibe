@@ -1,11 +1,13 @@
 package com.lambao.odv.debug
 
+import android.app.Application
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import com.lambao.odv.gallery.FoundationsGalleryActivity
 import com.lambao.odv.tools.debug.DebugAction
 import com.lambao.odv.tools.debug.DebugActions
 import com.lambao.odv.tools.debug.DebugLogging
+import com.lambao.odv.tools.debug.DebugSettings
 import com.lambao.odv.tools.debug.ODVDebugBugButton
 import com.lambao.odv.tools.debug.debugModule
 import org.koin.core.module.Module
@@ -19,11 +21,12 @@ object DebugTools {
     val koinModules: List<Module> = listOf(debugModule)
 
     /**
-     * Gọi trước `startKoin`: ghi log ra Logcat và vào màn Debug, đăng ký công cụ riêng của app. Chỉ có MỘT icon launcher:
-     * Foundations gallery không còn là app thứ hai mà mở từ tab "Khác" của màn Debug.
+     * Gọi trước `startKoin`: ghi log ra Logcat và vào màn Debug, nạp cài đặt debug (FLAG_SECURE toàn app, che log API),
+     * đăng ký công cụ riêng của app. Chỉ có MỘT icon launcher: Foundations gallery mở từ tab "Khác" của màn Debug.
      */
-    fun install() {
+    fun install(application: Application) {
         DebugLogging.install()
+        DebugSettings.install(application)
         DebugActions.register(
             DebugAction(
                 title = "Foundations gallery",
@@ -33,7 +36,13 @@ object DebugTools {
         )
     }
 
-    /** Nút bọ nổi, đặt chồng lên mọi màn. */
+    /** Nút bọ nổi vẽ trong Activity, đặt ở gốc của app. */
     @Composable
-    fun Overlay() = ODVDebugBugButton()
+    fun Overlay() = ODVDebugBugButton(asWindow = false)
+
+    /**
+     * Cung cấp cho `LocalODVTopOverlay`: Dialog và BottomSheet gọi nó để vẽ lại nút bọ trong cửa sổ riêng nằm trên
+     * chúng (ADR-0012). Null ở bản release.
+     */
+    val topOverlay: (@Composable (asWindow: Boolean) -> Unit)? = { asWindow -> ODVDebugBugButton(asWindow = asWindow) }
 }
