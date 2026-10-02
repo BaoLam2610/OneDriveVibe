@@ -16,6 +16,17 @@ class ConnectViewModel(
     // Chỉ log kết quả, tuyệt đối không log giá trị các ô hay config (CH-06).
     private val log = Logger.withTag("Connect")
 
+    init {
+        // KN-13: hệ điều hành thu hồi tiến trình khi K6 hoặc màn Thiết lập bảo mật đang mở thì back stack được khôi phục
+        // nhưng State này thì không. Config đã lưu (KN-08) nên vào thẳng Danh sách. Phải giải mã được: Splash cũng đưa
+        // người dùng về Kết nối khi config còn nhưng hỏng, lúc đó phải ở lại form để kết nối lại.
+        viewModelScope.launch {
+            if (configs.hasConfig() && configs.load() is AppResult.Success) {
+                sendEffect(ConnectEffect.NavigateToHome)
+            }
+        }
+    }
+
     override fun onIntent(intent: ConnectIntent) {
         when (intent) {
             is ConnectIntent.FieldChanged -> onFieldChanged(intent.field, intent.value)

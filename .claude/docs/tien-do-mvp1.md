@@ -6,8 +6,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Đang làm
 
-- **Lát:** 1, Kết nối → Danh sách thư mục gốc (Lát 0 còn chờ kiểm tay)
-- **Bước:** đã đổi luồng Kết nối theo docs mới (KN-08, KN-13, BM-01, BM-08, KN-12); đang review Kotlin; chờ người dùng build và kiểm tay
+- **Lát:** 1, Kết nối → Danh sách thư mục gốc (Lát 0 còn chờ kiểm tay). Code xong cho Lát 0, 1, D; chưa bắt đầu Lát 2
+- **Bước:** đã đổi luồng Kết nối theo docs mới (KN-08, KN-13, BM-01, BM-08, KN-12) và đã review Kotlin, sửa xong mục MEDIUM. Còn chờ: người dùng sửa `ODVSecureWindow(enabled = false)` ở màn Kết nối (KN-10), build, kiểm tay Lát 0/1/D. Lát tiếp theo là Lát 2 (PIN, màn Khóa), cần người dùng duyệt trước khi bắt đầu
 - **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật hiện chỉ là khung (đặt PIN làm ở Lát 2). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
@@ -36,6 +36,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 - [x] `:feature:auth`: màn Kết nối
 - [x] `:feature:auth`: màn Thiết lập bảo mật (nhánh tắt)
 - [x] Đổi luồng theo docs 2026-10-03: lưu config ngay sau kết nối, hộp thoại K6 (KN-13), bỏ StepBar/công tắc/sheet K4, không đọc quota (KN-12)
+- [x] Review Kotlin đợt đổi luồng (không CRITICAL; đã sửa guard bấm đôi, khôi phục sau process death, thứ tự import)
+- [ ] Người dùng: bật lại FLAG_SECURE ở màn Kết nối (KN-10)
 - [x] `:feature:browser`: tab Thư mục qua API (TM-07)
 - [x] Điều hướng khởi động
 - [x] Review Kotlin + bảo mật
@@ -122,3 +124,4 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-02 | Sửa lỗi: thêm `ApiService` làm lớp cơ sở cho `GraphApi`; gộp gallery vào Debug (một app), bỏ FLAG_SECURE màn Debug, nút X đóng Activity; header Kết nối/Bảo mật cố định |
 | 2026-10-02 | Lát D mở rộng: nút bọ luôn trên cùng (kể cả Dialog/BottomSheet), màn chi tiết log API (JSON đẹp, +/-, sao chép, tìm kiếm có đếm), tìm kiếm Log local, tùy chọn FLAG_SECURE toàn app, log API đầy đủ không che; ADR-0013 |
 | 2026-10-03 | Đổi luồng Kết nối/Thiết lập bảo mật theo docs mới: lưu config ngay (chế độ thiết bị), hộp thoại K6 bắt buộc chọn, bỏ `PendingConnection`/StepBar/công tắc/sheet K4, `verifyConnection` không trả dung lượng; chờ review và kiểm tay |
+| 2026-10-03 | Review Kotlin đợt đổi luồng: sửa guard bấm đôi "Thiết lập mã PIN", `ConnectViewModel` vào Danh sách nếu config đã lưu và giải mã được (process death khi K6 hiện, KN-13), thứ tự import. Đối chiếu kế hoạch: xong code Lát 0, 1, D; chưa có `:feature:library/player/...`; Lát 2 chưa bắt đầu |

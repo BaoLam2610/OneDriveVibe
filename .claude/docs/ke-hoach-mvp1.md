@@ -45,7 +45,7 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 
 - `:core:network`: Ktor gọi Graph, lấy token Client Credentials, token chỉ trong bộ nhớ; TK-01, TK-02, TK-03; log che header (CH-06).
 - `:core:security`: mã hóa config AES-GCM bằng khóa Keystore (nhánh bảo mật TẮT).
-- `:feature:auth`: màn Kết nối (KN-01 → KN-11, bảng lỗi theo mã, `FLAG_SECURE`); màn Thiết lập bảo mật, chỉ nhánh tắt (BM-03, BM-04).
+- `:feature:auth`: màn Kết nối (KN-01 → KN-13, bảng lỗi theo mã, `FLAG_SECURE`): kết nối xong lưu config ngay ở chế độ thiết bị rồi hiện hộp thoại hỏi thiết lập PIN (KN-13); "Để sau" vào Danh sách. Màn Thiết lập bảo mật chỉ là khung (Back về hộp thoại, BM-08); phần đặt PIN làm ở Lát 2.
 - `:feature:browser`: tab Thư mục gọi thẳng API (TM-07), vào thư mục con, Breadcrumb, Back.
 - Điều hướng khởi động theo luồng tổng thể (mục 2 đặc tả): chưa có config → Kết nối; có config → Danh sách.
 - **Kiểm tay:** nhập 4 trường đúng/sai (từng mã lỗi); thấy cây thư mục thật; tắt rồi mở lại app vào thẳng Danh sách.
@@ -62,7 +62,7 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 ### Lát 2: Mã PIN và màn Khóa
 
 - Argon2id + Keystore, không lưu PIN hay hash (CH-01, CH-02, CH-07).
-- Đặt PIN: nhập 2 lần, chặn PIN dễ đoán (BM-01 → BM-07).
+- Đặt PIN: nhập 2 lần, chặn PIN dễ đoán (BM-01 → BM-08); mã hóa lại config đã lưu ở chế độ thiết bị bằng khóa dẫn xuất từ PIN (BM-04, ADR-0008).
 - Màn Khóa: KH-01 → KH-06 (chờ tăng gấp đôi, vẫn tính khi tắt app; Quên PIN; xóa dữ liệu sau 10 lần nếu bật).
 - Tự khóa khi rời app; khóa thì xóa token và config đã giải mã khỏi bộ nhớ (CH-03).
 - Sinh trắc học.
