@@ -50,7 +50,7 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 - [x] `:tools:debug`: bộ đệm log/API, `DebugActivity` 4 tab (API, Log, Lưu trữ, Khác), nút bọ nổi
 - [x] `DebugTools` bản debug/release; một app duy nhất, gallery mở từ tab "Khác"
 - [x] Mở rộng: nút bọ trên cùng, màn chi tiết log API, tìm kiếm API/Log, FLAG_SECURE toàn app, log API không che (ADR-0013)
-- [ ] Review Kotlin + bảo mật (đợt mở rộng)
+- [x] Review Kotlin + bảo mật (đợt mở rộng): không CRITICAL/HIGH; đã sửa M1, M2, M3, M5; M4, M6 ghi vào ADR-0013 (nợ bản debug)
 - [x] Review Kotlin + bảo mật
 - [ ] Kiểm tay
 
@@ -125,3 +125,4 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-02 | Lát D mở rộng: nút bọ luôn trên cùng (kể cả Dialog/BottomSheet), màn chi tiết log API (JSON đẹp, +/-, sao chép, tìm kiếm có đếm), tìm kiếm Log local, tùy chọn FLAG_SECURE toàn app, log API đầy đủ không che; ADR-0013 |
 | 2026-10-03 | Đổi luồng Kết nối/Thiết lập bảo mật theo docs mới: lưu config ngay (chế độ thiết bị), hộp thoại K6 bắt buộc chọn, bỏ `PendingConnection`/StepBar/công tắc/sheet K4, `verifyConnection` không trả dung lượng; chờ review và kiểm tay |
 | 2026-10-03 | Review Kotlin đợt đổi luồng: sửa guard bấm đôi "Thiết lập mã PIN", `ConnectViewModel` vào Danh sách nếu config đã lưu và giải mã được (process death khi K6 hiện, KN-13), thứ tự import. Đối chiếu kế hoạch: xong code Lát 0, 1, D; chưa có `:feature:library/player/...`; Lát 2 chưa bắt đầu |
+| 2026-10-03 | Review Lát D mở rộng (không CRITICAL/HIGH): che URL ở danh sách API khi bật che (M1), cắt và bắt lỗi khi sao chép body lớn (M2), dựng section/đếm kết quả/pretty-print ngoài luồng chính + debounce tìm kiếm 250 ms (M3), regex che `sig`/`tempauth` không nuốt dấu `"` (M5). Chưa làm, ghi ở ADR-0013: trần bộ nhớ tổng của log API (M4), nút bọ mở được khi app khóa và log không xóa khi khóa (M6, làm cùng Lát 2) |

@@ -46,6 +46,7 @@ import com.lambao.odv.core.designsystem.component.ODVTab
 import com.lambao.odv.core.designsystem.component.ODVTabs
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVTheme
+import com.lambao.odv.core.network.maskedUrl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -198,7 +199,7 @@ private fun ApiTab(
         } else {
             LazyColumn(contentPadding = padding) {
                 items(result.items, key = { it.first.id }) { (request, count) ->
-                    RequestRow(request, count, query) { onOpen(request.id) }
+                    RequestRow(request, count, query, maskTraffic) { onOpen(request.id) }
                 }
             }
         }
@@ -216,7 +217,7 @@ private fun SearchSummary(text: String, found: Boolean) {
 }
 
 @Composable
-private fun RequestRow(request: DebugRequest, matches: Int, query: String, onClick: () -> Unit) {
+private fun RequestRow(request: DebugRequest, matches: Int, query: String, maskTraffic: Boolean, onClick: () -> Unit) {
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
     val entry = request.entry
@@ -241,7 +242,9 @@ private fun RequestRow(request: DebugRequest, matches: Int, query: String, onCli
             Text(formatTime(request.timeMs), style = type.timecode, color = colors.inkFaint)
             if (query.isNotEmpty()) Text("$matches khớp", style = type.timecode, color = colors.voltText)
         }
-        Text(entry.url, style = type.code, color = colors.inkMuted, maxLines = 2)
+        // URL có thể mang `sig`/`tempauth`: cũng phải che khi công tắc che đang bật (ADR-0013).
+        val url = remember(entry, maskTraffic) { if (maskTraffic) entry.maskedUrl() else entry.url }
+        Text(url, style = type.code, color = colors.inkMuted, maxLines = 2)
     }
 }
 

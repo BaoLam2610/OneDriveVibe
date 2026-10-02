@@ -40,7 +40,9 @@ interface HttpTrafficRecorder {
 private const val MAX_BODY_CHARS = 1_000_000
 
 // Không dùng dấu gạch ngược để tránh lỗi escape trong chuỗi Kotlin.
-private val secretQueryParam = Regex("([?&](?:tempauth|sig|access_token)=)[^&]*")
+// Dừng ở `&`, dấu nháy kép hoặc khoảng trắng: URL nằm trong chuỗi JSON thì dấu `"` đóng chuỗi phải còn, nếu không body
+// mất khả năng parse thành JSON ở màn chi tiết.
+private val secretQueryParam = Regex("""([?&](?:tempauth|sig|access_token)=)[^&"\s]*""")
 private val secretFormField = Regex("((?:client_secret|access_token|refresh_token|id_token)=)[^&]*")
 private val secretJsonValue =
     Regex("""("(?:@microsoft\.graph\.downloadUrl(?:NoAuth)?|access_token|refresh_token|client_secret|id_token)"\s*:\s*)"[^"]*"""")
@@ -69,6 +71,9 @@ fun HttpTrafficEntry.masked() = HttpTrafficEntry(
     responseBody = responseBody?.let(::maskText),
     error = error,
 )
+
+/** Chỉ URL đã che. Dùng ở danh sách API: không cần che cả body lớn của từng dòng như [masked]. */
+fun HttpTrafficEntry.maskedUrl(): String = maskText(url)
 
 /** Dựng bản ghi đầy đủ từ phản hồi. [requestBody] là body đã gửi (null nếu không có). */
 internal suspend fun HttpResponse.toTrafficEntry(durationMs: Long, requestBody: String?): HttpTrafficEntry {

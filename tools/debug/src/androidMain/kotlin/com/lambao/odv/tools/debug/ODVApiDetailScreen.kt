@@ -28,7 +28,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,6 +53,10 @@ import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.network.HttpTrafficEntry
 import com.lambao.odv.core.network.masked
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonElement
 import java.net.URLDecoder
 import java.text.SimpleDateFormat
@@ -112,13 +118,24 @@ private fun buildSections(request: DebugRequest, entry: HttpTrafficEntry): List<
     )
 }
 
+// setPrimaryClip đi qua Binder (giới hạn cỡ 1 MB cho cả giao dịch); body có thể tới 1M ký tự nên phải cắt, nếu không
+// sẽ ném TransactionTooLargeException làm sập app. Chừa dư vì ký tự UTF-8 có thể chiếm tới 3 byte.
+private const val MAX_COPY_CHARS = 200_000
+
 private fun copyToClipboard(context: Context, label: String, text: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText(label, text)
+    val truncated = text.length > MAX_COPY_CHARS
+    val clip = ClipData.newPlainText(label, if (truncated) text.take(MAX_COPY_CHARS) else text)
     // Có thể chứa token/secret: yêu cầu hệ thống không hiện bản xem trước nội dung vừa sao chép (Android 13+).
     clip.description.extras = PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
-    clipboard.setPrimaryClip(clip)
-    Toast.makeText(context, "Đã sao chép: $label", Toast.LENGTH_SHORT).show()
+    val message = try {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(clip)
+        if (truncated) "Đã sao chép $label (cắt còn $MAX_COPY_CHARS ký tự)" else "Đã sao chép: $label"
+    } catch (e: RuntimeException) {
+        // Công cụ debug: nuốt lỗi Binder để không làm sập app, báo cho người dùng biết.
+        "Không sao chép được $label (quá lớn)"
+    }
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
 
 /**
@@ -129,9 +146,13 @@ private fun copyToClipboard(context: Context, label: String, text: String) {
 @Composable
 internal fun ODVApiDetailScreen(request: DebugRequest, maskTraffic: Boolean, onBack: () -> Unit) {
     val context = LocalContext.current
-    val entry = remember(request, maskTraffic) { if (maskTraffic) request.entry.masked() else request.entry }
-    val sections = remember(request.id, maskTraffic) { SectionCache.get(request, maskTraffic) }
-    val states = remember(request.id) { sections.associate { it.id to SectionState() } }
+    val scope = rememberCoroutineScope()
+    // Dựng section (có thể parse JSON tới 1M ký tự) và đếm kết quả ngoài luồng chính; lần đầu mở màn thì danh sách rỗng
+    // trong chốc lát rồi hiện ra.
+    val sections by produceState(emptyList<Section>(), request.id, maskTraffic) {
+        value = withContext(Dispatchers.Default) { SectionCache.get(request, maskTraffic) }
+    }
+    val states = remember(request.id) { HashMap<String, SectionState>() }
     var searching by rememberSaveable { mutableStateOf(false) }
     var rawQuery by rememberSaveable { mutableStateOf("") }
     // Back đóng thanh tìm kiếm trước, rồi mới thoát màn chi tiết.
@@ -139,8 +160,15 @@ internal fun ODVApiDetailScreen(request: DebugRequest, maskTraffic: Boolean, onB
         searching = false
         rawQuery = ""
     }
-    val query = if (searching) rawQuery else ""
-    val counts = remember(sections, query) { sections.associate { it.id to it.matchCount(query) } }
+    // Debounce 250 ms khi gõ: mỗi lần đếm duyệt toàn bộ cây JSON nên không đếm theo từng phím.
+    val query by produceState("", rawQuery, searching) {
+        val typed = if (searching) rawQuery else ""
+        if (typed.isNotEmpty()) delay(250)
+        value = typed
+    }
+    val counts by produceState(emptyMap<String, Int>(), sections, query) {
+        value = withContext(Dispatchers.Default) { sections.associate { it.id to it.matchCount(query) } }
+    }
     val total = counts.values.sum()
 
     ODVScaffold(
@@ -179,10 +207,16 @@ internal fun ODVApiDetailScreen(request: DebugRequest, maskTraffic: Boolean, onB
                 sections.forEach { section ->
                     sectionItems(
                         section = section,
-                        state = states.getValue(section.id),
+                        state = states.getOrPut(section.id) { SectionState() },
                         query = query,
-                        matches = counts.getValue(section.id),
-                        onCopy = { copyToClipboard(context, section.title, section.copyText) },
+                        matches = counts[section.id] ?: 0,
+                        onCopy = {
+                            // copyText pretty-print cả cây JSON: tính ngoài luồng chính rồi mới chạm clipboard.
+                            scope.launch {
+                                val text = withContext(Dispatchers.Default) { section.copyText }
+                                copyToClipboard(context, section.title, text)
+                            }
+                        },
                     )
                 }
             }
