@@ -11,6 +11,8 @@ App Android chỉ đọc OneDrive for Business qua Microsoft Graph: xem video, �
 | `.claude/docs/onedrive-graph-api.md` | Endpoint Graph, token, delta, mã lỗi |
 | `.claude/docs/onedrive-graph-responses.md` | Mẫu response thật (giá trị đã thay bằng mẫu) |
 | `.claude/adr/` | 11 quyết định kiến trúc. Muốn đổi thì viết ADR mới, không sửa ADR cũ |
+| `.claude/docs/ke-hoach-mvp1.md` | Kế hoạch triển khai MVP1 theo lát cắt dọc, thư viện đã chọn |
+| `.claude/docs/tien-do-mvp1.md` | Đang ở lát nào, bước nào. Đọc đầu mỗi phiên, cập nhật khi bắt đầu hoặc xong một bước |
 
 Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệu UI quyết định hình thức. Không tự chế màu, cỡ chữ, khoảng cách hay câu chữ chưa có trong thiết kế; hỏi lại.
 
