@@ -35,6 +35,9 @@ import com.lambao.odv.core.designsystem.theme.ODVTheme
 /**
  * AppBar (mục 4.4): cao 56, padding ngang 4, tiêu đề `title` một dòng cắt "…", nút bên phải là [actions] (mỗi nút 48).
  *
+ * Muốn thanh cố định ở trên khi cuộn và đúng inset thanh trạng thái, đặt nó vào `topBar` của [ODVScaffold]; đặt trong
+ * danh sách cuộn thì nó cuộn theo.
+ *
  * @param navigation ở gốc là [ODVAppBarLogo]; trong thư mục con là `ODVIconButton(ArrowLeft, "Lên một cấp", ...)`.
  */
 @Composable

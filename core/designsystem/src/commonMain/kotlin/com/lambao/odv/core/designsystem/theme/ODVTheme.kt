@@ -24,6 +24,16 @@ internal expect fun rememberODVFonts(): ODVFonts
 @Composable
 internal expect fun rememberReduceMotion(): Boolean
 
+/**
+ * Đổi màu icon thanh trạng thái và thanh điều hướng của hệ thống theo theme của app ([darkTheme] = nền tối, icon sáng).
+ * Cần vì `enableEdgeToEdge()` chỉ theo chế độ tối của hệ thống, không biết app đang ép Sáng/Tối trong Cài đặt.
+ *
+ * Chỉ [ODVTheme] ở gốc app gọi hàm này; không bọc `ODVTheme` lồng nhau trong Dialog hay màn xem. Màn xem video/ảnh/PDF (nền đen
+ * luôn, icon sáng) cần cơ chế riêng có khôi phục khi thoát; làm khi dựng các màn đó.
+ */
+@Composable
+internal expect fun ODVSystemBars(darkTheme: Boolean)
+
 private val LocalColors = staticCompositionLocalOf<ODVColors> { error("Thiếu ODVTheme") }
 private val LocalTypography = staticCompositionLocalOf<ODVTypography> { error("Thiếu ODVTheme") }
 private val LocalMotion = staticCompositionLocalOf { ODVMotion(reduceMotion = false) }
@@ -55,6 +65,7 @@ fun ODVTheme(
         ODVThemeMode.Light -> false
         ODVThemeMode.Dark -> true
     }
+    ODVSystemBars(darkTheme = dark)
     val fonts = rememberODVFonts()
     val typography = remember(fonts) { ODVTypography(fonts) }
     val reduceMotion = rememberReduceMotion()

@@ -1,13 +1,11 @@
 package com.lambao.odv.core.designsystem.component
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.view.Window
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
+import com.lambao.odv.core.designsystem.findActivity
 import java.util.WeakHashMap
 
 /**
@@ -46,10 +44,4 @@ actual fun ODVSecureWindow(enabled: Boolean) {
             onDispose { }
         }
     }
-}
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }

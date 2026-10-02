@@ -7,15 +7,33 @@ import android.os.Looper
 import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.view.WindowCompat
 import com.lambao.odv.core.designsystem.R
+import com.lambao.odv.core.designsystem.findActivity
+
+@Composable
+internal actual fun ODVSystemBars(darkTheme: Boolean) {
+    val window = LocalContext.current.findActivity()?.window
+    val view = LocalView.current
+    if (window != null) {
+        SideEffect {
+            val controller = WindowCompat.getInsetsController(window, view)
+            // Nền sáng thì icon tối và ngược lại.
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
+        }
+    }
+}
 
 @Composable
 internal actual fun rememberODVFonts(): ODVFonts = remember {

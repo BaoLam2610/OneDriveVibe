@@ -20,5 +20,9 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
         }
+        androidMain.dependencies {
+            // WindowCompat: đổi màu icon system bar theo theme của app (ODVSystemBars).
+            implementation(libs.androidx.core.ktx)
+        }
     }
 }
