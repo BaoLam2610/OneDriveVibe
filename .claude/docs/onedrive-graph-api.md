@@ -81,9 +81,29 @@ Endpoint token trả HTTP `400`/`401` với body dạng:
 | Thông tin drive và dung lượng | `GET /users/{upn}/drive` |
 | Chỉ lấy quota | `GET /users/{upn}/drive?select=quota` |
 
-Response `quota` gồm `total`, `used`, `remaining`, `deleted`, `state` (đơn vị byte).
+Response `quota` gồm `total`, `used`, `remaining`, `deleted`, `state` (đơn vị byte). Mọi trường đều có thể vắng mặt, kiểu số cần `Long` (64-bit).
+
+| `state` | Ý nghĩa |
+|---|---|
+| `normal` | Bình thường |
+| `nearing` | Gần hết hạn mức |
+| `critical` | Rất gần hết hạn mức |
+| `exceeded` | `used` đã vượt `total` |
 
 > Request `GET /users/{upn}/drive?$select=id,driveType,quota` phù hợp để **kiểm tra kết nối**: thành công nghĩa là token hợp lệ, đã có quyền và drive tồn tại.
+
+**Lưu ý về `quota`**
+
+- **`used` có thể lớn hơn `total`.** Đây là hành vi hợp lệ của Graph, không phải lỗi của app hay của response: khi đó `state = "exceeded"` và `remaining = 0`. Ví dụ thực tế (đã bỏ `id`):
+
+  ```json
+  "quota": { "deleted": 411290, "remaining": 0, "state": "exceeded", "total": 10737418240, "used": 274836750191 }
+  ```
+
+  Ở ví dụ trên `total` đúng 10 GiB nhưng `used` ≈ 274,8 GB. Cũng đã có người gặp `used` ≈ 3,4 TB so với `total` ≈ 3 TB ở một dự án OneDrive client khác.
+- **`total` không nhất thiết bằng hạn mức hiển thị ở admin center hay hạn mức theo license.** Hạn mức của OneDrive for Business gắn với site cá nhân (`-my.sharepoint.com`) của user và có thể bị đặt thấp hơn hoặc chênh với con số bạn thấy ở nơi khác (mặc định thường 1 TB, admin có thể nâng lên, tối đa 5 TB). Để đối chiếu, kiểm tra Storage limit của site trong SharePoint admin center hoặc `Get-SPOSite ... | Select StorageQuota, StorageUsageCurrent`.
+- **Không dùng quota để quyết định logic.** App chỉ đọc nên `exceeded` không chặn duyệt, phát hay tải tệp; chỉ dùng `quota` để hiển thị theo KN-12 của đặc tả nghiệp vụ, và phải chịu được trường thiếu, `total = 0` hay `used > total`.
+- Mã `507 quotaLimitReached` (mục 9.2) chỉ phát sinh khi **ghi**, không xuất hiện ở luồng đọc của app.
 
 ---
 
@@ -450,7 +470,7 @@ print(r.json())
 - Tài khoản cần có license bao gồm OneDrive/SharePoint và OneDrive đã được khởi tạo.
 - Giữ `client_secret` trong biến môi trường hoặc secret manager; không commit lên Git. Đặt lịch gia hạn trước khi secret hết hạn (tối đa 24 tháng).
 - `Files.Read.All`/`Files.ReadWrite.All` kiểu Application cho phép truy cập file của **mọi user** trong tenant; nếu chỉ cần một phạm vi hẹp, dùng `Sites.Selected` hoặc `Files.SelectedOperations.Selected`.
-- Hạn mức dung lượng mỗi user phụ thuộc license và cấu hình của tenant (mặc định thường 1 TB, có thể nâng cao hơn).
+- Hạn mức dung lượng mỗi user phụ thuộc license và cấu hình của tenant (mặc định thường 1 TB, có thể nâng cao hơn). Giá trị `quota.total` trả về có thể thấp hơn hạn mức mong đợi và có thể nhỏ hơn `used`; xem lưu ý ở mục 2.
 
 ---
 

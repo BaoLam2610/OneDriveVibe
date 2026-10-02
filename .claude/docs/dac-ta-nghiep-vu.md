@@ -72,7 +72,19 @@ Nút **Kết nối**, biểu tượng ẩn/hiện ký tự (hình con mắt) ở
 - **KN-07**: Bấm Kết nối: hiện trạng thái đang kết nối, khóa các trường, lần lượt:
   1. Lấy access token (Client Credentials, `scope=https://graph.microsoft.com/.default`).
   2. Gọi `GET /users/{upn}/drive?$select=id,driveType,quota`.
-- **KN-08**: Thành công: hiện tên drive và dung lượng đã dùng / tổng, sau đó chuyển sang màn Thiết lập bảo mật. Config **chỉ được lưu** sau khi hoàn tất bước bảo mật.
+- **KN-08** (tiêu chí thành công): Kết nối **thành công khi cả hai bước ở KN-07 trả HTTP 2xx** (token hợp lệ, đã có quyền, drive tồn tại). Thông tin `quota` chỉ để hiển thị, **không** là điều kiện thành công. Sau đó hiện thẻ "Đã kết nối" (loại drive, UPN, dung lượng theo KN-12) rồi chuyển sang màn Thiết lập bảo mật. Config **chỉ được lưu** sau khi hoàn tất bước bảo mật.
+- **KN-12** (hiển thị dung lượng): `quota` do Graph trả về **chỉ mang tính tham khảo**. `used` có thể lớn hơn `total` (`state = exceeded`) vì hạn mức `total` do tenant/SharePoint đặt có thể nhỏ hơn dữ liệu thực tế đang lưu, hoặc đã bị hạ sau khi dữ liệu được tải lên. App chỉ đọc nên không bị ảnh hưởng. Quy tắc hiển thị, xét theo thứ tự:
+
+  | Điều kiện | Hiển thị |
+  |---|---|
+  | Không có `quota`, hoặc thiếu `used` | Ẩn dòng dung lượng, **không** báo lỗi, vẫn kết nối thành công |
+  | Có `used` nhưng `total` thiếu hoặc bằng 0 | Chỉ "Đã dùng X", không thanh tiến độ |
+  | `used` > `total` (kể cả `state = exceeded`) | Chỉ "Đã dùng X", không thanh tiến độ, **không** hiện "/ tổng", **không** hiện cảnh báo hay lỗi |
+  | `used` ≤ `total` | "Đã dùng X / Tổng Y" kèm thanh tiến độ |
+
+  - Không tự tính phần trăm hay `remaining` từ `used` và `total`; không dùng `state` để chặn bất kỳ thao tác nào.
+  - Số liệu dung lượng chỉ lấy lúc kết nối, không lưu và không cập nhật sau đó (app không có màn nào khác dùng quota).
+  - Đơn vị và định dạng theo CD-10 (vd. "274,8 GB").
 - **KN-09**: Thất bại: hiện thông báo theo bảng dưới, giữ nguyên giá trị đã nhập để sửa. Thông báo được chọn theo **mã lỗi** và hiển thị theo ngôn ngữ đang dùng (CD-10), không hiển thị nguyên văn thông báo lỗi của máy chủ.
 - **KN-10**: Màn này chặn chụp màn hình và ẩn nội dung trong danh sách ứng dụng gần đây.
 - **KN-11** (phạm vi tài khoản): UPN phải là tài khoản **work/school** thuộc đúng tenant đã nhập. App không hỗ trợ tài khoản Microsoft cá nhân; nếu nhập UPN cá nhân (vd. `@outlook.com`) thì kết nối sẽ thất bại theo bảng lỗi dưới (thường là Graph `404`).
