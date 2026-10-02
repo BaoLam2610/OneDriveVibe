@@ -9,8 +9,8 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // ADR-0010: domain chỉ được phụ thuộc :core:common
-            implementation(project(":core:common"))
+            // ADR-0010: domain chỉ được phụ thuộc :core:common. `api` vì AppResult/AppError nằm trong chữ ký repository.
+            api(project(":core:common"))
         }
     }
 }

@@ -29,6 +29,15 @@ sealed interface AppError {
         val retryAfterSeconds: Long? = null,
     ) : AppError
 
+    /**
+     * Kho bí mật không đọc hoặc không giải mã được (khóa Keystore bị mất, tệp hỏng, PIN sai ở Lát 2).
+     * Không kèm nguyên nhân để chi tiết mật mã không lọt ra ngoài.
+     */
+    data object SecureStorage : AppError
+
     /** Lỗi không phân loại được. [cause] chỉ để ghi log khi debug, không hiển thị. */
-    data class Unknown(val cause: Throwable? = null) : AppError
+    data class Unknown(val cause: Throwable? = null) : AppError {
+        // Chỉ in tên loại: nội dung ngoại lệ có thể chứa URL hay dữ liệu nhạy cảm (CH-06).
+        override fun toString(): String = "AppError.Unknown"
+    }
 }

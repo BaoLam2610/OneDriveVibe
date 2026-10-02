@@ -30,7 +30,7 @@ dependencyResolutionManagement {
 
 include(":androidApp")
 
-// ADR-0010: module core. Module :feature:* tạo khi bắt đầu làm feature đó.
+// ADR-0010: module core.
 include(":core:common")
 include(":core:domain")
 include(":core:data")
@@ -38,5 +38,9 @@ include(":core:network")
 include(":core:database")
 include(":core:security")
 include(":core:designsystem")
+
+// Module feature tạo khi bắt đầu lát dùng tới nó (ADR-0010).
+include(":feature:auth")
+include(":feature:browser")
 
 // Đã bỏ :shared (module mẫu của template KMP). Phần dùng chung nay nằm ở các module :core:*.

@@ -1,0 +1,60 @@
+<resources>
+    <!-- Connect (K1–K5) -->
+    <string name="connect_step">STEP 1 / 2</string>
+    <string name="connect_title">Connect OneDrive</string>
+    <string name="connect_subtitle">Paste the app details from Microsoft Entra. Data is encrypted and stored only on this device.</string>
+    <string name="connect_tenant_label">Tenant ID</string>
+    <string name="connect_tenant_helper">The tenant GUID or domain name</string>
+    <string name="connect_tenant_error">Tenant ID must be a GUID or a domain name</string>
+    <string name="connect_client_label">Client ID</string>
+    <string name="connect_client_helper">Application (client) ID in Entra</string>
+    <string name="connect_client_error">Client ID must be a full 36-character GUID</string>
+    <string name="connect_secret_label">Client Secret</string>
+    <string name="connect_secret_helper">The Value column, not the Secret ID</string>
+    <string name="connect_upn_label">OneDrive account email</string>
+    <string name="connect_upn_helper">UPN of the account that has OneDrive</string>
+    <string name="connect_upn_error">Email format is not valid</string>
+    <string name="connect_show_value">Show characters</string>
+    <string name="connect_hide_value">Hide characters</string>
+    <string name="connect_button">Connect</string>
+    <string name="connect_loading_title">Connecting to OneDrive</string>
+    <string name="connect_loading_subtitle">Keep the app open for a few seconds.</string>
+    <string name="connect_loading_description">Connecting</string>
+
+    <!-- Success (K4) -->
+    <string name="connect_success_title">OneDrive connected</string>
+    <string name="connect_success_drive_business">OneDrive for Business</string>
+    <string name="connect_success_used">Used</string>
+    <string name="connect_success_hint">Next, set a PIN to protect the app. Connection details are only saved after this step.</string>
+    <string name="connect_success_continue">Continue</string>
+
+    <!-- Connection errors (K5, KN-09 table) -->
+    <string name="connect_error_title">Could not connect</string>
+    <string name="connect_error_code">Error code: %1$s</string>
+    <string name="connect_error_close">Close</string>
+    <string name="connect_error_fix_secret">Fix Client Secret</string>
+    <string name="connect_error_tenant_format">The Tenant ID format is not valid.</string>
+    <string name="connect_error_tenant_not_found">Tenant not found.</string>
+    <string name="connect_error_client_not_found">This Client ID does not exist in this tenant.</string>
+    <string name="connect_error_secret_invalid">The Client Secret is incorrect. Check that you copied the Value column, not the Secret ID.</string>
+    <string name="connect_error_secret_expired">The Client Secret has expired. Create a new secret.</string>
+    <string name="connect_error_app_disabled">The app is disabled in Entra.</string>
+    <string name="connect_error_forbidden">The app has not been granted the Files.Read.All permission, or admin consent has not been granted.</string>
+    <string name="connect_error_drive_not_found">No OneDrive was found for this UPN (wrong UPN, no license, or OneDrive not initialized). Note: the app only supports OneDrive for Business accounts, not personal Microsoft accounts.</string>
+    <string name="connect_error_network">Could not connect. Check your network and try again.</string>
+    <string name="connect_error_other">Something went wrong. Use the error code below to look it up.</string>
+
+    <!-- Security setup (B7, B8) -->
+    <string name="security_step">STEP 2 / 2</string>
+    <string name="security_title">Security setup</string>
+    <string name="security_subtitle">Set a 6-digit PIN so only you can open OneDrive in this app.</string>
+    <string name="security_toggle_title">Protect the app</string>
+    <string name="security_toggle_description">Require a PIN every time it opens</string>
+    <string name="security_warning">Anyone holding an unlocked device can see your OneDrive</string>
+    <string name="security_complete">Finish</string>
+    <string name="security_saving_title">Finishing setup</string>
+    <string name="security_saving_description">Finishing</string>
+    <string name="security_save_failed_title">Could not save the connection details</string>
+    <string name="security_save_failed_body">This device could not encrypt and save the connection details. Please try again.</string>
+    <string name="security_save_failed_close">Close</string>
+</resources>

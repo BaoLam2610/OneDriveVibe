@@ -137,7 +137,15 @@ abstract class BaseMviViewModel<S : Any, I : Any, E : Any>(initialState: S) : Vi
 ```
 
 - Không dùng framework MVI nặng (Orbit MVI là phương án dự phòng, có hỗ trợ KMP).
-- Effect dùng cho thao tác một lần (điều hướng, snackbar, mở player); không đặt vào State. Chỉ thu `effects` ở **một** nơi (`XxxScreen`, theo vòng đời STARTED).
+- **State hay Effect** (Android khuyến nghị đưa sự kiện UI vào state, vì Channel không bảo đảm effect được xử lý; ADR-0002 vẫn giữ kênh Effect):
+
+  | Loại | Đặt ở | Ví dụ |
+  |---|---|---|
+  | Không được mất, hoặc phải còn sau khi xoay màn hình / đổi ngôn ngữ | **State** + Intent báo "đã xử lý" để ViewModel xóa | Dialog lỗi KN-09, sheet "Đã kết nối" KN-08, cảnh báo KH-06 |
+  | Mất cũng không hại | **Effect** | Chuyển màn, mở player, snackbar nhẹ |
+
+- Channel là `UNLIMITED` + `trySend` (giữ thứ tự, không treo). Không đổi capacity khác mà giữ `trySend`: kênh đầy thì effect bị bỏ mà không báo.
+- Chỉ thu `effects` ở **một** nơi (`XxxScreen`), trong `repeatOnLifecycle(STARTED)` trên `Dispatchers.Main.immediate`.
 - Reducer thuần, dễ đọc và gỡ lỗi.
 - UseCase chỉ tạo khi có logic thật; không tạo UseCase chỉ gọi lại repository.
 - Mỗi màn: `XxxContract.kt` (State, Intent, Effect), `XxxViewModel.kt`, `XxxScreen.kt` (nối ViewModel), `XxxContent.kt` (stateless, preview được).

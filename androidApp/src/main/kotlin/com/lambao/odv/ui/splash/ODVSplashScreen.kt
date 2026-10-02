@@ -16,15 +16,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.lambao.odv.R
+import com.lambao.odv.core.designsystem.ODVCollectEffects
 import com.lambao.odv.core.designsystem.logo.ODVLogo
 import com.lambao.odv.core.designsystem.theme.ODVTheme
+import org.koin.compose.viewmodel.koinViewModel
 
 /**
  * Splash (S1, thiet-ke-ui.md mục 5.1): mark 112 căn giữa; dòng giới thiệu `caption` 500 màu `ink-muted`, cách đáy 56.
- * Lát 0 dừng ở màn này (kiểm tay đổi ngôn ngữ qua dòng giới thiệu). Lát 1 thêm điều hướng tiếp theo luồng khởi động.
+ * Đọc xem đã có config chưa rồi gọi [onConnectRequired] hoặc [onReady]; nơi gọi thay Splash bằng màn đó.
  */
 @Composable
-fun ODVSplashScreen(modifier: Modifier = Modifier) {
+fun ODVSplashScreen(
+    onConnectRequired: () -> Unit,
+    onReady: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: SplashViewModel = koinViewModel(),
+) {
+    ODVCollectEffects(viewModel.effects) { effect ->
+        when (effect) {
+            SplashEffect.NavigateToConnect -> onConnectRequired()
+            SplashEffect.NavigateToHome -> onReady()
+        }
+    }
+
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
     Box(

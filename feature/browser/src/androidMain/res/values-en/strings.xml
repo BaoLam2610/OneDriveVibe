@@ -1,0 +1,21 @@
+<resources>
+    <string name="browser_root">Documents</string>
+    <string name="browser_up">Up one level</string>
+    <string name="browser_breadcrumb_hidden">Folders above</string>
+    <plurals name="browser_item_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+
+    <!-- Empty folder (D8) -->
+    <string name="browser_empty_title">No matching files</string>
+    <string name="browser_empty_body">This folder has no photos, videos or PDFs that are currently shown.</string>
+
+    <!-- Folder load errors -->
+    <string name="browser_error_title">Could not load the folder</string>
+    <string name="browser_error_network">Could not connect. Check your network and try again.</string>
+    <string name="browser_error_other">Something went wrong. Error code: %1$s</string>
+    <string name="browser_error_other_no_code">Something went wrong.</string>
+    <string name="browser_retry">Try again</string>
+    <string name="browser_loading">Loading</string>
+</resources>

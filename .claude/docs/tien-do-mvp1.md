@@ -6,9 +6,9 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Đang làm
 
-- **Lát:** 0, Bộ khung app
-- **Bước:** code xong, đã review; chờ người dùng build và kiểm tay
-- **Ghi chú:** đổi ngôn ngữ ở Lát 0 kiểm qua Cài đặt hệ thống (Android 13+), vì màn Cài đặt làm ở Lát 9. `UiError` làm ở Lát 1.
+- **Lát:** 1, Kết nối → Danh sách thư mục gốc (Lát 0 còn chờ kiểm tay)
+- **Bước:** code 1a–1c xong, đã review Kotlin + bảo mật và sửa; chờ người dùng build và kiểm tay
+- **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Công tắc bảo mật chỉ hiển thị trạng thái tắt, Lát 2 mới bật được. Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
 
@@ -30,14 +30,14 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Lát 1: Kết nối → Danh sách thư mục gốc
 
-- [ ] `:core:network`: Ktor, token Client Credentials, TK-01 → TK-03, che log
-- [ ] `:core:security`: mã hóa config bằng Keystore
-- [ ] `:core:domain` / `:core:data`: repository config và drive
-- [ ] `:feature:auth`: màn Kết nối
-- [ ] `:feature:auth`: màn Thiết lập bảo mật (nhánh tắt)
-- [ ] `:feature:browser`: tab Thư mục qua API (TM-07)
-- [ ] Điều hướng khởi động
-- [ ] Review Kotlin + bảo mật
+- [x] `:core:network`: Ktor, token Client Credentials, TK-01 → TK-03, che log
+- [x] `:core:security`: mã hóa config bằng Keystore
+- [x] `:core:domain` / `:core:data`: repository config và drive
+- [x] `:feature:auth`: màn Kết nối
+- [x] `:feature:auth`: màn Thiết lập bảo mật (nhánh tắt)
+- [x] `:feature:browser`: tab Thư mục qua API (TM-07)
+- [x] Điều hướng khởi động
+- [x] Review Kotlin + bảo mật
 - [ ] Kiểm tay
 
 ## Lát 2: Mã PIN và màn Khóa
@@ -105,3 +105,4 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 |---|---|
 | 2026-10-02 | Duyệt kế hoạch MVP1 |
 | 2026-10-02 | Lát 0: dựng khung app (catalog thư viện, common, MVI, Koin, Navigation 3, VI/EN, tắt backup, tech-stack.md); đã review, chờ kiểm tay |
+| 2026-10-02 | Lát 1: dựng network (token single-flight, retry), security (Keystore AES-GCM), domain/data, feature:auth, feature:browser, điều hướng khởi động; chờ review và build |

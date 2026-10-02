@@ -9,7 +9,12 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":core:common"))
+            // api: SecretStore trả AppResult/AppError.
+            api(project(":core:common"))
+        }
+        androidMain.dependencies {
+            // Binding Koin của bản Android (cần androidContext()).
+            implementation(libs.koin.android)
         }
     }
 }

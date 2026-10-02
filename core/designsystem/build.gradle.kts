@@ -23,6 +23,8 @@ kotlin {
         androidMain.dependencies {
             // WindowCompat: đổi màu icon system bar theo theme của app (ODVSystemBars).
             implementation(libs.androidx.core.ktx)
+            // ODVCollectEffects: thu Effect theo vòng đời STARTED.
+            implementation(libs.androidx.lifecycle.runtimeCompose)
         }
     }
 }

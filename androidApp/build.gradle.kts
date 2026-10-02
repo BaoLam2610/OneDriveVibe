@@ -17,7 +17,12 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
+    // Chỉ để ghép module Koin ở MainApplication (networkModule, securityModule). Code app không gọi thẳng các module này.
+    implementation(project(":core:network"))
+    implementation(project(":core:security"))
     implementation(project(":core:designsystem"))
+    implementation(project(":feature:auth"))
+    implementation(project(":feature:browser"))
 
     implementation(libs.androidx.activity.compose)
     // ADR-0011: AppCompatActivity + AppCompatDelegate.setApplicationLocales() để đổi ngôn ngữ trong app.
@@ -28,14 +33,17 @@ dependencies {
     implementation(libs.compose.ui)
 
     // Koin (ADR-0004)
-    implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
+    implementation(libs.koin.core.viewmodel)
+    implementation(libs.koin.compose.viewmodel)
 
     // Navigation 3 (ADR-0003)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    // SplashViewModel kế thừa BaseMviViewModel (ViewModel không lộ qua :core:common).
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.androidx.lifecycle.runtimeCompose)
     implementation(libs.kotlinx.serialization.core)
 
     implementation(libs.compose.uiToolingPreview)

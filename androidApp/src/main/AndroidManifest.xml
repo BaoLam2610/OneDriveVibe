@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Gọi Microsoft Graph và endpoint token. :core:network là thư viện KMP không có manifest riêng nên khai báo ở app. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!--
         CH-04: tắt sao lưu tự động. allowBackup="false" chặn sao lưu đến Android 11;
         dataExtractionRules chặn cả sao lưu đám mây lẫn chuyển máy trên Android 12+.

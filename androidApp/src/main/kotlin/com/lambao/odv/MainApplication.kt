@@ -1,7 +1,12 @@
 package com.lambao.odv
 
 import android.app.Application
+import com.lambao.odv.core.data.dataModule
+import com.lambao.odv.core.network.networkModule
+import com.lambao.odv.core.security.securityModule
 import com.lambao.odv.di.appModule
+import com.lambao.odv.feature.auth.authModule
+import com.lambao.odv.feature.browser.browserModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -16,7 +21,7 @@ class MainApplication : Application() {
             // Chỉ log lỗi: Koin không được in giá trị đã tiêm (có thể là config hay token, CH-06).
             androidLogger(Level.ERROR)
             androidContext(this@MainApplication)
-            modules(appModule)
+            modules(appModule, securityModule, networkModule, dataModule, authModule, browserModule)
         }
     }
 }

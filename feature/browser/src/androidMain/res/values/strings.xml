@@ -1,0 +1,23 @@
+<resources>
+    <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
+         Câu chữ lấy từ thiết kế (ODV List); mục ghi [mới] chưa có trong thiết kế, cần duyệt. -->
+    <string name="browser_title" translatable="false">OneDrive</string>
+    <string name="browser_root">Tài liệu</string>
+    <string name="browser_up">Lên một cấp</string>
+    <string name="browser_breadcrumb_hidden">Các thư mục phía trên</string>
+    <plurals name="browser_item_count">
+        <item quantity="other">%1$d mục</item>
+    </plurals>
+
+    <!-- Thư mục trống (D8) -->
+    <string name="browser_empty_title">Chưa có tệp phù hợp</string>
+    <string name="browser_empty_body">Thư mục này không có ảnh, video hay PDF nào đang được bật hiển thị.</string>
+
+    <!-- Lỗi tải thư mục -->
+    <string name="browser_error_title">Không tải được thư mục</string> <!-- [mới] -->
+    <string name="browser_error_network">Không kết nối được, kiểm tra mạng và thử lại.</string>
+    <string name="browser_error_other">Đã xảy ra lỗi. Mã lỗi: %1$s</string> <!-- [mới] -->
+    <string name="browser_error_other_no_code">Đã xảy ra lỗi.</string> <!-- [mới] -->
+    <string name="browser_retry">Thử lại</string> <!-- [mới] -->
+    <string name="browser_loading">Đang tải</string> <!-- [mới] mô tả cho TalkBack -->
+</resources>

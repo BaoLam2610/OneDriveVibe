@@ -51,12 +51,11 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
-# Koin (ADR-0004). Dùng BOM nên các artifact Koin không ghi version.
-koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
-koin-core = { module = "io.insert-koin:koin-core" }
-koin-android = { module = "io.insert-koin:koin-android" }
-koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
-koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
+# Koin (ADR-0004). Ghi version trực tiếp (không dùng BOM) để dùng được cả trong module KMP.
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-core-viewmodel = { module = "io.insert-koin:koin-core-viewmodel", version.ref = "koin" }
+koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 
 # Navigation 3 (ADR-0003). :androidApp là module Android thuần nên dùng bản androidx.
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "androidx-navigation3" }
