@@ -1,21 +1,17 @@
 package com.lambao.odv.feature.auth.connect
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -28,27 +24,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.lambao.odv.core.designsystem.component.ODVBottomSheet
 import com.lambao.odv.core.designsystem.component.ODVButton
 import com.lambao.odv.core.designsystem.component.ODVButtonStyle
 import com.lambao.odv.core.designsystem.component.ODVDialog
 import com.lambao.odv.core.designsystem.component.ODVDialogTone
 import com.lambao.odv.core.designsystem.component.ODVFullScreenLoader
 import com.lambao.odv.core.designsystem.component.ODVMaskToggle
-import com.lambao.odv.core.designsystem.component.ODVProgressBar
 import com.lambao.odv.core.designsystem.component.ODVScaffold
-import com.lambao.odv.core.designsystem.component.ODVStepBar
 import com.lambao.odv.core.designsystem.component.ODVTextField
-import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.logo.ODVLogo
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.feature.auth.R
 
 /**
- * Giao diện màn Kết nối (thiet-ke-ui.md mục 5.1): padding 48/16/32; header CỐ ĐỊNH (mark 40 + StepBar 1/2) nằm ở topBar của ODVScaffold nên không cuộn; tiêu đề `display`,
+ * Giao diện màn Kết nối (thiet-ke-ui.md mục 5.1): padding 48/16/32; header CỐ ĐỊNH (mark 40) nằm ở topBar của ODVScaffold nên không cuộn; tiêu đề `display`,
  * form cách đầu trang 28 gồm 4 ô cách nhau 16, nút "Kết nối" toàn chiều rộng sát đáy.
- * Không giữ state; cả dialog lỗi (K5) và sheet thành công (K4) đều dựng từ [state].
+ * Không giữ state; cả dialog lỗi (K5) và hộp thoại hỏi thiết lập PIN (K6) đều dựng từ [state].
  */
 @Composable
 internal fun ODVConnectContent(
@@ -65,15 +57,13 @@ internal fun ODVConnectContent(
 
     Box(modifier.fillMaxSize()) {
         ODVScaffold(
-            // Header cố định: Logo + StepBar không cuộn theo form (thiet-ke-ui.md mục 5.1).
+            // Header cố định: Logo không cuộn theo form. Không có StepBar (thiet-ke-ui.md mục 4.1: luồng có nhánh).
             topBar = {
                 Row(
                     Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     ODVLogo(size = 40.dp)
-                    ODVStepBar(stringResource(R.string.connect_step), step = 1, total = 2, modifier = Modifier.weight(1f))
                 }
             },
         ) { contentPadding ->
@@ -170,8 +160,8 @@ internal fun ODVConnectContent(
     state.failure?.let { failure ->
         ConnectFailureDialog(failure, onIntent)
     }
-    state.connected?.let { connected ->
-        ConnectedSheet(connected, onIntent)
+    if (state.showPinPrompt) {
+        PinPromptDialog(onIntent)
     }
 }
 
@@ -216,7 +206,9 @@ private fun SensitiveField(
 private fun ConnectFailureDialog(failure: ConnectFailure, onIntent: (ConnectIntent) -> Unit) {
     ODVDialog(
         onDismissRequest = { onIntent(ConnectIntent.DismissFailure) },
-        title = stringResource(R.string.connect_error_title),
+        title = stringResource(
+            if (failure.kind == ConnectFailureKind.SaveFailed) R.string.connect_save_failed_title else R.string.connect_error_title,
+        ),
         icon = ODVIcon.Alert,
         tone = ODVDialogTone.Danger,
         body = stringResource(failure.kind.messageRes()),
@@ -246,66 +238,29 @@ private fun ConnectFailureKind.messageRes(): Int = when (this) {
     ConnectFailureKind.Forbidden -> R.string.connect_error_forbidden
     ConnectFailureKind.DriveNotFound -> R.string.connect_error_drive_not_found
     ConnectFailureKind.Network -> R.string.connect_error_network
+    ConnectFailureKind.SaveFailed -> R.string.connect_save_failed_body
     ConnectFailureKind.Other -> R.string.connect_error_other
 }
 
-/** K4 (KN-08): thẻ `surface-2` gồm loại drive, UPN, thanh dung lượng; đoạn hướng dẫn; nút "Tiếp tục". */
+/**
+ * K6 (KN-13): Dialog bắt buộc chọn (thiet-ke-ui.md mục 4.2). Chạm ngoài và Back hệ thống không đóng, chỉ đóng bằng
+ * một trong hai nút. Câu chữ tự viết, chờ xác nhận (thiet-ke-ui.md mục 9, đề xuất 7).
+ */
 @Composable
-private fun ConnectedSheet(connected: ConnectedDrive, onIntent: (ConnectIntent) -> Unit) {
-    val colors = ODVTheme.colors
-    val type = ODVTheme.typography
-    val info = connected.info
-    ODVBottomSheet(
-        onDismissRequest = { onIntent(ConnectIntent.DismissConnected) },
-        title = stringResource(R.string.connect_success_title),
+private fun PinPromptDialog(onIntent: (ConnectIntent) -> Unit) {
+    ODVDialog(
+        onDismissRequest = {},
+        title = stringResource(R.string.connect_pin_prompt_title),
+        icon = ODVIcon.Lock,
+        body = stringResource(R.string.connect_pin_prompt_body),
+        dismissOnOutsideClick = false,
+        dismissOnBackPress = false,
     ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .background(colors.surface2, ODVTheme.shapes.md)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(40.dp).background(colors.successSoft, CircleShape), contentAlignment = Alignment.Center) {
-                    ODVIcon(ODVIcon.Check, contentDescription = null, tint = colors.success)
-                }
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.connect_success_drive_business),
-                        style = type.bodyStrong,
-                        color = colors.ink,
-                    )
-                    Text(connected.upn, style = type.caption, color = colors.inkMuted)
-                }
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.connect_success_used), style = type.caption, color = colors.inkMuted)
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        "${odvFormatFileSize(info.usedBytes)} / ${odvFormatFileSize(info.totalBytes)}",
-                        style = type.code,
-                        color = colors.ink,
-                    )
-                }
-                ODVProgressBar(
-                    progress = if (info.totalBytes > 0) info.usedBytes.toFloat() / info.totalBytes else 0f,
-                    height = 8.dp,
-                )
-            }
-        }
-        Text(
-            stringResource(R.string.connect_success_hint),
-            modifier = Modifier.padding(top = 16.dp),
-            style = type.body,
-            color = colors.inkMuted,
-        )
         ODVButton(
-            text = stringResource(R.string.connect_success_continue),
-            onClick = { onIntent(ConnectIntent.Continue) },
-            modifier = Modifier.padding(top = 16.dp),
-            fullWidth = true,
+            stringResource(R.string.connect_pin_prompt_later),
+            { onIntent(ConnectIntent.SkipPin) },
+            style = ODVButtonStyle.Ghost,
         )
+        ODVButton(stringResource(R.string.connect_pin_prompt_setup), { onIntent(ConnectIntent.SetupPin) })
     }
 }

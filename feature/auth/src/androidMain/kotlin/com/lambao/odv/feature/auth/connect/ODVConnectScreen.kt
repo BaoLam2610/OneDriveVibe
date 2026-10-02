@@ -13,12 +13,14 @@ import com.lambao.odv.core.designsystem.component.ODVSecureWindow
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * Màn Kết nối (KN-01 → KN-11). Nối ViewModel với giao diện; [onContinue] chuyển sang bước Thiết lập bảo mật.
+ * Màn Kết nối (KN-01 → KN-13). Nối ViewModel với giao diện. Kết nối thành công thì config đã được lưu và hộp thoại
+ * hỏi thiết lập PIN hiện ngay trên màn này: [onSetupPin] mở màn Thiết lập bảo mật, [onSkipPin] vào Danh sách.
  * Chặn chụp màn hình và ẩn ở danh sách app gần đây (KN-10, CH-05).
  */
 @Composable
 fun ODVConnectScreen(
-    onContinue: () -> Unit,
+    onSetupPin: () -> Unit,
+    onSkipPin: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ConnectViewModel = koinViewModel(),
 ) {
@@ -31,7 +33,8 @@ fun ODVConnectScreen(
     ODVCollectEffects(viewModel.effects) { effect ->
         when (effect) {
             is ConnectEffect.FocusField -> focusRequesters.getValue(effect.field).requestFocus()
-            ConnectEffect.NavigateToSecuritySetup -> onContinue()
+            ConnectEffect.NavigateToSecuritySetup -> onSetupPin()
+            ConnectEffect.NavigateToHome -> onSkipPin()
         }
     }
 

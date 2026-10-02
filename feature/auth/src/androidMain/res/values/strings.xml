@@ -2,8 +2,7 @@
     <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
          Câu chữ lấy từ thiết kế (ODV Start app); mục ghi [mới] chưa có trong thiết kế, cần duyệt. -->
 
-    <!-- Kết nối (K1–K5) -->
-    <string name="connect_step">BƯỚC 1 / 2</string>
+    <!-- Kết nối (K1, K2, K3) -->
     <string name="connect_title">Kết nối OneDrive</string>
     <string name="connect_subtitle">Dán thông tin ứng dụng từ Microsoft Entra. Dữ liệu được mã hóa, chỉ lưu trên máy này.</string>
     <string name="connect_tenant_label">Tenant ID</string>
@@ -24,12 +23,11 @@
     <string name="connect_loading_subtitle">Giữ ứng dụng mở trong vài giây.</string>
     <string name="connect_loading_description">Đang kết nối</string>
 
-    <!-- Thành công (K4) -->
-    <string name="connect_success_title">Đã kết nối OneDrive</string>
-    <string name="connect_success_drive_business">OneDrive for Business</string>
-    <string name="connect_success_used">Đã dùng</string>
-    <string name="connect_success_hint">Tiếp theo, đặt mã PIN để bảo vệ ứng dụng. Thông tin kết nối chỉ được lưu sau bước này.</string>
-    <string name="connect_success_continue">Tiếp tục</string>
+    <!-- Hộp thoại hỏi thiết lập mã PIN (K6, KN-13) -->
+    <string name="connect_pin_prompt_title">Thiết lập mã PIN?</string> <!-- [mới] đề xuất 7 -->
+    <string name="connect_pin_prompt_body">Mã PIN 6 số sẽ khóa ứng dụng mỗi khi mở. Nếu bỏ qua, bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn. Bạn có thể bật lại trong Cài đặt › Bảo mật.</string> <!-- [mới] đề xuất 7 -->
+    <string name="connect_pin_prompt_later">Để sau</string>
+    <string name="connect_pin_prompt_setup">Thiết lập mã PIN</string>
 
     <!-- Lỗi kết nối (K5, bảng KN-09) -->
     <string name="connect_error_title">Không kết nối được</string>
@@ -46,18 +44,11 @@
     <string name="connect_error_drive_not_found">Không tìm thấy OneDrive của UPN này (sai UPN, chưa có license hoặc OneDrive chưa khởi tạo). Lưu ý: ứng dụng chỉ hỗ trợ tài khoản OneDrive for Business, không hỗ trợ tài khoản Microsoft cá nhân.</string>
     <string name="connect_error_network">Không kết nối được, kiểm tra mạng và thử lại.</string>
     <string name="connect_error_other">Đã xảy ra lỗi. Dùng mã lỗi bên dưới để tra cứu.</string> <!-- [mới] KN-09 "lỗi khác" -->
+    <string name="connect_save_failed_title">Không lưu được thông tin kết nối</string> <!-- [mới] KN-08 -->
+    <string name="connect_save_failed_body">Máy không mã hóa và lưu được thông tin kết nối. Hãy thử lại.</string> <!-- [mới] KN-08 -->
 
-    <!-- Thiết lập bảo mật (B7, B8) -->
-    <string name="security_step">BƯỚC 2 / 2</string>
+    <!-- Thiết lập bảo mật (B1–B8) -->
     <string name="security_title">Thiết lập bảo mật</string>
     <string name="security_subtitle">Đặt mã PIN 6 số để chỉ mình bạn mở được OneDrive trong ứng dụng này.</string>
-    <string name="security_toggle_title">Bảo vệ ứng dụng</string>
-    <string name="security_toggle_description">Yêu cầu mã PIN mỗi khi mở</string>
-    <string name="security_warning">Bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn</string>
-    <string name="security_complete">Hoàn tất</string>
-    <string name="security_saving_title">Đang hoàn tất thiết lập</string>
-    <string name="security_saving_description">Đang hoàn tất</string>
-    <string name="security_save_failed_title">Không lưu được thông tin kết nối</string> <!-- [mới] -->
-    <string name="security_save_failed_body">Máy không mã hóa và lưu được thông tin kết nối. Hãy thử lại.</string> <!-- [mới] -->
-    <string name="security_save_failed_close">Đóng</string>
+    <string name="security_back">Quay lại</string> <!-- [mới] -->
 </resources>

@@ -4,9 +4,10 @@ import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.model.ConnectionConfig
 
 /**
- * Nơi giữ config kết nối đã mã hóa (CH-01). Config chỉ được lưu sau khi hoàn tất bước bảo mật (KN-08).
+ * Nơi giữ config kết nối đã mã hóa (CH-01). Config được lưu ngay khi kết nối thành công, ở chế độ thiết bị (khóa
+ * Keystore), trước cả hộp thoại hỏi thiết lập PIN (KN-08, ADR-0008).
  *
- * Lát 1 chỉ có chế độ bảo mật TẮT (khóa Keystore). Lát 2 thêm tham số chế độ bảo mật kèm PIN cho [save].
+ * Lát 2 thêm thao tác mã hóa lại config bằng khóa dẫn xuất từ PIN (BM-04, CD-02, CD-09).
  */
 interface ConfigRepository {
 

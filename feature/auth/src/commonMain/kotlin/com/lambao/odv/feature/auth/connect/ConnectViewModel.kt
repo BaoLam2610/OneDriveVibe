@@ -1,16 +1,16 @@
 package com.lambao.odv.feature.auth.connect
 
 import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.domain.repository.ConfigRepository
 import com.lambao.odv.core.domain.repository.DriveRepository
-import com.lambao.odv.feature.auth.PendingConnection
-import co.touchlab.kermit.Logger
 import kotlinx.coroutines.launch
 
 class ConnectViewModel(
     private val drives: DriveRepository,
-    private val pending: PendingConnection,
+    private val configs: ConfigRepository,
 ) : BaseMviViewModel<ConnectState, ConnectIntent, ConnectEffect>(ConnectState()) {
 
     // Chỉ log kết quả, tuyệt đối không log giá trị các ô hay config (CH-06).
@@ -25,17 +25,14 @@ class ConnectViewModel(
             ConnectIntent.HideAll -> setState { copy(revealed = emptySet()) }
             ConnectIntent.Connect -> connect()
             ConnectIntent.DismissFailure -> setState { copy(failure = null) }
-            ConnectIntent.DismissConnected -> setState { copy(connected = null) }
             ConnectIntent.EditSecret -> {
                 setState { copy(failure = null) }
                 sendEffect(ConnectEffect.FocusField(ConnectField.ClientSecret))
             }
-            ConnectIntent.Continue -> {
-                // KN-08: config chưa được lưu, giữ trong bộ nhớ cho tới khi hoàn tất bước bảo mật.
-                pending.hold(currentState.toConfig())
-                setState { copy(connected = null) }
-                sendEffect(ConnectEffect.NavigateToSecuritySetup)
-            }
+            // Cả hai nút giữ showPinPrompt = true: màn Kết nối sắp rời back stack (Để sau) hoặc bị màn khác che
+            // (Thiết lập mã PIN), và Back từ màn Thiết lập bảo mật phải thấy lại hộp thoại (BM-08).
+            ConnectIntent.SetupPin -> sendEffect(ConnectEffect.NavigateToSecuritySetup)
+            ConnectIntent.SkipPin -> sendEffect(ConnectEffect.NavigateToHome)
         }
     }
 
@@ -57,15 +54,21 @@ class ConnectViewModel(
         if (!state.canConnect) return
         setState { copy(isConnecting = true, failure = null, revealed = emptySet()) }
         viewModelScope.launch {
-            when (val result = drives.verifyConnection(state.toConfig())) {
+            val config = state.toConfig()
+            // KN-08: kết nối thành công thì lưu config ngay (chế độ thiết bị) rồi mới hỏi thiết lập PIN (KN-13).
+            val result = when (val verified = drives.verifyConnection(config)) {
+                is AppResult.Success -> configs.save(config)
+                is AppResult.Failure -> verified
+            }
+            when (result) {
                 is AppResult.Success -> {
-                    log.i { "Kết nối thành công" }
-                    setState { copy(isConnecting = false, connected = ConnectedDrive(result.value, state.upn)) }
+                    log.i { "Kết nối thành công, đã lưu config" }
+                    setState { copy(isConnecting = false, showPinPrompt = true) }
                 }
                 is AppResult.Failure -> {
                     val failure = result.error.toConnectFailure()
                     log.w { "Kết nối thất bại: ${failure.kind} code=${failure.code}" }
-                    // KN-09: giữ nguyên giá trị đã nhập để sửa.
+                    // KN-09: giữ nguyên giá trị đã nhập để sửa; không lưu config.
                     setState { copy(isConnecting = false, failure = failure) }
                 }
             }

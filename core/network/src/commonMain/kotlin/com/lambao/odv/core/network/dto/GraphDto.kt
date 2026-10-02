@@ -3,19 +3,14 @@ package com.lambao.odv.core.network.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** Mọi trường đều tùy chọn vì Graph có thể bỏ thiếu (onedrive-graph-responses.md mục 4, điểm 9). */
+/**
+ * Chỉ dùng để xác nhận drive tồn tại (KN-08). Không có `quota`: app không đọc, không lưu, không hiển thị dung lượng
+ * (KN-12), nên `used > total` (`state = exceeded`) không ảnh hưởng gì.
+ */
 @Serializable
 data class DriveDto(
     val id: String,
     val driveType: String? = null,
-    val quota: QuotaDto? = null,
-)
-
-/** Đơn vị byte; cần 64-bit. */
-@Serializable
-data class QuotaDto(
-    val total: Long = 0,
-    val used: Long = 0,
 )
 
 @Serializable

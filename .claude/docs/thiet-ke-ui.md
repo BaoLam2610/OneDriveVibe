@@ -1,10 +1,10 @@
-# Đặc tả giao diện OneDriveVibe (bàn giao thiết kế cho code)
+# Đặc tả giao diện ODV (bàn giao thiết kế cho code)
 
-- **Áp dụng cho:** app Android OneDriveVibe (Kotlin, Jetpack Compose)
+- **Áp dụng cho:** app Android ODV (Kotlin, Jetpack Compose)
 - **Nguồn thiết kế:** canvas "ODV Foundations" trên Claude Design (bản v22, 02/10/2026). Có 5 page: Foundations, Khởi động, Danh sách, Màn xem, Cài đặt.
 - **Tài liệu đi kèm:**
-  - `.claude/docs/dac-ta-nghiep-vu.md`: nghiệp vụ, mã KN, BM, KH, TM, TV, DS, VD, AN, PD, CD…
-  - `.claude/docs/odv-tokens.json`: toàn bộ token ở dạng dữ liệu, chuẩn W3C Design Tokens.
+  - `claude/dac-ta-nghiep-vu.md`: nghiệp vụ, mã KN, BM, KH, TM, TV, DS, VD, AN, PD, CD…
+  - `claude/odv-tokens.json`: toàn bộ token ở dạng dữ liệu, chuẩn W3C Design Tokens.
 - **Khung thiết kế:** điện thoại 390 × 844dp, hướng dọc. Video ngang dùng khung 844 × 390dp.
 
 ---
@@ -49,23 +49,23 @@
    - Thanh hệ thống có nền `bg` ở màn thường và `media.background` ở màn xem.
    - Video ngang ẩn thanh hệ thống (VD-07).
 8. **Icon:**
-   - Chỉ dùng bộ icon OneDriveVibe ở mục 3: 24 × 24, nét 2dp, đầu tròn.
+   - Chỉ dùng bộ icon ODV ở mục 3: 24 × 24, nét 2dp, đầu tròn.
    - Không dùng Material Icons, không dùng emoji.
    - Tô màu bằng tint theo token.
 9. **Viết hoa kiểu câu:**
-   - Không viết hoa toàn bộ, trừ nhãn bước `BƯỚC 1 / 2`.
+   - Không viết hoa toàn bộ.
    - Câu chữ lấy nguyên văn từ thiết kế. Bảng câu chữ chính ở mục 5 và 7.
 10. **Số và ngày theo vi-VN:** `12.480`, `4,9 MB`, `23/05/2026`, `1:26:02`. Số đổi liên tục hoặc cần thẳng cột dùng JetBrains Mono.
 11. **Trạng thái:** mỗi component có đủ trạng thái ở mục 4: mặc định, nhấn, focus, tắt, lỗi, đang tải.
 12. **Riêng tư:** các màn sau chặn chụp màn hình (`FLAG_SECURE`) và ẩn nội dung trong danh sách app gần đây (KN-10, KH-04, CH-05):
-    - Kết nối, Khóa, nhập PIN.
+    - Kết nối (kể cả hộp thoại K6), Khóa, nhập PIN.
     - Cài đặt, ở cả hai nhóm Bảo mật và Kết nối, vì đây là một màn cuộn chung.
 
 ---
 
 ## 2. Token
 
-Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs/odv-tokens.json`. Các bảng dưới đây sinh từ cùng nguồn.
+Số liệu đầy đủ, dạng máy đọc được, nằm trong `claude/odv-tokens.json`. Các bảng dưới đây sinh từ cùng nguồn.
 
 ### 2.1 Màu theo theme
 
@@ -149,7 +149,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 | `body-sm-strong` | Be Vietnam Pro | 14 / 20 | 600 | 0 | Tên trong thẻ lưới, mục cuối Breadcrumb |
 | `caption-strong` | Be Vietnam Pro | 13 / 18 | 600 | 0 | Nhãn ô nhập, tên nhóm Cài đặt |
 | `meta` | Be Vietnam Pro | 12 / 16 | 400 | 0 | Meta trong thẻ lưới, đường dẫn kết quả tìm |
-| `step-label` | JetBrains Mono | 12 / 16 | 500 | 0.04em | BƯỚC 1 / 2 |
+| `step-label` | JetBrains Mono | 12 / 16 | 500 | 0.04em | **Không còn dùng** (đã bỏ StepBar). Giữ trong token cho tới khi người thiết kế gỡ |
 | `timecode-sm` | JetBrains Mono | 12 / 16 | 400 | 0 | Badge thời lượng, viên thuốc 72 / 310 |
 | `timecode-xs` | JetBrains Mono | 11 / 16 | 400 | 0 | Badge thời lượng trong ô Thư viện |
 | `timer` | JetBrains Mono | 56 / 64 | 500 | -0.02em | Đếm ngược khóa tạm 00:30 |
@@ -289,7 +289,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 | `playlist` | Chế độ: Tự phát tiếp | `stop-end` | Chế độ: Không lặp |
 | `repeat-one` | Chế độ: Lặp một video | `repeat` | Chế độ: Lặp danh sách |
 | `fit` | Đổi khung hình (VD-06) | `rotate` | Xoay Dọc ↔ Ngang (VD-07) |
-| `info` | Thông tin tệp (VD-17, AN-05, PD-08) | `lock`, `unlock` | Khóa thao tác, khóa app |
+| `info` | Thông tin tệp (VD-17, AN-05, PD-08) | `lock`, `unlock` | Khóa thao tác, khóa app, hộp thoại K6 |
 | `sun`, `volume` | HUD độ sáng / âm lượng | `tune` | Kiểu đọc PDF |
 | `folder`, `image`, `video`, `book` | Loại mục: thư mục, ảnh, video, PDF | `search`, `close` | Tìm kiếm, xóa từ khóa, đóng |
 | `settings` | Mở Cài đặt (AppBar) | `arrow-left`, `chevron-right` | Quay lại, vào mục, Breadcrumb |
@@ -305,7 +305,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 - **Bản một màu:**
   - Bản ink dùng trên nền volt.
   - Bản trắng dùng trên media.
-- **Cỡ:** nhỏ nhất 24dp. Splash dùng 112dp. Kết nối dùng 40dp, đặt cạnh StepBar. AppBar Danh sách dùng 28dp. Màn Khóa dùng 48dp. Vòng tải dùng 36dp, nằm trong vòng 72dp.
+- **Cỡ:** nhỏ nhất 24dp. Splash dùng 112dp. Kết nối dùng 40dp, đặt phía trên tiêu đề. AppBar Danh sách dùng 28dp. Màn Khóa dùng 48dp. Vòng tải dùng 36dp, nằm trong vòng 72dp.
 - **App icon (adaptive):** nền `#101217`, mark nằm trong vùng an toàn 66/108.
 
 ---
@@ -360,12 +360,10 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 - **Tabs (Thư mục / Thư viện):**
   - Khung `surface-2` tròn, padding 4. Mỗi tab cao 40, chia đều, icon 18 + chữ `button-sm`.
   - Tab chọn: nền `ink`, chữ `bg`. Tab không chọn: chữ `ink-muted`.
-- **ProgressBar:** tròn, cao 4 (trong hàng), 6 (tải PDF) hoặc 8 (dung lượng drive).
+- **ProgressBar:** tròn, cao 4 (trong hàng) hoặc 6 (tải PDF).
   - Rãnh `surface-2`, phần đã có `volt-text`.
   - Trên media: rãnh `#ffffff33`, phần đã có `volt`.
-- **StepBar:** nhãn `step-label` màu `volt-text` ("BƯỚC 1 / 2"), bên dưới cách 6 là các đoạn cao 4 tròn, cách nhau 4.
-  - Đoạn đã qua `volt-text`, đoạn chưa qua `surface-2`.
-  - Kết nối là bước 1/2, Thiết lập bảo mật là bước 2/2.
+- **StepBar:** **đã bỏ.** Màn Kết nối và Thiết lập bảo mật không còn nhãn "BƯỚC 1 / 2" hay thanh đoạn (luồng có nhánh nên không còn đếm bước). Không dựng component này.
 
 ### 4.2 Thông báo và lớp phủ
 
@@ -392,6 +390,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
   - Tiêu đề `title`. Nội dung `body` màu `ink-muted`. Dòng mã lỗi `code` màu `ink-muted` ("Mã lỗi: AADSTS7000215").
   - Nút căn phải, cách nhau 8: nút phụ là ghost, nút chính là primary / danger / danger-solid.
   - Dialog nguy hiểm dùng role alertdialog.
+  - Dialog **bắt buộc chọn** (K6): chạm scrim và Back hệ thống không đóng; chỉ đóng bằng một trong hai nút.
 - **Bottom sheet:**
   - Rộng toàn màn, nền `surface`, bo `lg` hai góc trên, padding 8/16/32.
   - Tay nắm 36 × 4 màu `line-strong`, căn giữa. Tiêu đề `heading`.
@@ -563,22 +562,21 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 | K1 | Kết nối · Trống | 390×844 | `ConnectEmpty` |
 | K2 | Kết nối · Lỗi định dạng (KN-06) | 390×844 | `ConnectInvalid` |
 | K3 | Kết nối · Đang kết nối (KN-07) | 390×844 | `ConnectLoading` |
-| K4 | Kết nối · Thành công (KN-08) | 390×844 | `ConnectSuccess` |
 | K5 | Kết nối · Lỗi kèm mã (KN-09) | 390×844 | `ConnectError` |
+| K6 | Kết nối · Hộp thoại hỏi thiết lập mã PIN (KN-13). **Chưa có artboard, cần thiết kế** | 390×844 | `ConnectPinPrompt` (dự kiến) |
 | S1 | Splash · Tối | 390×844 | `SplashDark` |
 | K1 | Kết nối · Trống · Tối | 390×844 | `ConnectEmptyDark` |
 | K5 | Kết nối · Lỗi kèm mã · Tối | 390×844 | `ConnectErrorDark` |
+| K6 | Hộp thoại hỏi thiết lập mã PIN · Tối. **Chưa có artboard** | 390×844 | `ConnectPinPromptDark` (dự kiến) |
 | B1 | Bảo mật · Đặt mã PIN (BM-01, BM-02) | 390×844 | `SecEmpty` |
 | B2 | Bảo mật · Đang nhập (BM-05) | 390×844 | `SecTyping` |
 | B3 | Bảo mật · PIN dễ đoán (BM-06) | 390×844 | `SecWeak` |
 | B4 | Bảo mật · Nhập lại PIN | 390×844 | `SecConfirm` |
 | B5 | Bảo mật · Hai lần không khớp | 390×844 | `SecMismatch` |
 | B6 | Bảo mật · Đã khớp + sinh trắc học | 390×844 | `SecDone` |
-| B7 | Bảo mật · Tắt bảo vệ (BM-03) | 390×844 | `SecOff` |
 | B8 | Bảo mật · Đang hoàn tất (BM-04) | 390×844 | `SecLoading` |
 | B1 | Bảo mật · Đặt mã PIN · Tối | 390×844 | `SecEmptyDark` |
 | B6 | Bảo mật · Đã khớp · Tối | 390×844 | `SecDoneDark` |
-| B7 | Bảo mật · Tắt bảo vệ · Tối | 390×844 | `SecOffDark` |
 | B8 | Bảo mật · Đang hoàn tất · Tối | 390×844 | `SecLoadingDark` |
 | L1 | Khóa · Nhập mã PIN (KH-01) | 390×844 | `LockEmpty` |
 | L2 | Khóa · Hộp thoại sinh trắc học (KH-01) | 390×844 | `LockBio` |
@@ -593,19 +591,29 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 | L5 | Khóa · Bị khóa 30 giây · Tối | 390×844 | `LockCool30Dark` |
 | L8 | Khóa · Xác nhận xóa · Tối | 390×844 | `LockForgot2Dark` |
 
+Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt) **đã bỏ** cùng công tắc "Bảo vệ ứng dụng" (BM-01). Các mã B còn lại giữ nguyên, không đánh số lại. Mã K4 (`ConnectSuccess`) cũng đã bỏ.
+
+**Luồng khởi động:** K1 → K3 → (thành công, config đã lưu) → K6 → "Thiết lập mã PIN" → B1 … B6 → B8 → Danh sách; hoặc K6 → "Để sau" → Danh sách. Back ở B1 quay lại K6 (BM-08). K3 thất bại → K5.
+
 **Bố cục chung:**
 - **Splash:** mark 112 căn giữa. Dòng "Phim · Ảnh · Truyện trên OneDrive" `caption` 500 màu `ink-muted`, cách đáy 56. Chỉ hiện khi khởi động nguội.
 - **Kết nối:**
   - Padding 48/16/32.
-  - Đầu trang: mark 40 + StepBar 1/2, cách 16. Tiêu đề `display` cách 12 phía trên. Phụ đề `body` màu `ink-muted`.
+  - Đầu trang: mark 40, rồi tiêu đề `display` cách 16. Không có StepBar. Phụ đề `body` màu `ink-muted`.
   - Form cách đầu trang 28, gồm 4 TextField cách nhau 16. Nút "Kết nối" toàn chiều rộng nằm sát đáy.
-  - K4: bottom sheet "Đã kết nối OneDrive" gồm thẻ `surface-2` (icon `check` tròn 40 nền `success-soft`, loại drive, UPN, thanh dung lượng 8, "312,4 GB / 1 TB" `code`), đoạn hướng dẫn và nút "Tiếp tục".
+  - Kết nối thành công (KN-08): khi K3 kết thúc thì hiện hộp thoại K6 ngay trên màn Kết nối. Không có bottom sheet, thẻ tài khoản, loại drive, UPN hay thanh dung lượng (KN-12).
   - K5: Dialog danger có dòng mã lỗi. Nút "Sửa Client Secret" (primary) và "Đóng".
+  - **K6 (KN-13):** Dialog bắt buộc chọn (mục 4.2), role dialog, không đóng bằng chạm scrim hay Back.
+    - Icon `lock` 48 tông volt.
+    - Tiêu đề `title`: "Thiết lập mã PIN?"
+    - Nội dung `body` màu `ink-muted`: "Mã PIN 6 số sẽ khóa ứng dụng mỗi khi mở. Nếu bỏ qua, bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn. Bạn có thể bật lại trong Cài đặt › Bảo mật."
+    - Nút căn phải, cách 8: "Để sau" (ghost), "Thiết lập mã PIN" (primary).
+    - Câu chữ tự viết, chờ xác nhận (đề xuất 7).
 - **Thiết lập bảo mật:**
   - Padding 40/16/24 (khi có bàn phím) hoặc 32, các khối cách 16.
-  - Đầu trang: icon `lock` 40 màu `volt-text` + StepBar 2/2.
-  - Thẻ công tắc "Bảo vệ ứng dụng": nền `surface`, viền `line`, bo `md`, padding 16.
+  - Đầu trang: icon `lock` 40 màu `volt-text`, rồi tiêu đề `display`. Không có StepBar. Không có thẻ công tắc "Bảo vệ ứng dụng".
   - Khối PIN: tiêu đề `heading`, PinDots, dòng thông báo, rồi bàn phím sát đáy.
+  - Nút Back (hệ thống và mũi tên trên đầu trang) quay lại K6 (BM-08).
 - **Khóa:**
   - Padding 64/16/16. Mark 48 và tiêu đề `screen-title`, PinDots, thông báo.
   - Bàn phím ở đáy, bên dưới là nút ghost "Quên mã PIN".
@@ -755,6 +763,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
   - Cập nhật Client Secret
 - Đổi PIN đi P1 → P2 → P3. PIN dễ đoán và PIN không khớp dùng cùng thông báo như B3 / B5.
 - Cập nhật secret đi S1 → S2 (loading toàn màn, không có Hủy) → S3 (lỗi, giữ secret cũ) hoặc quay về Cài đặt kèm Snackbar S5.
+- Khi bảo vệ đang **tắt** (kể cả khi người dùng chọn "Để sau" ở K6), công tắc "Bảo vệ ứng dụng" bật lên thì đi theo luồng B1 → … → B8 (CD-02). Hành động trong danh sách trên không cần P1 vì chưa có PIN.
 
 ---
 
@@ -771,6 +780,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 | Khóa thao tác (VD-08) | Chặn mọi chạm. Giữ nút mở khóa 1 giây, vòng volt chạy theo thời gian giữ. Rung nhẹ khi khóa và khi mở |
 | Mất mạng (VD-16) | Phát hết phần đã tải trước rồi mới hiện thẻ Mất mạng. Không tự chuyển video khi mất mạng |
 | Tự phát tiếp (VD-13) | Vòng đếm 5 giây đầy dần tuyến tính. Bấm Hủy thì ở lại màn, hiện trạng thái Phát lại |
+| Hộp thoại hỏi PIN sau kết nối (K6, KN-13) | Hiện ngay khi kết nối thành công. Chạm ngoài và Back hệ thống không đóng. "Để sau" vào Danh sách; "Thiết lập mã PIN" mở B1. Back ở B1 quay lại K6 |
 | Snackbar | Trượt lên từ đáy trong 250ms, ở lại 3 giây rồi mờ dần |
 | Kéo để đồng bộ (DS-04) | Icon `sync` xoay khi đang chạy, dừng ngay khi xong, không nảy |
 | Lỗi nhập (KN-06) | Dòng lỗi hiện trong 150ms, không rung |
@@ -817,7 +827,11 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 - PIN 6 số, nhập bằng bàn phím tự vẽ, đủ 6 số thì tự chuyển bước.
 - Trong lúc khóa tạm thì ẩn phím sinh trắc học.
 - "Quên mã PIN" có 2 bước xác nhận.
-- StepBar: Kết nối 1/2, Bảo mật 2/2.
+- **Không có StepBar** ở Kết nối và Thiết lập bảo mật (luồng có nhánh nên không còn đếm bước).
+- Kết nối thành công thì **lưu config ngay** (chế độ thiết bị) rồi hiện **hộp thoại K6** hỏi thiết lập mã PIN. Không có thẻ tài khoản, loại drive hay thanh dung lượng (KN-08, KN-12, KN-13).
+- K6 bắt buộc chọn một trong hai nút ("Thiết lập mã PIN" / "Để sau"), không đóng bằng chạm ngoài hay Back. Chỉ hiện một lần cho mỗi lần kết nối mới.
+- "Để sau" vào thẳng Danh sách với bảo mật tắt; bật lại ở Cài đặt › Bảo mật.
+- Màn Thiết lập bảo mật vào thẳng bước đặt PIN, không còn công tắc. Back ở B1 quay lại K6, giữ config đã lưu (BM-08).
 - Màn Danh sách là màn Home. Biểu tượng bánh răng trên AppBar mở Cài đặt.
 - Không có "Kệ truyện". PDF xem qua Thư mục và dải Đọc tiếp.
 - Không có "Mở bằng ứng dụng khác".
@@ -836,6 +850,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
    - "Đã đọc xong. Đã gỡ khỏi Đọc tiếp."
    - các hộp thoại xóa bộ nhớ đệm và giảm giới hạn
    - thông báo "Lỗi khác" ở KN-09
+   - nội dung hộp thoại K6: tiêu đề "Thiết lập mã PIN?", đoạn giải thích, nút "Để sau" và "Thiết lập mã PIN"
 8. Nhảy trang PDF dùng bàn phím số của hệ thống.
 
 ---
@@ -851,7 +866,10 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 | 5 | Mã màn trùng giữa page (D1, P1, P5…) | Luôn ghi kèm tên page |
 | 6 | Board "06 Icon" trên canvas đang hiện 37 icon. 5 icon `info`, `minus`, `fit`, `next`, `prev` đã dùng trên màn nhưng chưa có trên board | Dùng đủ 42 icon như mục 3.1. Bản cập nhật board đã sẵn sàng, chờ đăng |
 | 7 | Khi xem với font thật, các board Foundations 02, 03, 07, 11, 12 bị tràn hoặc cắt chữ | Chỉ ảnh hưởng canvas, không ảnh hưởng app. Bản sửa chiều cao đã sẵn sàng, chờ đăng |
-| 8 | Spec chốt FullScreenLoader "không có nút Hủy" (mục 4.2, 8), nhưng board "14 Loading toàn màn hình" có trạng thái chờ lâu (sau 10 giây) với dòng cảnh báo và nút Hủy | `ODVFullScreenLoader` có `slowNotice` và `onCancel` tùy chọn. Chờ người thiết kế chốt; cho tới lúc đó K3, B8, Cài đặt · S2 không truyền `onCancel` |
+| 8 | Artboard K4 `ConnectSuccess` (bottom sheet "Đã kết nối OneDrive" có thanh dung lượng) vẫn còn trên canvas v22, nhưng KN-08 và KN-12 đã bỏ màn này | Không dựng K4. Cần xóa hoặc đánh dấu "đã bỏ" artboard này trên canvas |
+| 9 | Các artboard K1, K2, K3, K5 (kể cả bản tối) và B1 đến B6, B8 trên canvas v22 còn hiện StepBar "BƯỚC 1 / 2", "BƯỚC 2 / 2" | Không dựng StepBar. Cần gỡ StepBar khỏi các artboard này trên canvas; style `step-label` trong token gỡ theo |
+| 10 | Artboard B7 `SecOff`, `SecOffDark` và thẻ công tắc "Bảo vệ ứng dụng" trên B1 đến B6 vẫn còn trên canvas, nhưng BM-01 đã bỏ công tắc | Không dựng B7 và công tắc. Cần xóa hoặc đánh dấu "đã bỏ" trên canvas |
+| 11 | Chưa có artboard K6 (hộp thoại hỏi thiết lập mã PIN, KN-13), cả bản sáng lẫn tối | Người thiết kế dựng theo mô tả ở mục 5.1. Trong lúc chờ, dev dựng theo mô tả và component Dialog (mục 4.2) |
 
 ---
 
@@ -881,3 +899,10 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `.claude/docs
 - [ ] Chạm đúp cộng dồn. Vuốt bị tắt khi zoom > 1x
 - [ ] Đủ 4 trạng thái nút giữa: phát, dừng, phát lại, đang tải
 - [ ] Nút trước/sau mờ đúng ở đầu/cuối danh sách phát
+
+**Kiểm riêng luồng kết nối lần đầu:**
+- [ ] Kết nối thành công thì config đã lưu trước khi K6 hiện. Đóng app ở K6 rồi mở lại vào thẳng Danh sách, K6 không hiện lại
+- [ ] K6 không đóng được bằng chạm ngoài hay Back hệ thống
+- [ ] "Để sau" vào Danh sách, Cài đặt › Bảo vệ ứng dụng ở trạng thái Tắt
+- [ ] "Thiết lập mã PIN" mở B1; Back ở B1 quay lại K6; hoàn tất B8 thì config được mã hóa lại và lần mở sau hiện màn Khóa
+- [ ] Không còn StepBar và không còn công tắc "Bảo vệ ứng dụng" ở K1 đến K6 và B1 đến B8

@@ -1,6 +1,5 @@
 <resources>
-    <!-- Connect (K1–K5) -->
-    <string name="connect_step">STEP 1 / 2</string>
+    <!-- Connect (K1, K2, K3) -->
     <string name="connect_title">Connect OneDrive</string>
     <string name="connect_subtitle">Paste the app details from Microsoft Entra. Data is encrypted and stored only on this device.</string>
     <string name="connect_tenant_label">Tenant ID</string>
@@ -21,12 +20,11 @@
     <string name="connect_loading_subtitle">Keep the app open for a few seconds.</string>
     <string name="connect_loading_description">Connecting</string>
 
-    <!-- Success (K4) -->
-    <string name="connect_success_title">OneDrive connected</string>
-    <string name="connect_success_drive_business">OneDrive for Business</string>
-    <string name="connect_success_used">Used</string>
-    <string name="connect_success_hint">Next, set a PIN to protect the app. Connection details are only saved after this step.</string>
-    <string name="connect_success_continue">Continue</string>
+    <!-- PIN setup prompt (K6, KN-13) -->
+    <string name="connect_pin_prompt_title">Set up a PIN?</string>
+    <string name="connect_pin_prompt_body">A 6-digit PIN locks the app every time it opens. If you skip it, anyone holding an unlocked device can see your OneDrive. You can turn it on later in Settings › Security.</string>
+    <string name="connect_pin_prompt_later">Later</string>
+    <string name="connect_pin_prompt_setup">Set up PIN</string>
 
     <!-- Connection errors (K5, KN-09 table) -->
     <string name="connect_error_title">Could not connect</string>
@@ -43,18 +41,11 @@
     <string name="connect_error_drive_not_found">No OneDrive was found for this UPN (wrong UPN, no license, or OneDrive not initialized). Note: the app only supports OneDrive for Business accounts, not personal Microsoft accounts.</string>
     <string name="connect_error_network">Could not connect. Check your network and try again.</string>
     <string name="connect_error_other">Something went wrong. Use the error code below to look it up.</string>
+    <string name="connect_save_failed_title">Could not save the connection details</string>
+    <string name="connect_save_failed_body">This device could not encrypt and save the connection details. Please try again.</string>
 
-    <!-- Security setup (B7, B8) -->
-    <string name="security_step">STEP 2 / 2</string>
+    <!-- Security setup (B1–B8) -->
     <string name="security_title">Security setup</string>
     <string name="security_subtitle">Set a 6-digit PIN so only you can open OneDrive in this app.</string>
-    <string name="security_toggle_title">Protect the app</string>
-    <string name="security_toggle_description">Require a PIN every time it opens</string>
-    <string name="security_warning">Anyone holding an unlocked device can see your OneDrive</string>
-    <string name="security_complete">Finish</string>
-    <string name="security_saving_title">Finishing setup</string>
-    <string name="security_saving_description">Finishing</string>
-    <string name="security_save_failed_title">Could not save the connection details</string>
-    <string name="security_save_failed_body">This device could not encrypt and save the connection details. Please try again.</string>
-    <string name="security_save_failed_close">Close</string>
+    <string name="security_back">Back</string>
 </resources>

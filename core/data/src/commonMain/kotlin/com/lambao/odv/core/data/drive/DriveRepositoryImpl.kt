@@ -3,7 +3,6 @@ package com.lambao.odv.core.data.drive
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.common.result.map
 import com.lambao.odv.core.domain.model.ConnectionConfig
-import com.lambao.odv.core.domain.model.DriveInfo
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.repository.ConfigRepository
 import com.lambao.odv.core.domain.repository.DriveRepository
@@ -14,8 +13,8 @@ internal class DriveRepositoryImpl(
     private val configs: ConfigRepository,
 ) : DriveRepository {
 
-    override suspend fun verifyConnection(config: ConnectionConfig): AppResult<DriveInfo> =
-        api.getDrive(config.toCredentials()).map { it.toDomain() }
+    override suspend fun verifyConnection(config: ConnectionConfig): AppResult<Unit> =
+        api.getDrive(config.toCredentials()).map { }
 
     override suspend fun listChildren(folderId: String?): AppResult<List<DriveItem>> {
         val config = when (val loaded = configs.load()) {

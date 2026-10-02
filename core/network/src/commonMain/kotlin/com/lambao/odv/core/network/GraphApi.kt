@@ -25,11 +25,11 @@ class GraphApi internal constructor(
     recorder: HttpTrafficRecorder? = null,
 ) : ApiService(http, tokens, recorder, GRAPH_BASE) {
 
-    /** Kiểm tra kết nối: `GET /users/{upn}/drive?$select=id,driveType,quota` (KN-07). */
+    /** Kiểm tra kết nối: `GET /users/{upn}/drive?$select=id,driveType` (KN-07). Không xin `quota` (KN-12). */
     suspend fun getDrive(credentials: GraphCredentials): AppResult<DriveDto> =
         authorizedGet(credentials) {
             url { appendDrivePath(credentials) }
-            parameter("\$select", "id,driveType,quota")
+            parameter("\$select", "id,driveType")
         }.decode()
 
     /**

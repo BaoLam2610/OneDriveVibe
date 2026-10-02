@@ -3,7 +3,6 @@ package com.lambao.odv.feature.auth.connect
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.ConnectionConfigValidation
-import com.lambao.odv.core.domain.model.DriveInfo
 
 enum class ConnectField { TenantId, ClientId, ClientSecret, Upn }
 
@@ -18,6 +17,9 @@ enum class ConnectFailureKind {
     Forbidden,
     DriveNotFound,
     Network,
+
+    /** Kết nối được nhưng máy không mã hóa và lưu được config (KN-08). Không phải lỗi của máy chủ. */
+    SaveFailed,
     Other,
 }
 
@@ -27,9 +29,6 @@ data class ConnectFailure(val kind: ConnectFailureKind, val code: String?) {
     val isSecretProblem: Boolean
         get() = kind == ConnectFailureKind.SecretInvalid || kind == ConnectFailureKind.SecretExpired
 }
-
-/** Drive đã kiểm tra được, hiện ở sheet K4 trước khi sang bước bảo mật (KN-08). */
-data class ConnectedDrive(val info: DriveInfo, val upn: String)
 
 /**
  * State màn Kết nối. [toString] che toàn bộ vì có Client Secret (CH-06): `data class` mặc định sẽ in cả giá trị ô nhập.
@@ -44,8 +43,11 @@ data class ConnectState(
     val isConnecting: Boolean = false,
     /** Dialog lỗi KN-09 nằm trong State: phải còn sau khi xoay màn hình hoặc đổi ngôn ngữ. */
     val failure: ConnectFailure? = null,
-    /** Sheet KN-08. Cũng nằm trong State vì lý do trên. */
-    val connected: ConnectedDrive? = null,
+    /**
+     * Hộp thoại K6 hỏi thiết lập PIN (KN-13): hiện khi config đã được lưu. Cũng nằm trong State vì lý do trên, và vì
+     * Back từ màn Thiết lập bảo mật phải thấy lại hộp thoại này (BM-08). Giữ `true` cho tới khi rời màn Kết nối.
+     */
+    val showPinPrompt: Boolean = false,
 ) {
     fun value(field: ConnectField): String = when (field) {
         ConnectField.TenantId -> tenantId
@@ -88,20 +90,21 @@ sealed interface ConnectIntent {
     data object Connect : ConnectIntent
     data object DismissFailure : ConnectIntent
 
-    /** Vuốt đóng sheet thành công: quay lại form, config vẫn chưa được lưu. */
-    data object DismissConnected : ConnectIntent
-
     /** Nút "Sửa Client Secret" trong dialog lỗi. */
     data object EditSecret : ConnectIntent
 
-    /** Nút "Tiếp tục" ở sheet thành công. */
-    data object Continue : ConnectIntent
+    /** Nút "Thiết lập mã PIN" ở hộp thoại K6 (KN-13). */
+    data object SetupPin : ConnectIntent
+
+    /** Nút "Để sau" ở hộp thoại K6 (KN-13): giữ bảo mật tắt, vào Danh sách. */
+    data object SkipPin : ConnectIntent
 }
 
 sealed interface ConnectEffect {
     /** Đưa con trỏ vào ô. Mất effect này cũng không hại nên đi qua Effect. */
     data class FocusField(val field: ConnectField) : ConnectEffect
     data object NavigateToSecuritySetup : ConnectEffect
+    data object NavigateToHome : ConnectEffect
 }
 
 /**
@@ -126,5 +129,6 @@ internal fun AppError.toConnectFailure(): ConnectFailure = when (this) {
         }
         ConnectFailure(kind, code ?: status.toString())
     }
-    AppError.SecureStorage, is AppError.Unknown -> ConnectFailure(ConnectFailureKind.Other, null)
+    AppError.SecureStorage -> ConnectFailure(ConnectFailureKind.SaveFailed, null)
+    is AppError.Unknown -> ConnectFailure(ConnectFailureKind.Other, null)
 }

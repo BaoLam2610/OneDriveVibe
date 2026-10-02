@@ -123,12 +123,13 @@ fun ODVDialog(
     errorCode: String? = null,
     alert: Boolean = false,
     dismissOnOutsideClick: Boolean = true,
+    dismissOnBackPress: Boolean = true,
     extra: (@Composable ColumnScope.() -> Unit)? = null,
     actions: @Composable FlowRowScope.() -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = dismissOnOutsideClick),
+        properties = DialogProperties(dismissOnBackPress = dismissOnBackPress, dismissOnClickOutside = dismissOnOutsideClick),
     ) {
         // Cửa sổ Dialog vừa khít nội dung nên bóng sẽ bị cắt: tắt elevated.
         ODVDialogCard(title, modifier, icon, tone, body, errorCode, alert, elevated = false, extra = extra, actions = actions)

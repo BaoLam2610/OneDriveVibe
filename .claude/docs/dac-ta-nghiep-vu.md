@@ -16,6 +16,7 @@
 | Config | Bộ thông tin kết nối gồm đúng 4 trường: Tenant ID, Client ID, Client Secret, UPN. Không có trường nào khác |
 | UPN | User Principal Name: email tài khoản OneDrive for Business cần đọc (vd. `user@contoso.com`). Bắt buộc vì xác thực app-only không có `/me`, app gọi `/users/{UPN}/drive` |
 | Mã PIN | Mã gồm **đúng 6 chữ số** do người dùng tự đặt để mở app khi bật bảo mật |
+| Chế độ thiết bị | Bảo mật **tắt**: config chỉ được mã hóa bằng khóa phần cứng (Keystore), không cần PIN để mở app. Đây là chế độ mặc định ngay sau khi kết nối |
 | Delta sync | Đồng bộ danh sách tệp từ OneDrive về CSDL trên máy (mục 6 của tài liệu API) |
 | Loại tệp được bật | Các loại tệp (Ảnh / Video / PDF) mà người dùng chọn hiển thị trong Cài đặt |
 | Tệp hỗ trợ | Tệp thuộc một trong các định dạng ở mục 5.1 |
@@ -27,7 +28,10 @@
 
 ```
 Mở app
-  ├─ Chưa có config ──────────────► [Kết nối] ─► [Thiết lập bảo mật] ─► [Danh sách]
+  ├─ Chưa có config ──► [Kết nối] ──(thành công: lưu config, chế độ thiết bị)──► Hộp thoại "Thiết lập mã PIN?" (KN-13)
+  │                                                                               ├─ Thiết lập mã PIN ─► [Thiết lập bảo mật] ─► [Danh sách]
+  │                                                                               │                         └─ Back ─► quay lại hộp thoại
+  │                                                                               └─ Để sau ──────────────────────────► [Danh sách]
   ├─ Có config + bảo mật BẬT ─────► [Khóa] ─────────────────────────────► [Danh sách]
   └─ Có config + bảo mật TẮT ─────────────────────────────────────────────► [Danh sách]
 
@@ -48,7 +52,7 @@ App ở nền quá thời gian tự khóa (khi bảo mật BẬT) ─► [Khóa]
 
 **Mục đích**: nhập config và xác nhận kết nối được tới OneDrive.
 
-**Phạm vi MVP1**: chỉ dành cho tài khoản **OneDrive for Business**. Màn này **chỉ có 4 trường** bên dưới, không có nút "Đăng nhập với Microsoft", không có lựa chọn loại tài khoản.
+**Phạm vi MVP1**: chỉ dành cho tài khoản **OneDrive for Business**. Màn này **chỉ có 4 trường** bên dưới, không có nút "Đăng nhập với Microsoft", không có lựa chọn loại tài khoản. Màn **không có thanh tiến trình bước** (không còn "Bước 1/2").
 
 **Thành phần**
 
@@ -71,21 +75,15 @@ Nút **Kết nối**, biểu tượng ẩn/hiện ký tự (hình con mắt) ở
 - **KN-06**: Nút Kết nối chỉ bật khi cả 4 trường hợp lệ về định dạng; trường sai hiện lỗi ngay dưới trường.
 - **KN-07**: Bấm Kết nối: hiện trạng thái đang kết nối, khóa các trường, lần lượt:
   1. Lấy access token (Client Credentials, `scope=https://graph.microsoft.com/.default`).
-  2. Gọi `GET /users/{upn}/drive?$select=id,driveType,quota`.
-- **KN-08** (tiêu chí thành công): Kết nối **thành công khi cả hai bước ở KN-07 trả HTTP 2xx** (token hợp lệ, đã có quyền, drive tồn tại). Thông tin `quota` chỉ để hiển thị, **không** là điều kiện thành công. Sau đó hiện thẻ "Đã kết nối" (loại drive, UPN, dung lượng theo KN-12) rồi chuyển sang màn Thiết lập bảo mật. Config **chỉ được lưu** sau khi hoàn tất bước bảo mật.
-- **KN-12** (hiển thị dung lượng): `quota` do Graph trả về **chỉ mang tính tham khảo**. `used` có thể lớn hơn `total` (`state = exceeded`) vì hạn mức `total` do tenant/SharePoint đặt có thể nhỏ hơn dữ liệu thực tế đang lưu, hoặc đã bị hạ sau khi dữ liệu được tải lên. App chỉ đọc nên không bị ảnh hưởng. Quy tắc hiển thị, xét theo thứ tự:
+  2. Gọi `GET /users/{upn}/drive?$select=id,driveType`.
+- **KN-08** (tiêu chí thành công): Kết nối **thành công khi cả hai bước ở KN-07 trả HTTP 2xx** (token hợp lệ, đã có quyền, drive tồn tại). Khi thành công, app **lưu config ngay** ở chế độ thiết bị (mã hóa bằng khóa Keystore, xem CH-01) rồi hiện **hộp thoại hỏi thiết lập mã PIN** (KN-13) ngay trên màn Kết nối. App **không** hiện thẻ "Đã kết nối", **không** hiện thông tin tài khoản hay drive, **không** hiện dung lượng.
+- **KN-12** (không hiển thị dung lượng): App **không** đọc, không lưu và không hiển thị `quota` ở bất kỳ màn nào (kể cả `used`, `total`, `state`). Vì vậy `used` lớn hơn `total` (`state = exceeded`) không ảnh hưởng đến kết nối hay bất kỳ thao tác nào của app.
+- **KN-13** (hộp thoại thiết lập mã PIN): hiện ngay sau KN-08, gồm tiêu đề, một đoạn giải thích, **cảnh báo** như BM-03 (không đặt PIN thì bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn) và **hai nút**:
+  - **Thiết lập mã PIN**: mở màn Thiết lập bảo mật (mục 3.2).
+  - **Để sau**: giữ bảo mật **tắt**, vào màn Danh sách và bắt đầu đồng bộ lần đầu (DB-01). Người dùng bật lại ở Cài đặt › Bảo mật (CD-02).
 
-  | Điều kiện | Hiển thị |
-  |---|---|
-  | Không có `quota`, hoặc thiếu `used` | Ẩn dòng dung lượng, **không** báo lỗi, vẫn kết nối thành công |
-  | Có `used` nhưng `total` thiếu hoặc bằng 0 | Chỉ "Đã dùng X", không thanh tiến độ |
-  | `used` > `total` (kể cả `state = exceeded`) | Chỉ "Đã dùng X", không thanh tiến độ, **không** hiện "/ tổng", **không** hiện cảnh báo hay lỗi |
-  | `used` ≤ `total` | "Đã dùng X / Tổng Y" kèm thanh tiến độ |
-
-  - Không tự tính phần trăm hay `remaining` từ `used` và `total`; không dùng `state` để chặn bất kỳ thao tác nào.
-  - Số liệu dung lượng chỉ lấy lúc kết nối, không lưu và không cập nhật sau đó (app không có màn nào khác dùng quota).
-  - Đơn vị và định dạng theo CD-10 (vd. "274,8 GB").
-- **KN-09**: Thất bại: hiện thông báo theo bảng dưới, giữ nguyên giá trị đã nhập để sửa. Thông báo được chọn theo **mã lỗi** và hiển thị theo ngôn ngữ đang dùng (CD-10), không hiển thị nguyên văn thông báo lỗi của máy chủ.
+  Hộp thoại **bắt buộc chọn một trong hai nút**: chạm ra ngoài hoặc bấm Back của hệ thống không đóng được. Hộp thoại chỉ hiện **một lần cho mỗi lần kết nối mới** (kết nối lại sau khi Ngắt kết nối thì hiện lại). Nếu app bị đóng khi hộp thoại đang hiện, config đã được lưu (KN-08), lần mở sau vào thẳng Danh sách ở chế độ thiết bị và hộp thoại **không** hiện lại.
+- **KN-09**: Thất bại: hiện thông báo theo bảng dưới, giữ nguyên giá trị đã nhập để sửa; **không lưu config**. Thông báo được chọn theo **mã lỗi** và hiển thị theo ngôn ngữ đang dùng (CD-10), không hiển thị nguyên văn thông báo lỗi của máy chủ.
 - **KN-10**: Màn này chặn chụp màn hình và ẩn nội dung trong danh sách ứng dụng gần đây.
 - **KN-11** (phạm vi tài khoản): UPN phải là tài khoản **work/school** thuộc đúng tenant đã nhập. App không hỗ trợ tài khoản Microsoft cá nhân; nếu nhập UPN cá nhân (vd. `@outlook.com`) thì kết nối sẽ thất bại theo bảng lỗi dưới (thường là Graph `404`).
 
@@ -102,15 +100,18 @@ Nút **Kết nối**, biểu tượng ẩn/hiện ký tự (hình con mắt) ở
 | Lỗi mạng / timeout | Không kết nối được, kiểm tra mạng và thử lại |
 | Lỗi khác | Thông báo chung kèm mã lỗi để tra cứu |
 
-### 3.2 Màn Thiết lập bảo mật (chỉ xuất hiện lần đầu)
+### 3.2 Màn Thiết lập bảo mật (mở từ hộp thoại KN-13)
 
-- **BM-01**: Công tắc "Bảo vệ ứng dụng" mặc định **bật**.
-- **BM-02**: Khi bật: đặt **mã PIN 6 chữ số**, nhập 2 lần và hai lần phải khớp; tùy chọn bật mở khóa bằng sinh trắc học nếu máy hỗ trợ.
-- **BM-03**: Khi tắt: hiện cảnh báo *"Bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn"* và bỏ qua bước đặt mã PIN.
-- **BM-04**: Bấm Hoàn tất: mã hóa và lưu config theo chế độ đã chọn (mục 4.1), rồi vào màn Danh sách và bắt đầu đồng bộ lần đầu.
+Màn này chỉ mở khi người dùng chọn **Thiết lập mã PIN** ở hộp thoại KN-13. Màn **không có thanh tiến trình bước**.
+
+- **BM-01**: Màn vào thẳng bước đặt mã PIN. **Không có công tắc "Bảo vệ ứng dụng"**, vì lựa chọn dùng hay không dùng PIN đã nằm ở hộp thoại KN-13. Bật/tắt bảo vệ về sau thực hiện ở Cài đặt (CD-02, CD-03).
+- **BM-02**: Đặt **mã PIN 6 chữ số**, nhập 2 lần và hai lần phải khớp; tùy chọn bật mở khóa bằng sinh trắc học nếu máy hỗ trợ.
+- **BM-03** (cảnh báo khi không dùng PIN): *"Bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn"*. Hiện trong hộp thoại KN-13 và khi tắt bảo vệ ở Cài đặt (CD-03).
+- **BM-04**: Bấm Hoàn tất: **mã hóa lại config** (đã được lưu ở chế độ thiết bị theo KN-08) bằng khóa dẫn xuất từ PIN kết hợp Keystore (mục 4.1), ghi ra tệp tạm rồi mới thay tệp cũ như CD-09; xong vào màn Danh sách và bắt đầu đồng bộ lần đầu. Lỗi giữa chừng thì config giữ nguyên ở chế độ thiết bị.
 - **BM-05**: Ô nhập PIN hiển thị 6 chấm tròn; nhập đủ 6 số thì tự chuyển bước, không cần bấm nút.
 - **BM-06**: Chặn PIN dễ đoán và báo *"Mã PIN quá dễ đoán, hãy chọn mã khác"*. Gồm: 6 số giống nhau (`000000`, `111111`...), dãy tăng hoặc giảm liên tiếp (`123456`, `654321`...), và dạng lặp 2 số hoặc 3 số (`121212`, `123123`...).
 - **BM-07**: Nhập bằng **bàn phím số tự vẽ trong app**, không dùng bàn phím hệ thống, để bàn phím bên thứ ba không ghi nhận được PIN.
+- **BM-08** (nút Back): Back ở màn này **quay lại hộp thoại KN-13** (hiện lại trên màn Kết nối). PIN đã nhập bị bỏ, config vẫn ở chế độ thiết bị. Nếu app bị đóng giữa chừng khi đang đặt PIN thì lần mở sau vào thẳng Danh sách ở chế độ thiết bị.
 
 ### 3.3 Màn Khóa (khi bảo mật bật)
 
@@ -246,7 +247,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 | | Hiện tệp không hỗ trợ (dạng mờ) | Tắt |
 | | Giao diện | Theo hệ thống / Sáng / Tối |
 | | Ngôn ngữ | Theo hệ thống / Tiếng Việt / English (mặc định: Theo hệ thống) |
-| Bảo mật | Bảo vệ ứng dụng | Bật/Tắt |
+| Bảo mật | Bảo vệ ứng dụng | Bật/Tắt. Mặc định **Tắt** cho tới khi người dùng thiết lập PIN (ở hộp thoại KN-13 hoặc tại đây) |
 | | Đổi mã PIN | Khi đang bật |
 | | Mở khóa bằng sinh trắc học | Khi đang bật |
 | | Tự khóa khi rời app | Ngay lập tức / 1 / 5 / 15 phút (mặc định 1 phút) |
@@ -283,7 +284,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
   - Áp dụng cho **mọi văn bản** trong app, gồm cả thông báo lỗi (bảng lỗi ở 3.1), cảnh báo, nhãn và các hộp thoại. Thông báo lỗi chọn theo mã lỗi, không hiển thị nguyên văn của máy chủ.
   - **Ngày, giờ, dung lượng, thời lượng và số** hiển thị theo quy ước của ngôn ngữ đang dùng (vd. tiêu đề nhóm ngày trong Thư viện, TV-01).
   - **Tên tệp và tên thư mục** lấy từ OneDrive, hiển thị nguyên văn, không dịch.
-  - Lựa chọn ngôn ngữ thuộc nhóm cài đặt nên bị xóa khi Ngắt kết nối (CD-05); khi đó app quay về "Theo hệ thống". Màn Kết nối và màn Thiết lập bảo mật lần đầu luôn dùng "Theo hệ thống".
+  - Lựa chọn ngôn ngữ thuộc nhóm cài đặt nên bị xóa khi Ngắt kết nối (CD-05); khi đó app quay về "Theo hệ thống". Màn Kết nối, hộp thoại KN-13 và màn Thiết lập bảo mật lần đầu luôn dùng "Theo hệ thống".
   - Thêm ngôn ngữ mới sau này chỉ cần bổ sung bộ chuỗi và một lựa chọn trong danh sách; không đổi quy tắc nghiệp vụ.
 
 ---
@@ -294,7 +295,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 
 - **CH-01**: Config luôn được mã hóa, ở cả hai chế độ:
   - Bảo mật **bật**: mã hóa bằng khóa dẫn xuất từ mã PIN kết hợp khóa phần cứng của thiết bị (Android Keystore).
-  - Bảo mật **tắt**: mã hóa bằng khóa phần cứng của thiết bị.
+  - Bảo mật **tắt** (chế độ thiết bị): mã hóa bằng khóa phần cứng của thiết bị. Đây là chế độ config được lưu ngay sau khi kết nối thành công (KN-08), cho tới khi người dùng thiết lập PIN (BM-04, CD-02).
 - **CH-02**: Không lưu mã PIN hay mã băm của mã PIN. PIN đúng hay sai được xác định bằng việc giải mã config thành công hay không.
 - **CH-03**: Access token chỉ giữ trong bộ nhớ, không ghi xuống đĩa; khi app bị khóa thì xóa token và config đã giải mã khỏi bộ nhớ.
 - **CH-04**: Dữ liệu app không được đưa vào sao lưu tự động của Android.
@@ -348,7 +349,7 @@ Nhận diện theo `file.mimeType`; nếu không có thì theo đuôi tên tệp
 |---|---|---|
 | Kết nối **OneDrive for Business** bằng Tenant ID / Client ID / Client Secret / UPN (Client Credentials) | ✓ | |
 | Đa ngôn ngữ **Tiếng Việt + English**, chọn trong Cài đặt (CD-10) | ✓ | |
-| Thiết lập bảo mật (mã PIN 6 số), màn Khóa | ✓ | |
+| Hộp thoại hỏi thiết lập PIN sau kết nối (KN-13), thiết lập bảo mật (mã PIN 6 số), màn Khóa | ✓ | |
 | Danh sách: tab Thư mục, tab Thư viện, tìm kiếm, sắp xếp | ✓ | |
 | Dải Xem tiếp / Đọc tiếp | ✓ | |
 | Xem video: điều khiển ở mục 3.5, nhớ vị trí | ✓ | |

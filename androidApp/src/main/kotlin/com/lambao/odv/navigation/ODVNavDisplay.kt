@@ -16,7 +16,7 @@ import com.lambao.odv.ui.splash.ODVSplashScreen
 
 /**
  * Gốc điều hướng (ADR-0003). Back stack là state do app giữ: luồng khóa (Lát 2) thao tác thẳng trên danh sách này.
- * Màn con không nhận back stack; chúng nhận lambda như `onContinue`, `onFinished`.
+ * Màn con không nhận back stack; chúng nhận lambda như `onSetupPin`, `onSkipPin`.
  */
 @Composable
 fun ODVNavDisplay(modifier: Modifier = Modifier) {
@@ -41,15 +41,16 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                 )
             }
             entry<AppRoute.Connect> {
-                // Back từ Thiết lập bảo mật quay lại đây, các ô vẫn còn giá trị đã nhập.
-                ODVConnectScreen(onContinue = { backStack.add(AppRoute.SecuritySetup) })
+                // Config đã lưu trước khi hộp thoại KN-13 hiện. "Để sau" bỏ màn Kết nối khỏi back stack để Back không
+                // quay lại form; "Thiết lập mã PIN" đặt màn bảo mật lên trên, Back (BM-08) quay lại đây và hộp thoại hiện lại.
+                ODVConnectScreen(
+                    // Guard: K6 là cửa sổ riêng nên còn chạm được trong lúc chuyển màn, bấm đôi không được thêm 2 entry.
+                    onSetupPin = { if (backStack.lastOrNull() != AppRoute.SecuritySetup) backStack.add(AppRoute.SecuritySetup) },
+                    onSkipPin = { backStack.resetTo(AppRoute.Home) },
+                )
             }
             entry<AppRoute.SecuritySetup> {
-                ODVSecuritySetupScreen(
-                    // Đã lưu config: bỏ Kết nối và Bảo mật khỏi back stack để Back không quay lại form.
-                    onFinished = { backStack.resetTo(AppRoute.Home) },
-                    onMissingConnection = { backStack.resetTo(AppRoute.Connect) },
-                )
+                ODVSecuritySetupScreen(onBack = { backStack.removeLastOrNull() })
             }
             // Màn Khóa làm ở Lát 2.
             entry<AppRoute.Lock> { ODVPlaceholderScreen() }

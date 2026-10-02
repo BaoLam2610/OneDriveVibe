@@ -15,7 +15,7 @@ import kotlinx.serialization.json.Json
 private const val CONFIG_SECRET = "connection_config"
 
 /**
- * Config dạng lưu: JSON rồi mã hóa AES-GCM bằng khóa Keystore qua [SecretStore] (CH-01, chế độ bảo mật TẮT của Lát 1).
+ * Config dạng lưu: JSON rồi mã hóa AES-GCM bằng khóa Keystore qua [SecretStore] (CH-01, chế độ thiết bị: config được lưu ở chế độ này ngay sau khi kết nối, KN-08).
  * Lát 2 thêm khóa dẫn xuất từ PIN (ADR-0008). `toString` che toàn bộ vì có Client Secret (CH-06).
  */
 @Serializable

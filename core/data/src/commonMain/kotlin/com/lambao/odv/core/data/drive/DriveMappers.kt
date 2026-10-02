@@ -1,21 +1,12 @@
 package com.lambao.odv.core.data.drive
 
 import com.lambao.odv.core.domain.model.ConnectionConfig
-import com.lambao.odv.core.domain.model.DriveInfo
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.mediaKindOf
 import com.lambao.odv.core.network.GraphCredentials
-import com.lambao.odv.core.network.dto.DriveDto
 import com.lambao.odv.core.network.dto.DriveItemDto
 
 internal fun ConnectionConfig.toCredentials() = GraphCredentials(tenantId, clientId, clientSecret, upn)
-
-internal fun DriveDto.toDomain() = DriveInfo(
-    id = id,
-    driveType = driveType,
-    usedBytes = quota?.used ?: 0,
-    totalBytes = quota?.total ?: 0,
-)
 
 /**
  * Null cho mục không duyệt được: sổ tay OneNote (`package`) có `folder` nhưng không phải thư mục thật.

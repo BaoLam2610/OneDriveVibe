@@ -28,7 +28,8 @@ class SplashViewModel(
                 !configs.hasConfig() -> SplashEffect.NavigateToConnect
                 // Config còn nhưng không giải mã được (khóa Keystore mất, tệp hỏng, hoặc lỗi đọc tạm thời): sang Kết nối
                 // thay vì kẹt ở Danh sách với lỗi tải vĩnh viễn. KHÔNG xóa config ở đây: lỗi tạm thời không được làm mất
-                // dữ liệu; kết nối lại sẽ ghi đè config cũ khi hoàn tất bước bảo mật. Lát 2 (bảo mật BẬT) đổi bước này thành màn Khóa.
+                // dữ liệu; kết nối lại sẽ ghi đè config cũ ngay khi kết nối thành công (KN-08). Đóng app khi hộp thoại KN-13 đang hiện
+                // thì lần mở sau vào thẳng Danh sách ở chế độ thiết bị (config đã lưu). Lát 2 (bảo mật BẬT) đổi bước này thành màn Khóa.
                 configs.load() is AppResult.Failure -> SplashEffect.NavigateToConnect
                 else -> SplashEffect.NavigateToHome
             }
