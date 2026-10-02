@@ -1,7 +1,6 @@
 package com.lambao.odv.core.common.mvi
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,7 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /**
  * ViewModel MVI dùng chung (ADR-0002).
@@ -27,7 +25,8 @@ abstract class BaseMviViewModel<S : Any, I : Any, E : Any>(initialState: S) : Vi
     private val _state = MutableStateFlow(initialState)
     val state: StateFlow<S> = _state.asStateFlow()
 
-    private val _effects = Channel<E>(Channel.BUFFERED)
+    // UNLIMITED + trySend: không bao giờ treo và giữ đúng thứ tự gửi (BUFFERED + launch có thể đảo thứ tự khi đầy bộ đệm).
+    private val _effects = Channel<E>(Channel.UNLIMITED)
     val effects: Flow<E> = _effects.receiveAsFlow()
 
     /** State hiện tại, dùng trong xử lý intent. */
@@ -42,6 +41,6 @@ abstract class BaseMviViewModel<S : Any, I : Any, E : Any>(initialState: S) : Vi
     }
 
     protected fun sendEffect(effect: E) {
-        viewModelScope.launch { _effects.send(effect) }
+        _effects.trySend(effect)
     }
 }

@@ -128,7 +128,7 @@ Ngoại lệ: thư viện androidx đã là KMP (lifecycle, Room, DataStore, sql
 ```kotlin
 abstract class BaseMviViewModel<S : Any, I : Any, E : Any>(initialState: S) : ViewModel() {
     val state: StateFlow<S>
-    val effects: Flow<E>              // Channel(BUFFERED).receiveAsFlow(): mỗi effect nhận đúng một lần
+    val effects: Flow<E>              // Channel(UNLIMITED).receiveAsFlow(): mỗi effect nhận đúng một lần
     protected val currentState: S
     abstract fun onIntent(intent: I)
     protected fun setState(reduce: S.() -> S)
