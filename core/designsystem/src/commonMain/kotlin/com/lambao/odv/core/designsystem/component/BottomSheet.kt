@@ -38,6 +38,7 @@ import com.lambao.odv.core.designsystem.theme.ODVTheme
  * tiêu đề `heading`. Vuốt xuống hoặc chạm scrim để đóng.
  *
  * Màu hoàn toàn theo [ODVTheme] hiện tại (theo hệ thống hoặc cài đặt Giao diện của app); component không biết nó mở từ đâu.
+ * Sheet là cửa sổ riêng nhưng mặc định `SecureFlagPolicy.Inherit`: mở trên màn có [ODVSecureWindow] thì cũng bị chặn chụp.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,8 +117,11 @@ fun ODVOptionRow(
         Box(Modifier.width(24.dp)) {
             if (selected) ODVIcon(ODVIcon.Check, contentDescription = null, tint = colors.voltText)
         }
-        Text(label, style = if (mono) type.code.copy(fontSize = type.body.fontSize) else type.body, color = colors.ink)
-        if (description != null) Text(description, style = type.caption, color = colors.inkMuted)
+        // Mô tả nằm dưới nhãn như ODVRadioRow; weight để nhãn dài xuống dòng thay vì đẩy tràn.
+        Column(Modifier.weight(1f)) {
+            Text(label, style = if (mono) type.code.copy(fontSize = type.body.fontSize) else type.body, color = colors.ink)
+            if (description != null) Text(description, style = type.caption, color = colors.inkMuted)
+        }
     }
 }
 

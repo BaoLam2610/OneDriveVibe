@@ -41,7 +41,7 @@ class ODVLoaderStep(
  * rồi danh sách bước.
  *
  * Spec chốt "không có nút Hủy", nhưng board "14 Loading" có trạng thái chờ lâu (sau 10 giây) với dòng cảnh báo và nút Hủy.
- * Vì vậy [slowNotice] và [onCancel] là tùy chọn; nơi gọi quyết định có dùng hay không (xem docs/thiet-ke-ui.md mục 9).
+ * Vì vậy [slowNotice] và [onCancel] là tùy chọn; nơi gọi quyết định có dùng hay không (xem .claude/docs/thiet-ke-ui.md mục 9).
  */
 @Composable
 fun ODVFullScreenLoader(

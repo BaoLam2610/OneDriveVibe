@@ -17,7 +17,7 @@ enum class ODVIcon {
     Book,
     /** Tìm kiếm */
     Search,
-    /** Bộ lọc */
+    /** Kiểu đọc PDF */
     Tune,
     /** Hiện ký tự */
     Eye,
@@ -47,7 +47,7 @@ enum class ODVIcon {
     Rewind,
     /** Tua tới */
     Forward,
-    /** Toàn màn hình */
+    /** Toàn màn hình. Dự phòng, không dùng (VD-07 bỏ nút toàn màn hình) */
     Fullscreen,
     /** Cài đặt */
     Settings,
@@ -75,7 +75,7 @@ enum class ODVIcon {
     StopEnd,
     /** Đóng */
     Close,
-    /** Xem tiếp */
+    /** Banner Client Secret sắp hết hạn */
     Clock,
     /** Thông tin */
     Info,

@@ -149,13 +149,16 @@ fun ODVBreadcrumb(
     maxVisible: Int = 3,
     ellipsisContentDescription: String = "…",
 ) {
+    require(maxVisible >= 2) { "maxVisible phải ≥ 2 (một ô \"…\" và ít nhất cấp cuối)" }
     if (items.isEmpty()) return
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
     // Quá [maxVisible]: "…" đại diện các cấp trên, theo sau là (maxVisible - 1) cấp cuối.
-    val shown: List<Pair<Int, String>> = if (items.size > maxVisible) {
+    // Chỉ số của ô "…" ghi riêng, không so chuỗi, để thư mục tên "…" không bị nhầm.
+    val ellipsisIndex = if (items.size > maxVisible) items.size - maxVisible else -1
+    val shown: List<Pair<Int, String>> = if (ellipsisIndex >= 0) {
         val tail = (items.size - (maxVisible - 1)) until items.size
-        listOf((items.size - maxVisible) to "…") + tail.map { it to items[it] }
+        listOf(ellipsisIndex to "…") + tail.map { it to items[it] }
     } else {
         items.mapIndexed { index, label -> index to label }
     }
@@ -174,10 +177,11 @@ fun ODVBreadcrumb(
             } else {
                 Box(
                     Modifier
-                        .heightIn(min = 32.dp)
+                        // Vùng chạm ≥ 48 (thiet-ke-ui.md 1.6); `clickable` không tự nới như component Material.
+                        .heightIn(min = ODVSize.tapTarget)
                         .clickable(role = Role.Button) { onItemClick(index) }
                         .then(
-                            if (label == "…") Modifier.semantics { contentDescription = ellipsisContentDescription } else Modifier,
+                            if (position == 0 && index == ellipsisIndex) Modifier.semantics { contentDescription = ellipsisContentDescription } else Modifier,
                         )
                         .padding(horizontal = 4.dp),
                     contentAlignment = Alignment.Center,

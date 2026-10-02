@@ -108,6 +108,8 @@ fun ODVDialogCard(
 /**
  * Dialog (mục 4.2) trên scrim của hệ thống. Android không cho đặt độ mờ scrim của cửa sổ Dialog, nên scrim ≈ mặc định
  * của nền tảng, không phải `#00000099` chính xác. Màu theo [ODVTheme] hiện tại.
+ *
+ * Dialog là cửa sổ riêng nhưng mặc định `SecureFlagPolicy.Inherit`: mở trên màn có [ODVSecureWindow] thì cũng bị chặn chụp.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

@@ -4,10 +4,16 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
-private class ColorTransition(var from: ODVColors) {
-    var to: ODVColors = from
+// from/to là State: khi Giảm hiệu ứng bật, fraction đã bằng 1 nên snapTo(1f) không đổi gì; việc gán `to` phải tự
+// kích hoạt recompose thì màu mới mới hiện ngay.
+private class ColorTransition(initial: ODVColors) {
+    var from: ODVColors by mutableStateOf(initial)
+    var to: ODVColors by mutableStateOf(initial)
 
     /** Màu đang hiển thị ở tiến độ [fraction] (1 = đã sang màu đích). */
     fun shown(fraction: Float): ODVColors = if (fraction >= 1f) to else from.lerp(to, fraction)
