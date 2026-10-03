@@ -36,6 +36,8 @@ import com.lambao.odv.core.designsystem.component.ODVAppBar
 import com.lambao.odv.core.designsystem.component.ODVButton
 import com.lambao.odv.core.designsystem.component.ODVButtonSize
 import com.lambao.odv.core.designsystem.component.ODVButtonStyle
+import com.lambao.odv.core.designsystem.component.ODVDialog
+import com.lambao.odv.core.designsystem.component.ODVDialogTone
 import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVIconButton
@@ -76,6 +78,8 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
     var searching by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     var storageRefresh by remember { mutableIntStateOf(0) }
+    var confirmClear by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val maskTraffic by DebugSettings.maskTraffic.collectAsState()
     val requests by ApiTrafficStore.requests.collectAsState()
 
@@ -141,7 +145,21 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
             when (tab) {
                 TAB_API -> ToolRow("Xóa log API") { ApiTrafficStore.clear() }
                 TAB_LOG -> ToolRow("Xóa log local") { DebugLogStore.clear() }
-                TAB_STORAGE -> ToolRow("Làm mới") { storageRefresh++ }
+                TAB_STORAGE -> Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    // "Làm mới" chỉ đọc lại danh sách (không đổi dữ liệu); "Xóa dữ liệu local" mới là thao tác xóa.
+                    ODVButton("Làm mới", { storageRefresh++ }, style = ODVButtonStyle.Secondary, size = ODVButtonSize.Sm)
+                    if (DebugHooks.clearLocalData != null) {
+                        ODVButton(
+                            "Xóa dữ liệu local",
+                            { confirmClear = true },
+                            style = ODVButtonStyle.Danger,
+                            size = ODVButtonSize.Sm,
+                        )
+                    }
+                }
             }
             when (tab) {
                 TAB_API -> ApiTab(padding, requests, activeQuery, maskTraffic) { selectedId = it }
@@ -149,6 +167,30 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
                 TAB_STORAGE -> StorageTab(padding, storageRefresh)
                 else -> OthersTab(padding)
             }
+        }
+    }
+
+    if (confirmClear) {
+        // Không hoàn tác được, nên luôn hỏi lại. Chạy trên scope của màn Debug: DisconnectUseCase tự không bị hủy giữa chừng
+        // (NonCancellable); hook khởi động lại app ở bước cuối nên màn này đóng sau khi xóa xong.
+        ODVDialog(
+            onDismissRequest = { confirmClear = false },
+            title = "Xóa dữ liệu local?",
+            icon = ODVIcon.Alert,
+            tone = ODVDialogTone.Danger,
+            body = "Như Ngắt kết nối: xóa cấu hình kết nối, mã PIN, sinh trắc học, khóa mã hóa và token trên máy, rồi quay về màn " +
+                "Kết nối. Cài đặt debug được giữ. Không hoàn tác được.",
+            alert = true,
+        ) {
+            ODVButton("Hủy", { confirmClear = false }, style = ODVButtonStyle.Ghost)
+            ODVButton(
+                "Xóa dữ liệu",
+                {
+                    confirmClear = false
+                    scope.launch { DebugHooks.clearLocalData?.invoke() }
+                },
+                style = ODVButtonStyle.DangerSolid,
+            )
         }
     }
 }
