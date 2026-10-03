@@ -53,10 +53,20 @@ internal class ConfigVault(
     @Volatile
     private var sessionKey: ByteArray? = null
 
+    private val _protected = MutableStateFlow(false)
+
+    /**
+     * Config đang ở chế độ PIN (bảo mật BẬT). Luồng này để UI áp các biện pháp riêng tư ngay khi bật PIN, không đợi tới lúc
+     * khóa, ví dụ ẩn ảnh chụp ở danh sách app gần đây (ADR-0014). Chỉ đúng sau [initialize].
+     */
+    val protectionEnabled: StateFlow<Boolean> = _protected.asStateFlow()
+
     /** Config đang ở chế độ PIN. Chỉ đúng sau [initialize]. */
-    @Volatile
-    var pinMode: Boolean = false
-        private set
+    var pinMode: Boolean
+        get() = _protected.value
+        private set(value) {
+            _protected.value = value
+        }
 
     private val _lockState = MutableStateFlow(LockState.Unknown)
     val lockState: StateFlow<LockState> = _lockState.asStateFlow()
@@ -172,13 +182,7 @@ internal class ConfigVault(
         return true
     }
 
-    /** Xóa tệp config và mọi thứ trong bộ nhớ. */
-    suspend fun clear() {
-        mutex.withLock { secrets.delete(NAME) }
-        forget()
-    }
-
-    /** Chỉ bỏ phần trong bộ nhớ (tệp đã bị xóa ở nơi khác, ví dụ `SecretStore.wipeAll`). */
+    /** Bỏ mọi thứ trong bộ nhớ (tệp đã bị xóa ở nơi khác, ví dụ `SecretStore.wipeAll`). */
     fun forget() {
         epoch.update { it + 1 }
         cache = null

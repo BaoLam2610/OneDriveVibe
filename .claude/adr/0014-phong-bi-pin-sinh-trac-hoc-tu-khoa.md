@@ -39,5 +39,6 @@ ADR-0008 chốt "khóa dẫn xuất từ PIN (Argon2id) kết hợp Keystore" nh
 - Trên máy có khóa Keystore bọc sinh trắc học, tồn tại một khóa dẫn xuất nằm trên máy, chỉ mở được bằng sinh trắc học đã đăng ký. Lệch nhẹ khỏi tinh thần "không lưu gì suy ra được PIN" của ADR-0008, chấp nhận được vì khóa này không cho phép suy ngược PIN và Keystore bảo vệ nó.
 - Argon2id tốn khoảng 32 MiB RAM mỗi lần mở khóa.
 ### Rủi ro
+- Kết nối lại (KN-08) luôn ghi config ở chế độ thiết bị và xóa bộ đếm sai, nên nếu người dùng tới được màn Kết nối khi đang có PIN (chỉ sau lỗi đọc tạm thời lúc khởi động) thì PIN cũ biến mất. Chủ ý: người dùng tự nhập đủ 4 trường và hộp thoại KN-13 hỏi đặt PIN lại (code review e8027e03, L3).
 - Reboot rồi mở lại làm thời gian chờ tính lại từ đầu (người dùng có thể thấy phạt dài hơn thực tế).
 - Thư viện `argon2kt` là native: kiểm tra ABI và kích thước trang bộ nhớ 16 KB trên thiết bị thật; dự phòng BouncyCastle (chậm hơn).

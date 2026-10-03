@@ -7,8 +7,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 ## Đang làm
 
 - **Lát:** 2, Mã PIN và màn Khóa (Lát 0, 1, D code xong, còn chờ kiểm tay)
-- **Bước:** Lát 2 xong code bước 1 đến 8 (luồng PIN đầy đủ: đặt PIN, màn Khóa, tự khóa, Quên PIN). Còn bước 9 (sinh trắc học), 10 (ẩn nội dung ở danh sách app gần đây), 11 (rà chuỗi và tài liệu UI). Chờ người dùng build và kiểm tay trước khi làm tiếp
-- **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật hiện chỉ là khung (đặt PIN làm ở Lát 2). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
+- **Bước:** Lát 2 xong code bước 1 đến 8 (luồng PIN đầy đủ: đặt PIN, màn Khóa, tự khóa, Quên PIN). Bước 10 (ẩn nội dung ở danh sách app gần đây) cũng xong. Còn bước 9 (sinh trắc học) và 11 (rà chuỗi và tài liệu UI). Chờ người dùng build và kiểm tay trước khi làm tiếp
+- **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật đã có luồng đặt PIN (Lát 2, bước 8). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
 
@@ -61,11 +61,11 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 - [x] 3. `:core:security`: phong bì PIN (`PinEnvelopeCodec`), Argon2id (`PinKeyDeriver`), `BootAwareClock`, `SecretStore.wipeAll()`
 - [x] 4. `:core:domain`: `SecurityRepository`, `UnlockResult`, `LockState`, `PinPolicy` (BM-06), `ConnectionResetter`, `DisconnectUseCase`
 - [x] 5. `:core:data`: `ConfigVault`, `LockoutStore` (KH-02), `SecurityRepositoryImpl`, Koin
-- [x] 6. `:androidApp`: tự khóa (`AppLockController` + `ProcessLifecycleOwner`), cổng khóa trong `ODVNavDisplay` (Splash không cần đổi), `DebugTools.onAppLocked()`, ẩn nút bọ khi khóa
+- [x] 6. `:androidApp`: tự khóa (`AppLockController` + `ProcessLifecycleOwner`), cổng khóa trong `ODVNavDisplay` (không dựng `NavDisplay` ở khởi động nguội cho tới khi `Lock` nằm trên cùng); `SplashViewModel` chờ `lockState == Unlocked` rồi mới điều hướng, `DebugTools.onAppLocked()`, ẩn nút bọ khi khóa
 - [x] 7. `:feature:auth`: màn Khóa (KH-01 → KH-06), Quên PIN 2 bước, đồng hồ khóa tạm (viết ngay trong `ODVLockContent`, chưa tách `ODVCooldownTimer`); sinh trắc học chưa có
-- [x] 8. `:feature:auth`: đặt PIN B1 → B5, B8 (BM-01 → BM-08); B6 sinh trắc học làm ở bước 9. `ConnectViewModel` không cần sửa
+- [x] 8. `:feature:auth`: đặt PIN B1 → B5, B8 (BM-01 → BM-08); B6 sinh trắc học làm ở bước 9. `ConnectViewModel` không đổi nhưng `init` của nó (tự vào Danh sách khi `load()` thành công) là chỗ đỡ cho luồng PIN: đừng bỏ
 - [ ] 9. Sinh trắc học (bọc khóa dẫn xuất)
-- [ ] 10. Ẩn nội dung ở danh sách app gần đây khi bảo mật BẬT
+- [x] 10. Ẩn nội dung ở danh sách app gần đây khi bảo mật BẬT: `SecurityRepository.isProtected`; Android 13+ `setRecentsScreenshotEnabled(false)` trong `MainActivity`, bản thấp hơn `FLAG_SECURE` toàn cửa sổ (`ODVSecureWindow` trong `ODVApp`)
 - [ ] 11. Chuỗi VI/EN, rà `thiet-ke-ui.md`
 - [ ] Review Kotlin + bảo mật
 - [ ] Kiểm tay
@@ -137,3 +137,4 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-03 | Review Lát 2 bước 6 → 8, đã sửa: cổng khóa không kẹt màn trắng khi bấm Home lúc đang giải mã (`onUnlocked` chỉ pop khi thật sự Unlocked, `LockViewModel` hủy `completion` khi bị khóa lại, cổng đẩy lại `Lock` theo đỉnh back stack), giữ `NavDisplay` trong composition và phủ nền khi khóa (không mất `rememberSaveable`), `UnlockResult.Interrupted`, xóa token khi `adopt` hoàn tác, `AppLockController` quan sát `lockState`, thêm `koin-compose` vào catalog |
 | 2026-10-03 | Sửa lỗi màn hình đen sau Splash: lớp phủ nền của cổng khóa trong `ODVNavDisplay` bị mất điều kiện `if (covered)` (do lệnh căn lề tự động của chính mình), nên luôn vẽ đè lên mọi màn. Đã khôi phục `if (covered)` |
 | 2026-10-03 | Sửa lỗi khởi động nguội khi bật PIN (Splash nhấp nháy; nhập đúng PIN lại vào màn Kết nối): `ODVNavDisplay` không dựng `NavDisplay` ở lần đầu cho tới khi `Lock` nằm trên cùng (Splash/Kết nối không còn chạy dưới lớp khóa), `SplashViewModel` chờ `lockState == Unlocked` rồi mới quyết định điều hướng |
+| 2026-10-03 | Xử lý code review e8027e03: `lockState` thu bằng `collectAsState` (không gắn lifecycle) ở `ODVNavDisplay` và `ODVApp` để không lộ khung hình cũ khi mở lại sau lúc bị khóa; `showDebug` chỉ khi `Unlocked`; bước 10 (`isProtected` + `setRecentsScreenshotEnabled`/`FLAG_SECURE`); xóa `ODVPlaceholderScreen`, `ConfigRepository.clear()` và tham số `TokenProvider` thừa; sửa dấu cách catalog; cập nhật ghi chú tiến độ. Chưa xử lý: `.claude/settings.json` trong commit (chờ người dùng quyết) |

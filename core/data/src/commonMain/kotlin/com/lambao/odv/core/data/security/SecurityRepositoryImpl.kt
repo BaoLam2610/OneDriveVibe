@@ -42,6 +42,8 @@ internal class SecurityRepositoryImpl(
 
     override val lockState: StateFlow<LockState> get() = vault.lockState
 
+    override val isProtected: StateFlow<Boolean> get() = vault.protectionEnabled
+
     override suspend fun initialize() = vault.initialize()
 
     override suspend fun mode(): SecurityMode {

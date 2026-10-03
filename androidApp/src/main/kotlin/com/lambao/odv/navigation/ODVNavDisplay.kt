@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -40,7 +40,10 @@ import org.koin.compose.koinInject
 fun ODVNavDisplay(modifier: Modifier = Modifier) {
     val backStack = rememberNavBackStack(AppRoute.Splash)
     val security = koinInject<SecurityRepository>()
-    val lockState by security.lockState.collectAsStateWithLifecycle()
+    // collectAsState, không phải collectAsStateWithLifecycle: khi app ở nền mà bị khóa (ON_STOP), lifecycle-aware collector
+    // dừng nên composition giữ lockState cũ (Unlocked); lúc quay lại vài khung hình đầu vẽ nội dung cũ rồi mới trượt Lock vào.
+    // StateFlow nằm trong bộ nhớ nên thu liên tục không tốn gì (code review e8027e03, M1).
+    val lockState by security.lockState.collectAsState()
 
     // Đọc chế độ bảo mật từ tệp config: chạy ngoài NavDisplay để không phụ thuộc vào màn nào đang hiện (ADR-0014).
     LaunchedEffect(security) { security.initialize() }
@@ -54,7 +57,8 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
     }
 
     val covered = lockState == LockState.Locked && top != AppRoute.Lock
-    // NavDisplay đã được dựng ít nhất một lần chưa. Không lưu qua process death nên khởi động nguội luôn bắt đầu false.
+    // NavDisplay đã được dựng ít nhất một lần chưa. `remember` nên mất khi process chết hoặc Activity tạo lại (xoay màn hình):
+    // khởi động nguội luôn bắt đầu false; còn sau khi xoay thì Lock thường đã ở trên cùng nên `covered` là false, vô hại.
     var navShown by remember { mutableStateOf(false) }
 
     // Chưa biết chế độ, hoặc khởi động nguội mà đang khóa: chưa dựng NavDisplay. Nếu dựng khi Lock chưa lên trên cùng thì

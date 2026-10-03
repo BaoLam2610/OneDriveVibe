@@ -4,7 +4,6 @@ import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.data.security.LockoutStore
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.repository.ConfigRepository
-import com.lambao.odv.core.network.TokenProvider
 
 /**
  * Lấy và lưu config. Việc mã hóa, cache và chế độ PIN nằm ở [ConfigVault]; phần khóa/mở khóa ở `SecurityRepositoryImpl`
@@ -13,7 +12,6 @@ import com.lambao.odv.core.network.TokenProvider
 internal class ConfigRepositoryImpl(
     private val vault: ConfigVault,
     private val lockout: LockoutStore,
-    private val tokens: TokenProvider,
 ) : ConfigRepository {
 
     override suspend fun hasConfig(): Boolean = vault.exists()
@@ -26,10 +24,4 @@ internal class ConfigRepositoryImpl(
     }
 
     override suspend fun load(): AppResult<ConnectionConfig> = vault.load()
-
-    override suspend fun clear() {
-        vault.clear()
-        lockout.clear()
-        tokens.clear()
-    }
 }

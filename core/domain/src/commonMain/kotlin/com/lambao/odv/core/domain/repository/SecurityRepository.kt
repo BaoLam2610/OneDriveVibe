@@ -18,6 +18,12 @@ interface SecurityRepository {
     val lockState: StateFlow<LockState>
 
     /**
+     * Bảo mật đang BẬT (config ở chế độ PIN), kể cả khi đã mở khóa. UI dùng để ẩn nội dung ở danh sách app gần đây ngay từ
+     * lúc bật PIN (CH-05, ADR-0014); ảnh chụp ở danh sách này được lấy trước khi app kịp khóa.
+     */
+    val isProtected: StateFlow<Boolean>
+
+    /**
      * Gọi một lần khi khởi động app: đọc chế độ từ tệp config rồi đặt [lockState] (PIN thì Locked, còn lại Unlocked).
      * Gọi lại thì bỏ qua.
      */

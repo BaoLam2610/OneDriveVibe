@@ -24,6 +24,6 @@ interface ConfigRepository {
     /** Giải mã config đã lưu. Thất bại (khóa Keystore mất, tệp hỏng) trả về lỗi, không ném ngoại lệ. */
     suspend fun load(): AppResult<ConnectionConfig>
 
-    /** Xóa config đã lưu và bản trong bộ nhớ. */
-    suspend fun clear()
+    // Không có clear(): xóa config đi qua DisconnectUseCase → SecurityRepository.wipe (xóa cả khóa Keystore, bộ đếm sai,
+    // token). Một hàm xóa riêng ở đây sẽ để lại khóa Keystore và dễ bị dùng nhầm.
 }

@@ -75,11 +75,13 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 - Tab Thư mục đọc từ Room; sắp xếp (TM-05), lưới/danh sách (TM-06), lọc loại tệp (TM-03, TM-04).
 - Kéo để làm mới, tự đồng bộ khi mở nếu quá 15 phút (DS-04); thanh "Đang offline" (DS-05); gỡ tệp đã xóa (DS-06).
 - Tìm kiếm (DS-03). TK-05, TK-06.
+- Đăng ký `ConnectionResetter` xóa Room và dữ liệu đồng bộ khi ngắt kết nối (CD-05, KH-03, KH-06; xem `DisconnectUseCase`).
 - **Kiểm tay:** drive lớn; tắt app giữa lúc quét; chế độ máy bay.
 
 ### Lát 4: Thumbnail, bộ nhớ đệm, tab Thư viện
 
 - Cache thumbnail, giới hạn dung lượng, nhận diện theo `cTag` (BN-01 → BN-03).
+- Đăng ký `ConnectionResetter` xóa cache khi ngắt kết nối.
 - `:feature:library`: TV-01 → TV-06 (nhóm theo ngày, chip lọc, thanh cuộn nhanh, "Đang lập chỉ mục").
 
 ### Lát 5: Xem ảnh
@@ -98,10 +100,12 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 ### Lát 8: Xem tiếp / Đọc tiếp
 
 - DS-02, VD-12, PD-05.
+- Đăng ký `ConnectionResetter` xóa lịch sử xem khi ngắt kết nối.
 
 ### Lát 9: Cài đặt đầy đủ
 
 - CD-01 → CD-10; cập nhật Client Secret; ngắt kết nối và xóa sạch; giới hạn cache; nhắc secret sắp hết hạn.
+- Nối `SecurityRepositoryImpl.wipeAfterFailures` với cài đặt CD-08 (hiện tắt). Đăng ký `ConnectionResetter` xóa cài đặt. Nút Ngắt kết nối gọi `DisconnectUseCase`.
 
 ## 3. Thư viện chưa có trong ADR (đã duyệt)
 

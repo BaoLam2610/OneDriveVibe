@@ -16,7 +16,7 @@ val dataModule = module {
     // ConfigVault dùng chung cho ConfigRepository và SecurityRepository: một bản config trong bộ nhớ, một trạng thái khóa.
     single { ConfigVault(get(), get()) }
     single { LockoutStore(get(), get()) }
-    single<ConfigRepository> { ConfigRepositoryImpl(get(), get(), get()) }
+    single<ConfigRepository> { ConfigRepositoryImpl(get(), get()) }
     single<SecurityRepository> { SecurityRepositoryImpl(get(), get(), get(), get(), get()) }
     single<DriveRepository> { DriveRepositoryImpl(get(), get()) }
     // getAll: mỗi lát đăng ký ConnectionResetter của mình (Room, cache, cài đặt) mà không phải sửa chỗ này.
