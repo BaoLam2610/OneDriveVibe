@@ -1,0 +1,17 @@
+package com.lambao.odv.core.domain.repository
+
+import com.lambao.odv.core.domain.model.SortOrder
+import com.lambao.odv.core.domain.model.ViewMode
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Lựa chọn của tab Thư mục được nhớ giữa các lần mở app: sắp xếp (TM-05) và dạng lưới/danh sách (TM-06). Chỉ là tùy chọn
+ * hiển thị, không chứa bí mật. Lát 9 (Cài đặt) sẽ đọc cùng nơi lưu này; chưa có thì giữ mặc định khi đọc lỗi.
+ */
+interface BrowserPreferences {
+    val sortOrder: Flow<SortOrder>
+    val viewMode: Flow<ViewMode>
+
+    suspend fun setSortOrder(order: SortOrder)
+    suspend fun setViewMode(mode: ViewMode)
+}
