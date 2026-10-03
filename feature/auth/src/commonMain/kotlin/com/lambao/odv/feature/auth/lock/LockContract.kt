@@ -37,7 +37,10 @@ data class LockUiState(
     /** KH-06: số lần thử còn lại trước khi xóa dữ liệu, chỉ có từ lần sai thứ 8 khi bật CD-08. */
     val attemptsBeforeWipe: Int? = null,
 
-    /** Đang chạy Argon2id (khoảng nửa giây): khóa bàn phím để không nhập chồng. */
+    /** Đã bật sinh trắc học và còn dùng được: hiện phím sinh trắc học ở góc bàn phím (KH-01). Ẩn khi bị khóa tạm (KH-02). */
+    val biometricEnabled: Boolean = false,
+
+    /** Đang chạy Argon2id hoặc hiện hộp thoại sinh trắc học: khóa bàn phím để không nhập chồng. */
     val isBusy: Boolean = false,
     val forgot: ForgotStep = ForgotStep.None,
     val completion: LockCompletion? = null,
@@ -48,6 +51,9 @@ data class LockUiState(
 sealed interface LockIntent {
     data class Digit(val digit: Int) : LockIntent
     data object Backspace : LockIntent
+
+    /** Phím sinh trắc học (L2, KH-01). */
+    data object UseBiometric : LockIntent
 
     /** Nút "Quên mã PIN" (L7). */
     data object ForgotClicked : LockIntent

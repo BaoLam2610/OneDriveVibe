@@ -906,3 +906,11 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 - [ ] "Để sau" vào Danh sách, Cài đặt › Bảo vệ ứng dụng ở trạng thái Tắt
 - [ ] "Thiết lập mã PIN" mở B1; Back ở B1 quay lại K6; hoàn tất B8 thì config được mã hóa lại và lần mở sau hiện màn Khóa
 - [ ] Không còn StepBar và không còn công tắc "Bảo vệ ứng dụng" ở K1 đến K6 và B1 đến B8
+
+**Kiểm riêng sinh trắc học (Lát 2, ADR-0014):**
+- [ ] Máy hỗ trợ: sau khi PIN khớp, B6 hỏi bật; "Bật" hiện hộp thoại hệ thống, "Để sau" vào Danh sách. Máy không hỗ trợ thì bỏ qua B6
+- [ ] Đã bật: mở màn Khóa tự hiện hộp thoại sinh trắc học (L2); phím sinh trắc học ở góc trái dưới bàn phím; hủy hộp thoại thì nhập PIN như thường
+- [ ] Đang khóa tạm (KH-02): ẩn phím sinh trắc học và không tự hiện hộp thoại
+- [ ] Thêm hoặc đổi vân tay trong Cài đặt máy: lần mở sau sinh trắc học không còn, PIN vẫn dùng được
+- [ ] Đổi PIN hoặc tắt bảo vệ thì sinh trắc học bị tắt, bật lại được
+- [ ] Quên PIN và ngắt kết nối xóa luôn khóa sinh trắc học

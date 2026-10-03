@@ -84,6 +84,12 @@ internal class ConfigVault(
 
     fun currentEpoch(): Int = epoch.value
 
+    /**
+     * Bản sao khóa phiên (khóa dẫn xuất từ PIN) để bọc bằng sinh trắc học (ADR-0014); null nếu đang khóa hoặc chế độ thiết bị.
+     * Người gọi tự xóa bản sao. Không để lộ [sessionKey] gốc.
+     */
+    fun copySessionKey(): ByteArray? = sessionKey?.copyOf()
+
     suspend fun exists(): Boolean = secrets.exists(NAME)
 
     /** Đọc tệp config đã qua lớp Keystore: `Success(null)` nếu chưa có. Không đụng tới bộ nhớ hay trạng thái khóa. */

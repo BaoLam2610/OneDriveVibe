@@ -56,6 +56,10 @@
     <string name="security_hint">Mã PIN gồm 6 chữ số</string> <!-- [mới] -->
     <string name="security_weak">Mã PIN quá dễ đoán, hãy chọn mã khác</string> <!-- BM-06 -->
     <string name="security_mismatch">Hai mã PIN không khớp, hãy nhập lại</string> <!-- [mới] -->
+    <string name="security_biometric_title">Mở khóa bằng sinh trắc học?</string> <!-- [mới] B6, BM-02 -->
+    <string name="security_biometric_body">Dùng vân tay hoặc khuôn mặt để mở khóa nhanh. Mã PIN vẫn luôn dùng được, kể cả khi sinh trắc học thay đổi. Bạn có thể bật lại trong Cài đặt › Bảo mật.</string> <!-- [mới] -->
+    <string name="security_biometric_enable">Bật</string> <!-- [mới] -->
+    <string name="security_biometric_later">Để sau</string> <!-- [mới] -->
     <string name="security_saving_title">Đang hoàn tất thiết lập</string>
     <string name="security_saving_description">Đang hoàn tất</string>
 
@@ -68,6 +72,7 @@
     <string name="lock_unlocking">Đang mở khóa</string> <!-- [mới] -->
     <string name="lock_cooldown_note">Nhập sai quá nhiều lần, hãy thử lại sau</string> <!-- [mới] KH-02 -->
     <string name="lock_backspace">Xóa số cuối</string>
+    <string name="lock_biometric">Mở bằng sinh trắc học</string>
     <string name="lock_forgot">Quên mã PIN</string>
     <string name="lock_cancel">Hủy</string> <!-- [mới] -->
     <string name="lock_continue">Tiếp tục</string> <!-- [mới] -->

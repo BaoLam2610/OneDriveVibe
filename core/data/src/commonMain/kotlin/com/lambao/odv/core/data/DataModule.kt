@@ -17,7 +17,8 @@ val dataModule = module {
     single { ConfigVault(get(), get()) }
     single { LockoutStore(get(), get()) }
     single<ConfigRepository> { ConfigRepositoryImpl(get(), get()) }
-    single<SecurityRepository> { SecurityRepositoryImpl(get(), get(), get(), get(), get()) }
+    // BiometricAuthenticator do :androidApp cung cấp (cần Activity để hiện BiometricPrompt).
+    single<SecurityRepository> { SecurityRepositoryImpl(get(), get(), get(), get(), get(), get()) }
     single<DriveRepository> { DriveRepositoryImpl(get(), get()) }
     // getAll: mỗi lát đăng ký ConnectionResetter của mình (Room, cache, cài đặt) mà không phải sửa chỗ này.
     factory { DisconnectUseCase(getAll(), get()) }

@@ -48,6 +48,40 @@ sealed interface UnlockResult {
      * Khóa để nhập lại, không hiện thông báo lỗi.
      */
     data object Interrupted : UnlockResult
+
+    /**
+     * Người dùng hủy hộp thoại sinh trắc học, hoặc sinh trắc học không còn dùng được (đổi vân tay, phần bọc cũ): không phải
+     * lỗi, quay về nhập PIN. Màn Khóa cập nhật lại phím sinh trắc học theo `SecurityRepository.isBiometricEnabled`.
+     */
+    data object Cancelled : UnlockResult
+}
+
+/** Kết quả bật sinh trắc học (BM-02). */
+enum class BiometricOutcome {
+    Success,
+
+    /** Người dùng hủy hộp thoại: có thể thử lại hoặc bỏ qua. */
+    Cancelled,
+
+    /** Máy không có hoặc chưa đăng ký sinh trắc học mạnh, hoặc app chưa ở trạng thái đã mở khóa. */
+    Unavailable,
+
+    /** Lỗi khi tạo khóa hoặc ghi phần bọc. Không để lại phần bọc dở. */
+    Failed,
+}
+
+/** Kết quả lấy khóa dẫn xuất qua sinh trắc học (KH-01). */
+sealed interface BiometricUnwrap {
+    /** Có khóa. Người nhận tự xóa [key] sau khi dùng. */
+    class Key(val key: ByteArray) : BiometricUnwrap
+
+    /** Người dùng hủy, hoặc hộp thoại không hiện được (app đang ở nền, khóa tạm bởi hệ điều hành). */
+    data object Cancelled : BiometricUnwrap
+
+    /** Khóa Keystore mất hiệu lực (đổi hoặc thêm vân tay): đã xóa phần bọc, quay về PIN. */
+    data object Invalidated : BiometricUnwrap
+
+    data object Failed : BiometricUnwrap
 }
 
 /** Luật PIN (BM-02, BM-06). */

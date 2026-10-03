@@ -48,6 +48,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtimeCompose)
     // ProcessLifecycleOwner cho tự khóa khi cả app xuống nền (CH-03, ADR-0014).
     implementation(libs.androidx.lifecycle.process)
+    // BiometricPrompt kèm khóa Keystore cho mở khóa bằng sinh trắc học (BM-02, KH-01, ADR-0014).
+    implementation(libs.androidx.biometric)
     implementation(libs.kotlinx.serialization.core)
 
     implementation(libs.compose.uiToolingPreview)

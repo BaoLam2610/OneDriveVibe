@@ -3,10 +3,13 @@ package com.lambao.odv.core.data.security
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.data.config.ConfigVault
+import com.lambao.odv.core.domain.model.BiometricOutcome
+import com.lambao.odv.core.domain.model.BiometricUnwrap
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.model.SecurityMode
 import com.lambao.odv.core.domain.model.UnlockResult
+import com.lambao.odv.core.domain.repository.BiometricAuthenticator
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.network.TokenProvider
 import com.lambao.odv.core.security.EnvelopeOpen
@@ -35,6 +38,7 @@ internal class SecurityRepositoryImpl(
     private val lockout: LockoutStore,
     private val secrets: SecretStore,
     private val tokens: TokenProvider,
+    private val biometric: BiometricAuthenticator,
     private val wipeAfterFailures: () -> Int? = { null },
 ) : SecurityRepository {
 
@@ -103,6 +107,70 @@ internal class SecurityRepositoryImpl(
         }
     }
 
+    override suspend fun isBiometricAvailable(): Boolean = biometric.isAvailable()
+
+    override suspend fun isBiometricEnabled(): Boolean = vault.pinMode && biometric.isEnabled()
+
+    override suspend fun enableBiometric(): BiometricOutcome {
+        vault.initialize()
+        // Chỉ khi đang ở chế độ PIN và đã mở khóa mới có khóa phiên để bọc; đang khóa thì không có.
+        val key = vault.copySessionKey() ?: return BiometricOutcome.Unavailable
+        return try {
+            biometric.enroll(key)
+        } finally {
+            key.fill(0)
+        }
+    }
+
+    override suspend fun unlockWithBiometric(): UnlockResult {
+        vault.initialize()
+        if (!vault.pinMode) return UnlockResult.Success
+        // Vân tay không được né việc chống đoán PIN: đang bị khóa nhập thì phải đợi hết giờ (KH-02).
+        val remaining = lockout.remainingMs()
+        if (remaining > 0) return UnlockResult.Cooldown(remaining)
+        val epoch = vault.currentEpoch()
+        // Hộp thoại sinh trắc học chạy NGOÀI mutex: nó có thể chờ người dùng lâu, và không được chặn nhập PIN hay khóa.
+        val unwrapped = when (val result = biometric.unwrap()) {
+            is BiometricUnwrap.Key -> result
+            // Đã tự xóa phần bọc ở bên cài đặt; về nhập PIN.
+            BiometricUnwrap.Cancelled, BiometricUnwrap.Invalidated -> return UnlockResult.Cancelled
+            BiometricUnwrap.Failed -> return UnlockResult.Failed
+        }
+        return try {
+            mutex.withLock { openWithBiometricKey(unwrapped.key, epoch) }
+        } finally {
+            unwrapped.key.fill(0)
+        }
+    }
+
+    private suspend fun openWithBiometricKey(key: ByteArray, epoch: Int): UnlockResult {
+        // Kiểm tra lại trong mutex: hộp thoại có thể mở lâu, và một lần nhập sai PIN trong lúc đó có thể đã bật khóa tạm.
+        val remaining = lockout.remainingMs()
+        if (remaining > 0) return UnlockResult.Cooldown(remaining)
+        val envelope = (vault.readRaw() as? AppResult.Success)?.value
+        if (envelope == null || !codec.isEnvelope(envelope)) return UnlockResult.Failed
+        return when (val opened = codec.openWithKey(key, envelope, ConfigVault.NAME)) {
+            is EnvelopeOpen.Opened -> {
+                val config = vault.decode(opened.plain)
+                opened.plain.fill(0)
+                when {
+                    config == null -> {
+                        opened.key.fill(0)
+                        UnlockResult.Failed
+                    }
+                    // false: app bị khóa lại trong lúc xác thực; giữ Locked, không coi là mở khóa.
+                    adoptOrClearToken(config, opened.key, epoch) -> UnlockResult.Success
+                    else -> UnlockResult.Interrupted
+                }
+            }
+            // Khóa bọc không còn khớp phong bì (PIN đã đổi ở nơi khác, tệp cũ): xóa và để người dùng nhập PIN.
+            EnvelopeOpen.WrongKey, EnvelopeOpen.Malformed -> {
+                biometric.clear()
+                UnlockResult.Cancelled
+            }
+        }
+    }
+
     // Đọc bộ đếm có thể ghi lại mốc khi phát hiện reboot nên LockoutStore tự tuần tự hóa (không cần chờ Argon2id ở đây).
     override suspend fun lockoutRemainingMs(): Long = lockout.remainingMs()
 
@@ -150,6 +218,9 @@ internal class SecurityRepositoryImpl(
                     return@withLock UnlockResult.Failed
                 }
                 adoptOrClearToken(config, sealed.key, epoch)
+                // PIN mới có salt và khóa dẫn xuất mới: phần bọc sinh trắc học cũ không còn mở được phong bì. Xóa, người dùng
+                // bật lại khi muốn (CD-09).
+                biometric.clear()
                 UnlockResult.Success
             }
         }
@@ -169,6 +240,8 @@ internal class SecurityRepositoryImpl(
                 if (config == null || written !is AppResult.Success) return@withLock UnlockResult.Failed
                 vault.setDeviceMode(config)
                 lockout.clear()
+                // Hết chế độ PIN thì phần bọc khóa dẫn xuất không còn ý nghĩa (CD-03).
+                biometric.clear()
                 UnlockResult.Success
             }
         }

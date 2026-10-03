@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 private const val WARN_WHEN_ATTEMPTS_LEFT = 2
 
 /**
- * Màn Khóa (KH-01 → KH-06, CH-03). Mở khóa bằng PIN 6 số, chờ khi sai nhiều lần, Quên mã PIN. Sinh trắc học thêm ở bước sau.
+ * Màn Khóa (KH-01 → KH-06, CH-03). Mở khóa bằng PIN 6 số hoặc sinh trắc học (nếu đã bật), chờ khi sai nhiều lần, Quên mã PIN.
  *
  * Các chữ số nằm trong [pin] (CharArray) chứ không trong State, và bị xóa ngay khi gửi đi hoặc khi ViewModel bị hủy
  * (CH-02). Kết thúc màn đi qua `State.completion` (không phải Effect) để không kẹt ở màn Khóa nếu UI đang xoay màn hình.
@@ -44,6 +44,9 @@ class LockViewModel(
             val remaining = security.lockoutRemainingMs()
             if (remaining > 0) startCooldown(remaining)
             refreshWarning()
+            refreshBiometric()
+            // KH-01: đã bật sinh trắc học thì tự hiện hộp thoại ngay khi mở màn Khóa; không hiện khi đang bị khóa tạm (KH-02).
+            if (remaining <= 0) useBiometric()
         }
     }
 
@@ -51,6 +54,7 @@ class LockViewModel(
         when (intent) {
             is LockIntent.Digit -> onDigit(intent.digit)
             LockIntent.Backspace -> onBackspace()
+            LockIntent.UseBiometric -> useBiometric()
             LockIntent.ForgotClicked -> if (!currentState.isBusy) setState { copy(forgot = ForgotStep.Warn) }
             LockIntent.ForgotContinue -> setState { copy(forgot = ForgotStep.Confirm) }
             LockIntent.ForgotDismiss -> setState { copy(forgot = ForgotStep.None) }
@@ -71,6 +75,26 @@ class LockViewModel(
         if (!canEdit() || length == 0) return
         pin[--length] = '\u0000'
         setState { copy(entered = length, error = null) }
+    }
+
+    /** Hiện hộp thoại sinh trắc học của hệ thống; xong thì xử lý như kết quả PIN. Hủy thì ở lại để nhập PIN. */
+    private fun useBiometric() {
+        if (!canEdit() || !currentState.biometricEnabled) return
+        setState { copy(isBusy = true, error = null) }
+        viewModelScope.launch {
+            try {
+                handle(security.unlockWithBiometric())
+            } finally {
+                // Hủy coroutine hoặc hộp thoại không hiện được (Activity bị hủy khi xoay màn hình, ViewModel vẫn sống) mà không
+                // bỏ cờ này thì bàn phím và nút Quên PIN bị khóa mãi.
+                setState { copy(isBusy = false) }
+            }
+        }
+    }
+
+    private suspend fun refreshBiometric() {
+        val enabled = security.isBiometricEnabled()
+        setState { copy(biometricEnabled = enabled) }
     }
 
     private fun submit() {
@@ -109,8 +133,11 @@ class LockViewModel(
             UnlockResult.Failed -> setState { copy(isBusy = false, entered = 0, error = LockError.StorageFailed) }
             // App bị khóa lại giữa lúc giải mã: không phải lỗi, chỉ cho nhập lại.
             UnlockResult.Interrupted -> setState { copy(isBusy = false, entered = 0, error = null) }
+            // Hủy hộp thoại sinh trắc học, hoặc nó không còn dùng được (đổi vân tay): về nhập PIN, không phải lỗi.
+            UnlockResult.Cancelled -> setState { copy(isBusy = false, entered = 0, error = null) }
         }
         refreshWarning()
+        refreshBiometric()
     }
 
     private fun startCooldown(initialMs: Long) {

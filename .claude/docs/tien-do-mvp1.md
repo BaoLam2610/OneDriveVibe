@@ -7,7 +7,7 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 ## Đang làm
 
 - **Lát:** 2, Mã PIN và màn Khóa (Lát 0, 1, D code xong, còn chờ kiểm tay)
-- **Bước:** Lát 2 xong code bước 1 đến 8 (luồng PIN đầy đủ: đặt PIN, màn Khóa, tự khóa, Quên PIN). Bước 10 (ẩn nội dung ở danh sách app gần đây) cũng xong. Còn bước 9 (sinh trắc học) và 11 (rà chuỗi và tài liệu UI). Chờ người dùng build và kiểm tay trước khi làm tiếp
+- **Bước:** Lát 2 xong code cả 11 bước (PIN, màn Khóa, tự khóa, Quên PIN, ẩn recents, sinh trắc học). Đã review Kotlin + bảo mật bước 9 và sửa. Còn: kiểm tay trên máy thật (sai PIN 5 lần, bấm Home lúc giải mã, đổi vân tay, đổi PIN)
 - **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật đã có luồng đặt PIN (Lát 2, bước 8). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
@@ -64,10 +64,10 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 - [x] 6. `:androidApp`: tự khóa (`AppLockController` + `ProcessLifecycleOwner`), cổng khóa trong `ODVNavDisplay` (không dựng `NavDisplay` ở khởi động nguội cho tới khi `Lock` nằm trên cùng); `SplashViewModel` chờ `lockState == Unlocked` rồi mới điều hướng, `DebugTools.onAppLocked()`. Nút bọ debug hiện cả khi khóa (xem ADR-0013)
 - [x] 7. `:feature:auth`: màn Khóa (KH-01 → KH-06), Quên PIN 2 bước, đồng hồ khóa tạm (viết ngay trong `ODVLockContent`, chưa tách `ODVCooldownTimer`); sinh trắc học chưa có
 - [x] 8. `:feature:auth`: đặt PIN B1 → B5, B8 (BM-01 → BM-08); B6 sinh trắc học làm ở bước 9. `ConnectViewModel` không đổi nhưng `init` của nó (tự vào Danh sách khi `load()` thành công) là chỗ đỡ cho luồng PIN: đừng bỏ
-- [ ] 9. Sinh trắc học (bọc khóa dẫn xuất)
+- [x] 9. Sinh trắc học (bọc khóa dẫn xuất): `BiometricAuthenticator` (domain) + `AndroidBiometricAuthenticator`/`CurrentActivityHolder` (app), `SecurityRepository.enableBiometric`/`unlockWithBiometric`, B6 trong màn đặt PIN, phím sinh trắc học và hộp thoại tự hiện ở màn Khóa (L2)
 - [x] 10. Ẩn nội dung ở danh sách app gần đây khi bảo mật BẬT: `SecurityRepository.isProtected`; Android 13+ `setRecentsScreenshotEnabled(false)` trong `MainActivity`, bản thấp hơn `FLAG_SECURE` toàn cửa sổ (`ODVSecureWindow` trong `ODVApp`)
-- [ ] 11. Chuỗi VI/EN, rà `thiet-ke-ui.md`
-- [ ] Review Kotlin + bảo mật
+- [x] 11. Chuỗi VI/EN (feature/auth 70 key, androidApp khớp VI/EN), checklist sinh trắc học trong `thiet-ke-ui.md`, ADR-0014 và tech-stack
+- [x] Review Kotlin + bảo mật (bước 6 đến 9, đã sửa theo review)
 - [ ] Kiểm tay
 
 ## Lát 3: Đồng bộ delta và offline
@@ -139,3 +139,5 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-03 | Sửa lỗi khởi động nguội khi bật PIN (Splash nhấp nháy; nhập đúng PIN lại vào màn Kết nối): `ODVNavDisplay` không dựng `NavDisplay` ở lần đầu cho tới khi `Lock` nằm trên cùng (Splash/Kết nối không còn chạy dưới lớp khóa), `SplashViewModel` chờ `lockState == Unlocked` rồi mới quyết định điều hướng |
 | 2026-10-03 | Xử lý code review e8027e03: `lockState` thu bằng `collectAsState` (không gắn lifecycle) ở `ODVNavDisplay` và `ODVApp` để không lộ khung hình cũ khi mở lại sau lúc bị khóa; `showDebug` chỉ khi `Unlocked`; bước 10 (`isProtected` + `setRecentsScreenshotEnabled`/`FLAG_SECURE`); xóa `ODVPlaceholderScreen`, `ConfigRepository.clear()` và tham số `TokenProvider` thừa; sửa dấu cách catalog; cập nhật ghi chú tiến độ. Chưa xử lý: `.claude/settings.json` trong commit (chờ người dùng quyết) |
 | 2026-10-03 | Công cụ debug: nút bọ luôn hiện ở bản debug (kể cả màn Khóa, lúc `Unknown` và trên Dialog), bản release vẫn ẩn; tab API thêm "Sao chép cURL" (thanh trên màn chi tiết và icon cuối mỗi dòng, theo công tắc che); "Sao chép" và "Mở hết/Thu gọn" đổi thành icon gọn (`DebugIconButton` + 4 vector `ic_debug_*` trong `:tools:debug`, ngoài bộ icon sản phẩm). Cập nhật rủi ro ADR-0013. Chưa build |
+| 2026-10-03 | Lát 2 bước 9 và 11: sinh trắc học (`BiometricAuthenticator`, `AndroidBiometricAuthenticator` + `CurrentActivityHolder`, khóa Keystore `odv_bio_key` bọc khóa dẫn xuất ở `bio_wrap`), B6 trong màn đặt PIN, phím sinh trắc học và tự hiện hộp thoại ở màn Khóa, từ chối khi khóa tạm, đổi PIN/tắt bảo vệ xóa phần bọc; chuỗi VI/EN, checklist trong `thiet-ke-ui.md`, ADR-0014. Bước 10 đã xong từ trước. Chưa build, chưa review |
+| 2026-10-03 | Review sinh trắc học và đã sửa: thiếu import `BiometricOutcome` (lỗi biên dịch), `CurrentActivityHolder.awaitResumed` không để Activity bị hủy làm treo ViewModel, kiểm tra RESUMED ngay trước `BiometricPrompt.authenticate`, `isBusy`/`isEnrollingBiometric` trả về `false` trong `finally`, khóa hỏng (mọi `GeneralSecurityException`) thì dọn và về PIN, `cleanup()` không ném ngoại lệ, kiểm tra khóa tạm lại trong mutex, bật sinh trắc học cần xác nhận, B6 không kẹt khi lỗi. Chưa build |

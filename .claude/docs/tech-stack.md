@@ -209,7 +209,7 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 - **Không lưu PIN, không lưu hash PIN** (CH-02). PIN đúng hay sai = giải mã config được hay không. Số lần sai và thời gian chờ (KH-02) lưu riêng, bền qua tắt/mở app.
 - **Access token chỉ trong bộ nhớ** (CH-03); khóa app thì xóa token và config đã giải mã khỏi bộ nhớ.
 - Thư viện Argon2id đặt sau interface (`PinKeyDeriver`) để thay được. Bản Android dùng `argon2kt` (`com.lambdapioneer.argon2kt`, khai báo `androidMain` của `:core:security`); phiên bản trong `libs.versions.toml` cần kiểm tra lại khi cập nhật (ABI, trang bộ nhớ 16 KB). Chi tiết phong bì PIN, bộ đếm sai, sinh trắc học, tự khóa: ADR-0014.
-- `androidx.biometric` và `androidx.lifecycle:lifecycle-process` đã khai báo trong catalog, gắn vào `:androidApp` khi làm sinh trắc học và tự khóa (Lát 2, bước 6 và 9).
+- `androidx.biometric` và `androidx.lifecycle:lifecycle-process` đã khai báo trong catalog và đã gắn vào `:androidApp` (tự khóa ở bước 6, sinh trắc học `BiometricPrompt` ở bước 9).
 - `FLAG_SECURE` cho màn Kết nối, Khóa, nhập PIN, Cài đặt; ẩn nội dung ở danh sách app gần đây.
 - **CH-04 (đã làm ở Lát 0):** `allowBackup="false"`, `fullBackupContent="false"`, `dataExtractionRules` loại trừ mọi miền cho cả `cloud-backup` và `device-transfer` (Android 12+ bỏ qua `allowBackup` khi chuyển máy).
 - **CH-06:** không cài Ktor `Logging`. Log API cho màn Debug đi qua `HttpTrafficRecorder` (chỉ bản debug, chỉ trong bộ nhớ). Từ ADR-0013 bản ghi là **đầy đủ, chưa che** (kể cả `Authorization`, `client_secret`, token, `downloadUrl`); màn Debug hiện đầy đủ mặc định và có công tắc che (`HttpTrafficEntry.masked()`). Bản release không có recorder. `followRedirects = false` để bearer không bị gửi sang máy chủ khác.

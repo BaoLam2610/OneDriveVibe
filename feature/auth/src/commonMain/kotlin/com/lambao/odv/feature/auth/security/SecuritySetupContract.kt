@@ -1,6 +1,6 @@
 package com.lambao.odv.feature.auth.security
 
-/** Bước của màn Thiết lập bảo mật. Sinh trắc học (B6) thêm ở bước sau của Lát 2. */
+/** Bước của màn Thiết lập bảo mật. */
 enum class SetupStep {
     /** B1, B2, B3: nhập mã PIN mới. */
     Create,
@@ -10,6 +10,12 @@ enum class SetupStep {
 
     /** B8: đang mã hóa lại config (Argon2id mất khoảng nửa giây, BM-04). */
     Finishing,
+
+    /**
+     * B6: PIN đã khớp và config đã mã hóa bằng PIN; hỏi có bật mở khóa bằng sinh trắc học không (BM-02). Chỉ hiện khi máy hỗ
+     * trợ. Đóng app ở bước này vẫn an toàn vì config đã ở chế độ PIN.
+     */
+    OfferBiometric,
 }
 
 enum class SetupError {
@@ -34,6 +40,9 @@ data class SetupUiState(
 
     /** Đã bật bảo vệ xong: vào Danh sách. Là State chứ không phải Effect để không mất khi xoay màn hình. */
     val isDone: Boolean = false,
+
+    /** Đang hiện hộp thoại sinh trắc học của hệ thống (B6): khóa hai nút trong lúc đó. */
+    val isEnrollingBiometric: Boolean = false,
 )
 
 sealed interface SetupIntent {
@@ -43,6 +52,12 @@ sealed interface SetupIntent {
     /** Back từ bước nhập lại về bước đặt PIN (PIN đã nhập bị bỏ). Back ở bước đặt PIN do màn xử lý (quay lại KN-13, BM-08). */
     data object BackToCreate : SetupIntent
     data object DismissSaveFailure : SetupIntent
+
+    /** B6, nút "Bật": hiện hộp thoại sinh trắc học rồi bọc khóa. */
+    data object EnableBiometric : SetupIntent
+
+    /** B6, nút "Để sau" (và Back): vào Danh sách, bật lại ở Cài đặt (CD-02). */
+    data object SkipBiometric : SetupIntent
 }
 
 sealed interface SetupEffect {

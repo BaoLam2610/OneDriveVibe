@@ -53,6 +53,10 @@
     <string name="security_hint">The PIN has 6 digits</string>
     <string name="security_weak">That PIN is too easy to guess, choose another one</string>
     <string name="security_mismatch">The two PINs do not match, try again</string>
+    <string name="security_biometric_title">Unlock with biometrics?</string>
+    <string name="security_biometric_body">Use your fingerprint or face to unlock quickly. Your PIN always works, even if your biometrics change. You can turn this on later in Settings › Security.</string>
+    <string name="security_biometric_enable">Turn on</string>
+    <string name="security_biometric_later">Later</string>
     <string name="security_saving_title">Finishing setup</string>
     <string name="security_saving_description">Finishing</string>
 
@@ -65,6 +69,7 @@
     <string name="lock_unlocking">Unlocking</string>
     <string name="lock_cooldown_note">Too many wrong attempts, try again later</string>
     <string name="lock_backspace">Delete last digit</string>
+    <string name="lock_biometric">Unlock with biometrics</string>
     <string name="lock_forgot">Forgot PIN</string>
     <string name="lock_cancel">Cancel</string>
     <string name="lock_continue">Continue</string>

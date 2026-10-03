@@ -11,6 +11,7 @@ import com.lambao.odv.di.appModule
 import com.lambao.odv.feature.auth.authModule
 import com.lambao.odv.feature.browser.browserModule
 import com.lambao.odv.security.AppLockController
+import com.lambao.odv.security.CurrentActivityHolder
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -32,9 +33,13 @@ class MainApplication : Application() {
         }
         // CH-03, ADR-0014: tự khóa khi cả app xuống nền. Giữ tham chiếu mạnh vì Lifecycle chỉ giữ yếu observer.
         ProcessLifecycleOwner.get().lifecycle.addObserver(lockController)
+        // Để BiometricPrompt biết hiện trên Activity nào (ADR-0014).
+        registerActivityLifecycleCallbacks(activityHolder)
     }
 
     private val security: SecurityRepository by inject()
+
+    private val activityHolder: CurrentActivityHolder by inject()
 
     private val lockController by lazy { AppLockController(security) { DebugTools.onAppLocked() } }
 }

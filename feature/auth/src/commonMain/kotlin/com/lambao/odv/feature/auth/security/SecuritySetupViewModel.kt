@@ -3,6 +3,7 @@ package com.lambao.odv.feature.auth.security
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.domain.model.BiometricOutcome
 import com.lambao.odv.core.domain.model.PinPolicy
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import kotlinx.coroutines.launch
@@ -29,10 +30,29 @@ class SecuritySetupViewModel(
             SetupIntent.Backspace -> onBackspace()
             SetupIntent.BackToCreate -> backToCreate()
             SetupIntent.DismissSaveFailure -> setState { copy(saveFailed = false) }
+            SetupIntent.EnableBiometric -> enableBiometric()
+            SetupIntent.SkipBiometric -> if (!currentState.isEnrollingBiometric) setState { copy(isDone = true) }
         }
     }
 
-    private fun canEdit(): Boolean = currentState.let { it.step != SetupStep.Finishing && !it.isDone }
+    /** Chỉ nhập PIN ở hai bước đầu; đang hoàn tất, đang hỏi sinh trắc học hoặc đã xong thì bỏ qua phím. */
+    private fun canEdit(): Boolean = currentState.let { !it.isDone && (it.step == SetupStep.Create || it.step == SetupStep.Confirm) }
+
+    private fun enableBiometric() {
+        if (currentState.isEnrollingBiometric || currentState.step != SetupStep.OfferBiometric) return
+        setState { copy(isEnrollingBiometric = true) }
+        viewModelScope.launch {
+            val outcome = try {
+                security.enableBiometric()
+            } finally {
+                // Kể cả khi bị hủy: không bỏ cờ này thì hai nút ở B6 bị khóa mãi.
+                setState { copy(isEnrollingBiometric = false) }
+            }
+            // Hủy hộp thoại: ở lại B6 để thử lại hoặc chọn "Để sau". Thành công, hoặc lỗi và không dùng được (PIN đã bật nên
+            // không mất gì; bật lại ở Cài đặt, CD-02): vào Danh sách thay vì để người dùng kẹt ở B6 không có thông báo.
+            if (outcome != BiometricOutcome.Cancelled) setState { copy(isDone = true) }
+        }
+    }
 
     private fun onDigit(digit: Int) {
         if (!canEdit() || length >= PinPolicy.LENGTH) return
@@ -71,7 +91,7 @@ class SecuritySetupViewModel(
                     sendEffect(SetupEffect.Shake)
                 }
             }
-            SetupStep.Finishing -> Unit
+            SetupStep.Finishing, SetupStep.OfferBiometric -> Unit
         }
     }
 
@@ -93,7 +113,9 @@ class SecuritySetupViewModel(
                 first.fill('\u0000')
             }
             when (result) {
-                is AppResult.Success -> setState { copy(isDone = true) }
+                // BM-02: PIN đã bật. Nếu máy hỗ trợ sinh trắc học thì hỏi (B6), không thì xong luôn.
+                is AppResult.Success ->
+                    if (security.isBiometricAvailable()) setState { copy(step = SetupStep.OfferBiometric) } else setState { copy(isDone = true) }
                 // BM-04: lỗi thì config giữ nguyên ở chế độ thiết bị; quay về bước đặt PIN để thử lại.
                 is AppResult.Failure -> setState { copy(step = SetupStep.Create, entered = 0, saveFailed = true) }
             }

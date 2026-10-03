@@ -4,4 +4,11 @@
 
     <!-- Splash (thiet-ke-ui.md mục 5.1) -->
     <string name="splash_tagline">Phim · Ảnh · Truyện trên OneDrive</string>
+
+    <!-- Hộp thoại sinh trắc học của hệ thống (L2, KH-01, BM-02). Câu chữ tự viết, chờ duyệt (ADR-0014) -->
+    <string name="biometric_unlock_title">Mở khóa OneDriveVibe</string> <!-- [mới] -->
+    <string name="biometric_unlock_subtitle">Dùng sinh trắc học để mở khóa</string> <!-- [mới] -->
+    <string name="biometric_enroll_title">Bật mở khóa bằng sinh trắc học</string> <!-- [mới] -->
+    <string name="biometric_enroll_subtitle">Xác nhận bằng sinh trắc học của bạn</string> <!-- [mới] -->
+    <string name="biometric_use_pin">Dùng mã PIN</string> <!-- [mới] -->
 </resources>

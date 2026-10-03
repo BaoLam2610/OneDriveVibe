@@ -19,6 +19,7 @@ import com.lambao.odv.core.designsystem.component.ODVButtonStyle
 import com.lambao.odv.core.designsystem.component.ODVDialog
 import com.lambao.odv.core.designsystem.component.ODVDialogTone
 import com.lambao.odv.core.designsystem.component.ODVKeypad
+import com.lambao.odv.core.designsystem.component.ODVKeypadAction
 import com.lambao.odv.core.designsystem.component.ODVPinDots
 import com.lambao.odv.core.designsystem.component.ODVPinDotsState
 import com.lambao.odv.core.designsystem.component.ODVPinMessage
@@ -74,6 +75,13 @@ internal fun ODVLockContent(
                 onDigit = { onIntent(LockIntent.Digit(it)) },
                 onBackspace = { onIntent(LockIntent.Backspace) },
                 backspaceLabel = stringResource(R.string.lock_backspace),
+                // L1/L2: phím sinh trắc học ở góc trái dưới khi đã bật; ẩn hẳn khi bị khóa tạm (KH-02, đã chốt).
+                secondary = if (state.biometricEnabled && !state.isCoolingDown) {
+                    val label = stringResource(R.string.lock_biometric)
+                    ODVKeypadAction(ODVIcon.Fingerprint, label) { onIntent(LockIntent.UseBiometric) }
+                } else {
+                    null
+                },
                 enabled = !state.isCoolingDown && !state.isBusy,
             )
             ODVButton(

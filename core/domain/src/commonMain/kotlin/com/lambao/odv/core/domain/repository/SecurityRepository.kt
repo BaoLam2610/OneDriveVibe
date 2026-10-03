@@ -1,6 +1,7 @@
 package com.lambao.odv.core.domain.repository
 
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.domain.model.BiometricOutcome
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.model.SecurityMode
 import com.lambao.odv.core.domain.model.UnlockResult
@@ -40,6 +41,24 @@ interface SecurityRepository {
 
     /** Mở khóa bằng PIN (KH-01). Tính vào bộ đếm sai; xem [UnlockResult]. */
     suspend fun unlockWithPin(pin: CharArray): UnlockResult
+
+    /** Máy dùng được sinh trắc học mạnh (BM-02): dùng để quyết định có hỏi bật ở bước B6 hay không. */
+    suspend fun isBiometricAvailable(): Boolean
+
+    /** Sinh trắc học đã bật và còn dùng được (hiện phím sinh trắc học ở màn Khóa, KH-01). */
+    suspend fun isBiometricEnabled(): Boolean
+
+    /**
+     * Bật mở khóa bằng sinh trắc học (BM-02, CD-02): hiện hộp thoại rồi bọc khóa phiên hiện tại. Chỉ làm được khi đang ở chế độ
+     * PIN và đã mở khóa; ngược lại trả [BiometricOutcome.Unavailable].
+     */
+    suspend fun enableBiometric(): BiometricOutcome
+
+    /**
+     * Mở khóa bằng sinh trắc học (KH-01). Từ chối khi đang bị khóa nhập vì sai PIN ([UnlockResult.Cooldown], KH-02) để sinh
+     * trắc học không né được việc chống đoán PIN. Không tính vào bộ đếm sai: sai sinh trắc học do hệ điều hành giới hạn.
+     */
+    suspend fun unlockWithBiometric(): UnlockResult
 
     /** Thời gian còn bị khóa nhập (KH-02), 0 nếu không. Màn Khóa dùng để hiện đồng hồ khi mở lại sau khi tắt app. */
     suspend fun lockoutRemainingMs(): Long
