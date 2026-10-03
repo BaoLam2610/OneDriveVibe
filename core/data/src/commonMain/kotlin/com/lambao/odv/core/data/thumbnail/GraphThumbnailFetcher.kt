@@ -15,6 +15,7 @@ import com.lambao.odv.core.data.drive.toCredentials
 import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.ThumbnailSource
 import com.lambao.odv.core.domain.repository.ConfigRepository
+import com.lambao.odv.core.domain.repository.ThumbnailQuality
 import com.lambao.odv.core.network.GraphApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Semaphore
@@ -29,20 +30,32 @@ private const val FALLBACK_SIZE = "medium"
 
 // Chất lượng trung bình có chủ ý: đủ rõ trên lưới mà nhẹ và nhanh (người dùng không cần cao). Ô Thư viện rộng khoảng
 // 90dp (~250px ở xxhdpi) nên 240 hơi mềm nhưng chấp nhận được; thẻ Thư mục 2 cột rộng khoảng 160dp.
-private fun ThumbnailSize.graphSize(): String = when (this) {
-    ThumbnailSize.Cell -> "c240x240_crop"
-    ThumbnailSize.Card -> "c360x270_crop"
+private const val MIN_SIDE = 60
+private const val MAX_SIDE = 1600
+
+private fun scaled(base: Int, scalePercent: Int): Int = (base * scalePercent / 100).coerceIn(MIN_SIDE, MAX_SIDE)
+
+/** Cỡ tùy chỉnh của Graph (`c{rộng}x{cao}_crop`) sau khi nhân [scalePercent] với cỡ mặc định của từng loại ô. */
+internal fun ThumbnailSize.graphSize(scalePercent: Int): String = when (this) {
+    ThumbnailSize.Cell -> scaled(240, scalePercent).let { "c${it}x${it}_crop" }
+    ThumbnailSize.Card -> "c${scaled(360, scalePercent)}x${scaled(270, scalePercent)}_crop"
 }
 
 /**
- * Khóa cache của một thumbnail (BN-02): id tệp + `cTag` + cỡ. Đổi nội dung thì `cTag` đổi nên khóa đổi và bản cũ không
+ * Khóa cache của một thumbnail (BN-02): id tệp + `cTag` + cỡ thực. Đổi nội dung thì `cTag` đổi nên khóa đổi và bản cũ không
  * còn được dùng (nó nằm lại đến khi bị đẩy ra theo LRU, BN-01); đổi tên hay di chuyển không đổi khóa nên dùng lại cache.
+ * Có cỡ thực để đổi tỉ lệ chất lượng thì tải bản mới thay vì dùng nhầm bản cỡ cũ.
  */
-internal fun thumbnailCacheKey(source: ThumbnailSource): String =
-    "thumb:${source.itemId}:${source.cTag ?: "-"}:${source.size.name}"
+internal fun thumbnailCacheKey(source: ThumbnailSource, scalePercent: Int): String =
+    "thumb:${source.itemId}:${source.cTag ?: "-"}:${source.size.graphSize(scalePercent)}"
 
-internal object ThumbnailKeyer : Keyer<ThumbnailSource> {
-    override fun key(data: ThumbnailSource, options: Options): String = thumbnailCacheKey(data)
+/** Bản phát hành: luôn 100%, không có cách chỉnh. Bản debug ghi đè ở `DebugTools` (xem `ThumbnailQuality`). */
+internal object FixedThumbnailQuality : ThumbnailQuality {
+    override fun scalePercent(): Int = 100
+}
+
+internal class ThumbnailKeyer(private val quality: ThumbnailQuality) : Keyer<ThumbnailSource> {
+    override fun key(data: ThumbnailSource, options: Options): String = thumbnailCacheKey(data, quality.scalePercent())
 }
 
 /** Không có thumbnail để hiện (tệp không có, offline và chưa cache...). Giao diện giữ ô giữ chỗ. Không mang nội dung nhạy cảm. */
@@ -51,12 +64,13 @@ internal class ThumbnailUnavailableException(error: AppError) : Exception("Thumb
 internal class GraphThumbnailFetcherFactory(
     private val api: GraphApi,
     private val configs: ConfigRepository,
+    private val quality: ThumbnailQuality,
 ) : Fetcher.Factory<ThumbnailSource> {
 
     private val gate = Semaphore(MAX_PARALLEL_DOWNLOADS)
 
     override fun create(data: ThumbnailSource, options: Options, imageLoader: ImageLoader): Fetcher =
-        GraphThumbnailFetcher(data, api, configs, imageLoader.diskCache, options, gate)
+        GraphThumbnailFetcher(data, quality.scalePercent(), api, configs, imageLoader.diskCache, options, gate)
 }
 
 /**
@@ -66,6 +80,7 @@ internal class GraphThumbnailFetcherFactory(
  */
 internal class GraphThumbnailFetcher(
     private val source: ThumbnailSource,
+    private val scalePercent: Int,
     private val api: GraphApi,
     private val configs: ConfigRepository,
     private val diskCache: DiskCache?,
@@ -73,7 +88,7 @@ internal class GraphThumbnailFetcher(
     private val gate: Semaphore,
 ) : Fetcher {
 
-    private val key = thumbnailCacheKey(source)
+    private val key = thumbnailCacheKey(source, scalePercent)
 
     override suspend fun fetch(): FetchResult {
         diskCache?.openSnapshot(key)?.let { return it.toResult() }
@@ -96,7 +111,7 @@ internal class GraphThumbnailFetcher(
             is AppResult.Success -> loaded.value.toCredentials()
             is AppResult.Failure -> throw ThumbnailUnavailableException(loaded.error)
         }
-        var result = api.fetchThumbnail(credentials, source.itemId, source.size.graphSize())
+        var result = api.fetchThumbnail(credentials, source.itemId, source.size.graphSize(scalePercent))
         val error = (result as? AppResult.Failure)?.error
         if (error is AppError.Http && error.status == 400) {
             result = api.fetchThumbnail(credentials, source.itemId, FALLBACK_SIZE)

@@ -429,6 +429,9 @@ private fun OthersTab(padding: PaddingValues) {
     val context = LocalContext.current
     val secureMode by DebugSettings.secureMode.collectAsState()
     val maskTraffic by DebugSettings.maskTraffic.collectAsState()
+    val thumbnailScale by DebugSettings.thumbnailScalePercent.collectAsState()
+    val scope = rememberCoroutineScope()
+    var thumbnailCleared by remember { mutableStateOf(false) }
     val actions = DebugActions.items
     LazyColumn(contentPadding = padding) {
         item { SectionTitle("FLAG_SECURE toàn app") }
@@ -463,6 +466,49 @@ private fun OthersTab(padding: PaddingValues) {
                 modifier = Modifier.padding(horizontal = 16.dp),
                 description = "Che Authorization, token, client_secret, downloadUrl khi hiển thị. Mặc định tắt: hiện đầy đủ.",
             )
+        }
+        item { SectionTitle("Thumbnail") }
+        item {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                // Tỉ lệ so với cỡ mặc định của app (100%). Thấp thì nhẹ và nhanh nhưng mềm; cao thì nét nhưng nặng.
+                DebugSettings.thumbnailScales.forEach { percent ->
+                    ODVRadioRow(
+                        label = if (percent == 100) "100% (mặc định)" else "$percent%",
+                        selected = thumbnailScale == percent,
+                        onClick = { DebugSettings.setThumbnailScale(percent) },
+                        description = when {
+                            percent < 100 -> "Nhẹ và nhanh hơn, ảnh mềm hơn"
+                            percent > 100 -> "Nét hơn, tốn dung lượng và mạng hơn"
+                            else -> "Cỡ app đang dùng"
+                        },
+                    )
+                }
+            }
+        }
+        item {
+            Note(
+                "Áp dụng cho thumbnail tải từ lần kế tiếp (khóa cache có cỡ thực nên không dùng nhầm ảnh cỡ cũ). " +
+                    "Ảnh đang hiện giữ nguyên tới khi mở lại màn; xóa cache để ép tải lại toàn bộ.",
+            )
+        }
+        if (DebugHooks.clearThumbnailCache != null) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    ODVButton(
+                        "Xóa cache thumbnail",
+                        {
+                            thumbnailCleared = false
+                            scope.launch {
+                                DebugHooks.clearThumbnailCache?.invoke()
+                                thumbnailCleared = true
+                            }
+                        },
+                        style = ODVButtonStyle.Secondary,
+                        size = ODVButtonSize.Sm,
+                    )
+                }
+            }
+            if (thumbnailCleared) item { Note("Đã xóa cache thumbnail.") }
         }
         item { SectionTitle("Công cụ") }
         if (actions.isEmpty()) item { Note("Chưa có công cụ nào đăng ký qua DebugActions.register.") }

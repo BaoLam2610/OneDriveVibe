@@ -11,4 +11,8 @@ object DebugHooks {
      */
     @Volatile
     var clearLocalData: (suspend () -> Unit)? = null
+
+    /** Xóa cache thumbnail (đĩa và bộ nhớ) mà không đụng tới kết nối hay dữ liệu khác. Ảnh sẽ tải lại khi cuộn tới. */
+    @Volatile
+    var clearThumbnailCache: (suspend () -> Unit)? = null
 }

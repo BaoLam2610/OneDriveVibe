@@ -18,11 +18,16 @@ import kotlinx.coroutines.flow.asStateFlow
  * - [secureMode]: FLAG_SECURE toàn app (ByDesign / AlwaysOn / AlwaysOff). Áp dụng ngay cho mọi cửa sổ.
  * - [maskTraffic]: che Authorization, token, client_secret, downloadUrl khi hiển thị log API. Mặc định TẮT (hiện đầy đủ,
  *   ADR-0013).
+ * - [thumbnailScalePercent]: tỉ lệ chất lượng thumbnail so với cỡ mặc định (Lát 4); chỉ có ở bản debug.
  */
 object DebugSettings {
     private const val PREFS = "odv_debug"
     private const val KEY_SECURE = "secure_mode"
     private const val KEY_MASK = "mask_traffic"
+    private const val KEY_THUMBNAIL_SCALE = "thumbnail_scale_percent"
+
+    /** Các tỉ lệ chất lượng thumbnail cho chọn (phần trăm so với cỡ mặc định); 100 là mặc định của app. */
+    val thumbnailScales: List<Int> = listOf(50, 75, 100, 125, 150)
 
     private var prefs: SharedPreferences? = null
 
@@ -32,6 +37,11 @@ object DebugSettings {
     private val _maskTraffic = MutableStateFlow(false)
     val maskTraffic: StateFlow<Boolean> = _maskTraffic.asStateFlow()
 
+    private val _thumbnailScale = MutableStateFlow(100)
+
+    /** Tỉ lệ chất lượng thumbnail (50 → 150, mặc định 100). `DebugTools` ở app cấp giá trị này cho `ThumbnailQuality`. */
+    val thumbnailScalePercent: StateFlow<Int> = _thumbnailScale.asStateFlow()
+
     /** Gọi một lần ở Application.onCreate: nạp cài đặt, áp dụng FLAG_SECURE và theo dõi mọi Activity mới. */
     fun install(application: Application) {
         val stored = application.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -40,6 +50,7 @@ object DebugSettings {
             ?.let { name -> ODVSecureMode.entries.firstOrNull { it.name == name } }
             ?: ODVSecureMode.ByDesign
         _maskTraffic.value = stored.getBoolean(KEY_MASK, false)
+        _thumbnailScale.value = stored.getInt(KEY_THUMBNAIL_SCALE, 100).takeIf { it in thumbnailScales } ?: 100
         ODVSecureWindowPolicy.setMode(_secureMode.value)
         application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
             // Đăng ký Window của mọi Activity (MainActivity, DebugActivity, gallery) để chế độ toàn app áp dụng cho cả
@@ -63,6 +74,14 @@ object DebugSettings {
             putString(KEY_SECURE, mode.name)
         }
         ODVSecureWindowPolicy.setMode(mode)
+    }
+
+    fun setThumbnailScale(percent: Int) {
+        if (percent !in thumbnailScales) return
+        _thumbnailScale.value = percent
+        prefs?.edit {
+            putInt(KEY_THUMBNAIL_SCALE, percent)
+        }
     }
 
     fun setMaskTraffic(mask: Boolean) {

@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import com.lambao.odv.MainActivity
+import com.lambao.odv.core.domain.repository.ThumbnailCache
+import com.lambao.odv.core.domain.repository.ThumbnailQuality
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
 import com.lambao.odv.gallery.FoundationsGalleryActivity
 import com.lambao.odv.tools.debug.DebugAction
@@ -15,6 +17,7 @@ import com.lambao.odv.tools.debug.DebugSettings
 import com.lambao.odv.tools.debug.ODVDebugBugButton
 import com.lambao.odv.tools.debug.debugModule
 import org.koin.core.module.Module
+import org.koin.dsl.module
 import org.koin.mp.KoinPlatform
 
 /**
@@ -23,7 +26,16 @@ import org.koin.mp.KoinPlatform
  */
 object DebugTools {
     /** Module Koin cài bộ ghi lưu lượng API. */
-    val koinModules: List<Module> = listOf(debugModule)
+    val koinModules: List<Module> = listOf(
+        debugModule,
+        // Đứng sau androidDataModule trong MainApplication nên ghi đè ThumbnailQuality cố định 100% bằng giá trị chỉnh ở màn
+        // Debug (Koin 4 cho ghi đè mặc định). Bản release không có module này nên luôn 100%.
+        module { single<ThumbnailQuality> { DebugThumbnailQuality } },
+    )
+
+    private object DebugThumbnailQuality : ThumbnailQuality {
+        override fun scalePercent(): Int = DebugSettings.thumbnailScalePercent.value
+    }
 
     /**
      * Gọi trước `startKoin`: ghi log ra Logcat và vào màn Debug, nạp cài đặt debug (FLAG_SECURE toàn app, che log API),
@@ -41,6 +53,8 @@ object DebugTools {
                 Intent(application, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
             )
         }
+        // Tab Khác, nhóm Thumbnail: xóa cache ảnh thu nhỏ. Koin chỉ có sau startKoin nên lấy lúc bấm.
+        DebugHooks.clearThumbnailCache = { KoinPlatform.getKoin().get<ThumbnailCache>().clear() }
         DebugActions.register(
             DebugAction(
                 title = "Foundations gallery",

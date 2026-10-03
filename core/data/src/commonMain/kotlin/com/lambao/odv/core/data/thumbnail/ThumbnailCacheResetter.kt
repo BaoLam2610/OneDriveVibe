@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import coil3.ImageLoader
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.domain.repository.ConnectionResetter
+import com.lambao.odv.core.domain.repository.ThumbnailCache
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
@@ -15,11 +16,13 @@ import kotlinx.coroutines.withContext
 internal class ThumbnailCacheResetter(
     private val imageLoader: ImageLoader,
     private val dispatchers: DispatcherProvider,
-) : ConnectionResetter {
+) : ConnectionResetter, ThumbnailCache {
 
     private val log = Logger.withTag("ThumbnailCache")
 
-    override suspend fun reset() {
+    override suspend fun reset() = clear()
+
+    override suspend fun clear() {
         try {
             imageLoader.memoryCache?.clear()
             withContext(dispatchers.io) { imageLoader.diskCache?.clear() }
