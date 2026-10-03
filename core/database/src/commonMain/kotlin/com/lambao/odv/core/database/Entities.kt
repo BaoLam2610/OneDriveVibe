@@ -1,8 +1,8 @@
 package com.lambao.odv.core.database
 
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.Index
+import androidx.room3.PrimaryKey
 
 /**
  * Một mục của drive (thư mục hoặc tệp) đã đồng bộ về máy (DB-01). Chỉ lưu thứ UI cần; không lưu quota (KN-12).

@@ -1,9 +1,9 @@
 package com.lambao.odv.core.database
 
-import androidx.room.Dao
-import androidx.room.Query
-import androidx.room.Transaction
-import androidx.room.Upsert
+import androidx.room3.Dao
+import androidx.room3.Query
+import androidx.room3.Transaction
+import androidx.room3.Upsert
 import kotlinx.coroutines.flow.Flow
 
 /** Số tham số `?` tối đa cho một câu `IN (...)`; dưới giới hạn của SQLite để an toàn với drive lớn. */

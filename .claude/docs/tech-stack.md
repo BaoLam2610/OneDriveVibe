@@ -29,7 +29,7 @@ Cột **Trạng thái**: *đang dùng* = đã gắn vào module; *catalog* = đ�
 | Async | Coroutines + Flow | 1.11.0 | | Common | đang dùng (`:core:common`, api) |
 | Serialization | kotlinx.serialization | 1.11.0 | JSON, route Navigation 3 | Common | đang dùng (`:androidApp`) |
 | Mạng | Ktor Client (OkHttp trên Android, Darwin trên iOS) | 3.6.0 | Graph, token endpoint (ADR-0006) | Common + engine theo nền tảng | catalog → Lát 1 |
-| CSDL | Room KMP + `BundledSQLiteDriver`, KSP | 2.8.5 / sqlite 2.6.2 / KSP 2.3.12 | Metadata, cache, chỉ mục Thư viện (ADR-0007) | Common | catalog → Lát 3 |
+| CSDL | Room KMP + `BundledSQLiteDriver`, KSP | Room 3.0.3 (`androidx.room3`) / sqlite 2.7.1 / KSP 2.3.12 | Metadata, cache, chỉ mục Thư viện (ADR-0007) | Common | catalog → Lát 3 |
 | Cài đặt | DataStore Preferences (KMP) | 1.2.1 | Cài đặt không nhạy cảm | Common | catalog |
 | Lưu bí mật | Android Keystore (AES-GCM, khóa không xuất được) + Argon2id (`argon2kt`, dự phòng BouncyCastle) | | Mã hóa config 4 trường; token chỉ trong bộ nhớ (ADR-0008) | `expect/actual`, iOS: Keychain | Lát 1 (Keystore), Lát 2 (Argon2id) |
 | Ảnh | Coil 3 (`coil-network-ktor3`) | | Tải và cache ảnh, thumbnail | Common | Lát 4 |

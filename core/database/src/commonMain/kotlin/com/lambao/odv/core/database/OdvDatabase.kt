@@ -1,9 +1,9 @@
 package com.lambao.odv.core.database
 
-import androidx.room.ConstructedBy
-import androidx.room.Database
-import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
+import androidx.room3.ConstructedBy
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
+import androidx.room3.RoomDatabaseConstructor
 
 /**
  * CSDL Room KMP, nguồn dữ liệu duy nhất cho UI (ADR-0007). `version = 1` giữ nguyên đến khi phát hành: đổi cột trong

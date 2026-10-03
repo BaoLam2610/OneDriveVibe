@@ -14,9 +14,10 @@ androidx-lifecycle-nav3 = "2.11.0"
 androidx-navigation3 = "1.2.0"
 # Cần kiểm tra phiên bản mới nhất, và hỗ trợ trang bộ nhớ 16 KB, khi cập nhật (ADR-0014).
 argon2kt = "1.6.0"
-androidx-room = "2.8.5"
-# Phải khớp bản sqlite mà Room kéo theo.
-androidx-sqlite = "2.6.2"
+# Room 3 (nâng từ 2.8.5 để thử khắc phục SIGSEGV trong libsqliteJni lúc applyPage; xem ADR-0007).
+androidx-room = "3.0.3"
+# Phải khớp bản sqlite mà Room kéo theo (room3-runtime 3.0.3 kéo sqlite 2.7.1).
+androidx-sqlite = "2.7.1"
 composeMultiplatform = "1.12.1"
 koin = "4.2.2"
 kermit = "2.2.0"
@@ -84,8 +85,8 @@ androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "a
 androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "androidx-lifecycle-nav3" }
 
 # Room KMP (ADR-0007). Gắn vào :core:database ở Lát 3.
-androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }
-androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
+androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "androidx-room" }
+androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "androidx-room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
 
 # DataStore Preferences (kế hoạch MVP1 mục 3). Gắn vào module cần lưu cài đặt khi dùng tới.
@@ -99,4 +100,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-room = { id = "androidx.room", version.ref = "androidx-room" }
+room = { id = "androidx.room3", version.ref = "androidx-room" }

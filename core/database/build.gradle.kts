@@ -1,6 +1,6 @@
 plugins {
     id("odv.kmp.library")
-    // Room KMP (ADR-0007): KSP sinh DAO và OdvDatabaseConstructor; plugin androidx.room xuất schema JSON.
+    // Room KMP (ADR-0007): KSP sinh DAO và OdvDatabaseConstructor; plugin androidx.room3 (Room 3, ADR-0007) xuất schema JSON.
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
 }
@@ -29,7 +29,8 @@ dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
 }
 
-room {
+// Room 3: extension của plugin androidx.room3 tên là `room3`, không còn là `room`.
+room3 {
     // Schema giữ version = 1 đến khi phát hành (ADR-0007); file JSON để so khi đổi cột lúc dev.
     schemaDirectory("$projectDir/schemas")
 }

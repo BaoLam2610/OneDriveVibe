@@ -21,8 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.DisableSelection
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -208,21 +208,24 @@ internal fun ODVApiDetailScreen(request: DebugRequest, maskTraffic: Boolean, onB
                     color = if (total > 0) ODVTheme.colors.voltText else ODVTheme.colors.danger,
                 )
             }
-            LazyColumn(contentPadding = padding) {
-                sections.forEach { section ->
-                    sectionItems(
-                        section = section,
-                        state = states.getOrPut(section.id) { SectionState() },
-                        query = query,
-                        matches = counts[section.id] ?: 0,
-                        onCopy = {
-                            // copyText pretty-print cả cây JSON: tính ngoài luồng chính rồi mới chạm clipboard.
-                            scope.launch {
-                                val text = withContext(Dispatchers.Default) { section.copyText }
-                                copyToClipboard(context, section.title, text)
-                            }
-                        },
-                    )
+            // SelectionContainer: nhấn giữ để chọn/sao chép chữ trong header, body, response.
+            SelectionContainer {
+                LazyColumn(contentPadding = padding) {
+                    sections.forEach { section ->
+                        sectionItems(
+                            section = section,
+                            state = states.getOrPut(section.id) { SectionState() },
+                            query = query,
+                            matches = counts[section.id] ?: 0,
+                            onCopy = {
+                                // copyText pretty-print cả cây JSON: tính ngoài luồng chính rồi mới chạm clipboard.
+                                scope.launch {
+                                    val text = withContext(Dispatchers.Default) { section.copyText }
+                                    copyToClipboard(context, section.title, text)
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -239,7 +242,7 @@ private fun LazyListScope.sectionItems(
     // Đang tìm kiếm mà phần này có kết quả thì luôn mở để thấy kết quả.
     val expanded = state.expanded || (query.isNotEmpty() && matches > 0)
     item(key = "header:${section.id}") {
-        SectionHeader(section, expanded, matches, query, state, onCopy)
+        DisableSelection { SectionHeader(section, expanded, matches, query, state, onCopy) }
     }
     if (!expanded) return
     val json = section.json
@@ -322,9 +325,8 @@ private fun TextLine(text: String, query: String) {
     val annotated = buildAnnotatedString {
         appendMatches(text, query, SpanStyle(color = colors.ink), hl)
     }
-    Box(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 1.dp)) {
-        Text(annotated, style = ODVTheme.typography.code)
-    }
+    // Xuống dòng thay vì cuộn ngang riêng từng dòng, để vuốt dọc luôn cuộn cả màn.
+    Text(annotated, style = ODVTheme.typography.code, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 1.dp))
 }
 
 @Composable
@@ -369,9 +371,8 @@ private fun JsonRowView(row: JsonRow, query: String, onToggle: (String) -> Unit,
         } else {
             Spacer(Modifier.width(28.dp))
         }
-        Box(Modifier.horizontalScroll(rememberScrollState())) {
-            Text(annotated, style = type.code)
-        }
+        // Không cuộn ngang: chữ dài tự xuống dòng, nút +/− giữ nguyên bên trái.
+        Text(annotated, style = type.code, modifier = Modifier.weight(1f))
     }
 }
 
