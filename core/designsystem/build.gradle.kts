@@ -19,6 +19,8 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            // ODVRemoteImage (thumbnail, Lát 4). Chỉ Compose; Fetcher và cache nằm ở :core:data.
+            implementation(libs.coil.compose)
         }
         androidMain.dependencies {
             // WindowCompat: đổi màu icon system bar theo theme của app (ODVSystemBars).

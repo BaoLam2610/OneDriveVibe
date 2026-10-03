@@ -39,6 +39,7 @@ abstract class ApiService internal constructor(
      */
     protected suspend fun authorizedGet(
         credentials: GraphCredentials,
+        acceptRedirect: Boolean = false,
         configure: HttpRequestBuilder.() -> Unit,
     ): AppResult<HttpResponse> {
         var tokenRefreshed = false
@@ -47,7 +48,7 @@ abstract class ApiService internal constructor(
                 is AppResult.Success -> result.value
                 is AppResult.Failure -> return result
             }
-            val result = executeGet(token, configure)
+            val result = executeGet(token, acceptRedirect, configure)
             val unauthorized = result is AppResult.Failure && (result.error as? AppError.Http)?.status == 401
             if (unauthorized && !tokenRefreshed) {
                 tokenRefreshed = true
@@ -58,7 +59,11 @@ abstract class ApiService internal constructor(
         }
     }
 
-    private suspend fun executeGet(token: String, configure: HttpRequestBuilder.() -> Unit): AppResult<HttpResponse> {
+    private suspend fun executeGet(
+        token: String,
+        acceptRedirect: Boolean,
+        configure: HttpRequestBuilder.() -> Unit,
+    ): AppResult<HttpResponse> {
         val started = TimeSource.Monotonic.markNow()
         val response = try {
             http.get {
@@ -73,7 +78,9 @@ abstract class ApiService internal constructor(
             return AppResult.Failure(error)
         }
         recorder?.record(response.toTrafficEntry(started.elapsedNow().inWholeMilliseconds, requestBody = null))
-        return if (response.status.isSuccess()) AppResult.Success(response) else AppResult.Failure(response.toGraphError())
+        // 3xx chỉ được nhận khi nơi gọi chủ động theo chuyển hướng (thumbnail trả 302 sang URL đã ký); client không tự theo.
+        val accepted = response.status.isSuccess() || (acceptRedirect && response.status.value in 300..399)
+        return if (accepted) AppResult.Success(response) else AppResult.Failure(response.toGraphError())
     }
 
     /** Đọc body JSON của phản hồi thành công thành [T]; lỗi parse trở thành [AppResult.Failure]. */

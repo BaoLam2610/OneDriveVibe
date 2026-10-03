@@ -25,6 +25,10 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:browser"))
+    implementation(project(":feature:library"))
+
+    // SingletonImageLoader.Factory ở MainApplication (Lát 4): AsyncImage lấy ImageLoader từ Koin qua singleton này.
+    implementation(libs.coil.singleton)
 
     implementation(libs.androidx.activity.compose)
     // ADR-0011: AppCompatActivity + AppCompatDelegate.setApplicationLocales() để đổi ngôn ngữ trong app.

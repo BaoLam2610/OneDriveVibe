@@ -28,7 +28,7 @@ import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.feature.auth.connect.ODVConnectScreen
 import com.lambao.odv.feature.auth.lock.ODVLockScreen
 import com.lambao.odv.feature.auth.security.ODVSecuritySetupScreen
-import com.lambao.odv.feature.browser.ODVBrowserScreen
+import com.lambao.odv.ui.home.ODVHomeScreen
 import com.lambao.odv.ui.splash.ODVSplashScreen
 import org.koin.compose.koinInject
 
@@ -126,7 +126,7 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                     )
                 }
                 // Màn xem (Lát 5–7) sẽ truyền vào onOpenFile.
-                entry<AppRoute.Home> { ODVBrowserScreen() }
+                entry<AppRoute.Home> { ODVHomeScreen() }
             },
         )
         // Chỉ phủ khi đang khóa mà màn Khóa chưa lên trên cùng; mọi trường hợp khác phải thấy NavDisplay.

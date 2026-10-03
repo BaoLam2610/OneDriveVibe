@@ -7,8 +7,13 @@ import com.lambao.odv.core.network.dto.DeltaPageDto
 import com.lambao.odv.core.network.dto.DriveDto
 import com.lambao.odv.core.network.dto.DriveItemDto
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpHeaders
 import io.ktor.http.URLBuilder
+import io.ktor.http.isSuccess
 import io.ktor.http.appendPathSegments
 import io.ktor.http.takeFrom
 
@@ -22,7 +27,7 @@ private const val CHILDREN_PAGE_SIZE = 200
  * không bị cắt về 200. Đánh đổi: mỗi transaction Room lớn hơn và tắt app giữa chừng mất tối đa một trang lớn hơn (DB-04).
  * `children` giữ [CHILDREN_PAGE_SIZE] vì chưa đo.
  */
-private const val DELTA_PAGE_SIZE = 1000
+private const val DELTA_PAGE_SIZE = 500
 
 /**
  * Đúng các trường `DriveItemDto` đọc khi đồng bộ (bỏ `createdBy`, `lastModifiedBy`, `shared`... để giảm payload và thời
@@ -40,6 +45,8 @@ class GraphApi internal constructor(
     http: HttpClient,
     tokens: TokenProvider,
     recorder: HttpTrafficRecorder? = null,
+    /** Client không bearer, dành cho URL đã ký sẵn do Graph trả (thumbnail). Xem [createDownloadHttpClient]. */
+    private val signedDownloads: HttpClient,
 ) : ApiService(http, tokens, recorder, GRAPH_BASE) {
 
     /** Kiểm tra kết nối: `GET /users/{upn}/drive?$select=id,driveType` (KN-07). Không xin `quota` (KN-12). */
@@ -105,6 +112,47 @@ class GraphApi internal constructor(
             }
         }.decode()
     }
+
+    /**
+     * Ảnh thumbnail của [itemId] ở kích thước [size] (tên có sẵn như `medium` hoặc tùy chỉnh như `c300x300_crop`).
+     * Graph thường trả `302` sang URL đã ký trên CDN: bearer chỉ gửi tới Graph, bước hai gọi URL đó bằng client không
+     * bearer. Graph trả thẳng `200` thì dùng luôn nội dung. Bước một vẫn được ghi vào màn Debug như mọi request Graph
+     * (bản debug, ADR-0013); bước hai (ảnh nhị phân, URL đã ký) thì không.
+     * Tệp không có thumbnail trả `AppError.Http(404, ...)` để nơi gọi giữ ô giữ chỗ.
+     */
+    suspend fun fetchThumbnail(credentials: GraphCredentials, itemId: String, size: String): AppResult<ByteArray> {
+        val response = when (
+            val result = authorizedGet(credentials, acceptRedirect = true) {
+                url {
+                    appendDrivePath(credentials)
+                    appendPathSegments("items", itemId, "thumbnails", "0", size, "content")
+                }
+            }
+        ) {
+            is AppResult.Success -> result.value
+            is AppResult.Failure -> return result
+        }
+        if (response.status.value !in 300..399) return response.readBytes()
+        // Chỉ theo chuyển hướng tới HTTPS: URL do máy chủ trả nên coi là không tin cậy.
+        val location = response.headers[HttpHeaders.Location]?.takeIf { it.startsWith("https://") }
+            ?: return AppResult.Failure(AppError.Unknown())
+        return try {
+            signedDownloads.get(location).readBytes()
+        } catch (e: Throwable) {
+            AppResult.Failure(e.toAppError())
+        }
+    }
+
+    private suspend fun HttpResponse.readBytes(): AppResult<ByteArray> =
+        if (status.isSuccess()) {
+            try {
+                AppResult.Success(body<ByteArray>())
+            } catch (e: Throwable) {
+                AppResult.Failure(e.toAppError())
+            }
+        } else {
+            AppResult.Failure(toGraphError())
+        }
 
     private fun URLBuilder.appendDrivePath(credentials: GraphCredentials) {
         takeFrom(baseUrl)

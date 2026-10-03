@@ -32,11 +32,11 @@ Cột **Trạng thái**: *đang dùng* = đã gắn vào module; *catalog* = đ�
 | CSDL | Room KMP + `BundledSQLiteDriver`, KSP | Room 3.0.3 (`androidx.room3`) / sqlite 2.7.1 / KSP 2.3.12 | Metadata, cache, chỉ mục Thư viện (ADR-0007) | Common | catalog → Lát 3 |
 | Cài đặt | DataStore Preferences (KMP) | 1.2.1 | Cài đặt không nhạy cảm | Common | catalog |
 | Lưu bí mật | Android Keystore (AES-GCM, khóa không xuất được) + Argon2id (`argon2kt`, dự phòng BouncyCastle) | | Mã hóa config 4 trường; token chỉ trong bộ nhớ (ADR-0008) | `expect/actual`, iOS: Keychain | Lát 1 (Keystore), Lát 2 (Argon2id) |
-| Ảnh | Coil 3 (`coil-network-ktor3`) | | Tải và cache ảnh, thumbnail | Common | Lát 4 |
+| Ảnh | Coil 3 (`coil-core` trong `:core:data`, `coil-compose` trong `:core:designsystem`) | 3.6.3 | Tải và cache thumbnail. Không dùng `coil-network-ktor3`: Graph trả `302` sang URL đã ký còn client Graph đặt `followRedirects = false` (CH-06), nên `GraphThumbnailFetcher` tự gọi Graph rồi tải URL đã ký bằng client không bearer, và tự ghi/đọc `DiskCache` của Coil (200 MB, `cacheDir/thumbnails`, khóa = id + `cTag` + cỡ). Ảnh gốc ở Lát 5 cân nhắc lại | Common | Lát 4 |
 | Zoom ảnh | Telephoto (zoomable) hoặc tự viết transform gesture | | Zoom/pan ảnh, trang PDF | Kiểm tra KMP khi vào MVP2 | Lát 5 |
 | Video | Media3 ExoPlayer + `SimpleCache` | | Phát stream từ `downloadUrl` | Android, iOS: AVPlayer | Lát 6 |
 | PDF | `android.graphics.pdf.PdfRenderer` | | Render trang thành bitmap | Android, iOS: PDFKit | Lát 7 |
-| Phân trang | Paging 3 (`paging-common` KMP) + `room-paging` | | Danh sách lớn | Common | **Chốt cho Lát 4** (tab Thư viện): đọc Room qua `PagingSource`, sắp xếp bằng SQL, index ghép theo ngày. Tab Thư mục vẫn dùng `Flow<List>` (một thư mục), chuyển sang Paging nếu gặp thư mục rất lớn |
+| Phân trang | Paging 3 (`paging-common`, `paging-compose` KMP) + `room3-paging` | 3.5.1 / 3.0.3 | Danh sách lớn | Common | **Đã làm ở Lát 4** (tab Thư viện): `DriveDao.pagedLibrary` trả `PagingSource`, sắp xếp bằng SQL theo cột `sortDate` (index `mediaKind, sortDate`), `enablePlaceholders = true`. Lưới dựng từ số mục theo ngày (`libraryDays`) nên biết trước độ dài, không dùng `insertSeparators`. Tab Thư mục vẫn dùng `Flow<List>` (một thư mục), chuyển sang Paging nếu gặp thư mục rất lớn |
 | Chạy nền | Coroutine trong app (`SyncCoordinator`, scope riêng) | | Delta sync, tải | Android, iOS: BGTaskScheduler | Lát 3. **Chưa dùng WorkManager**: chế độ PIN xóa config và token khỏi bộ nhớ khi khóa (CH-03, ADR-0008) nên nền không gọi được Graph; đặc tả chỉ cần đồng bộ khi mở app và kéo làm mới (DS-04). Muốn đồng bộ lúc app đóng (chỉ chế độ thiết bị) thì viết ADR mới |
 | Ngày giờ | kotlinx-datetime | | Thư viện theo ngày, ngày chụp | Common | khi dùng tới (Lát 3–4) |
 | File I/O | kotlinx-io (hoặc Okio) | | Cache file, thay `java.io.File` trong code chung | Common | khi dùng tới (Lát 4, 7) |
@@ -199,7 +199,7 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 
 ### 5.3 Media
 - Video: `@microsoft.graph.downloadUrl` (đã ký sẵn, ngắn hạn) đưa thẳng vào ExoPlayer, tua bằng range request. URL hết hạn khi xem lâu hoặc xem tiếp thì lấy lại metadata để có URL mới (VD-14), **không** lấy lại access token.
-- Ảnh: endpoint `thumbnails` cho lưới, ảnh gốc khi mở màn xem; Coil dùng chung Ktor client.
+- Ảnh: endpoint `thumbnails/0/{size}/content` cho lưới (cỡ tùy chỉnh `c300x300_crop` và `c480x360_crop`, lỗi 400 thì rơi về `medium`), ảnh gốc khi mở màn xem. Thumbnail đi qua `Fetcher` riêng của Coil, không dùng chung client Graph (xem bảng thư viện).
 - PDF: `PdfRenderer` cần file seekable nên tải về cache trước (tải tiếp phần dở), render theo trang, giới hạn bộ nhớ bitmap.
 
 ### 5.4 Bảo mật

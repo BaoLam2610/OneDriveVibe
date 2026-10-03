@@ -13,11 +13,13 @@ import org.koin.compose.viewmodel.koinViewModel
  * Tab Thư mục (TM-01 → TM-07, DS-03 → DS-06). Back đóng thanh tìm nếu đang tìm, nếu không thì quay lên một cấp thư mục;
  * ở thư mục gốc thì Back thoát app như thường.
  * [onOpenFile] chạy khi chạm một tệp media; màn xem làm ở Lát 5–7 nên Lát 1 truyền hàm rỗng.
+ * [tabs] là thanh Tabs Thư mục/Thư viện do màn chứa (Home) dựng.
  */
 @Composable
 fun ODVBrowserScreen(
     modifier: Modifier = Modifier,
     onOpenFile: (DriveItem) -> Unit = {},
+    tabs: @Composable () -> Unit = {},
     viewModel: BrowserViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -32,5 +34,5 @@ fun ODVBrowserScreen(
         viewModel.onIntent(if (searching) BrowserIntent.CloseSearch else BrowserIntent.GoUp)
     }
 
-    ODVBrowserContent(state = state, onIntent = viewModel::onIntent, modifier = modifier)
+    ODVBrowserContent(state = state, onIntent = viewModel::onIntent, modifier = modifier, tabs = tabs)
 }

@@ -4,6 +4,7 @@ import com.lambao.odv.core.database.DriveItemEntity
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.MediaKind
+import com.lambao.odv.core.domain.model.libraryDateOf
 import com.lambao.odv.core.domain.model.mediaKindOf
 import com.lambao.odv.core.network.GraphCredentials
 import com.lambao.odv.core.network.dto.DriveItemDto
@@ -22,6 +23,9 @@ private fun parseInstantMs(value: String?): Long? =
 internal fun DriveItemDto.toEntity(scanId: Long): DriveItemEntity? {
     if (packageFacet != null) return null
     val isFolder = folder != null
+    val createdAt = parseInstantMs(fileSystemInfo?.createdDateTime) ?: parseInstantMs(createdDateTime)
+    val takenAt = parseInstantMs(photo?.takenDateTime)
+    val modifiedAt = parseInstantMs(lastModifiedDateTime)
     return DriveItemEntity(
         id = id,
         parentId = parentReference?.id,
@@ -32,10 +36,11 @@ internal fun DriveItemDto.toEntity(scanId: Long): DriveItemEntity? {
         mediaKind = if (isFolder) null else mediaKindOf(name, file?.mimeType)?.name,
         childCount = folder?.childCount,
         durationMs = video?.duration,
-        modifiedAt = parseInstantMs(lastModifiedDateTime),
+        modifiedAt = modifiedAt,
         cTag = cTag,
-        takenAt = parseInstantMs(photo?.takenDateTime),
-        createdAt = parseInstantMs(fileSystemInfo?.createdDateTime) ?: parseInstantMs(createdDateTime),
+        takenAt = takenAt,
+        createdAt = createdAt,
+        sortDate = libraryDateOf(takenAt, createdAt, modifiedAt),
         scanId = scanId,
     )
 }

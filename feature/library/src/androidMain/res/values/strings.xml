@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
+         Câu chữ lấy từ thiết kế (ODV List); mục ghi [mới] chưa có trong thiết kế, cần duyệt. -->
+    <string name="library_title" translatable="false">OneDrive</string>
+
+    <!-- Chip lọc (TV-03) -->
+    <string name="library_filter_all">Tất cả</string>
+    <string name="library_filter_photos">Ảnh</string>
+    <string name="library_filter_videos">Video</string>
+    <string name="library_chip_selected">%1$s, đang chọn</string>
+
+    <!-- Nhãn TalkBack của ô: tên, [thời lượng], dung lượng, ngày (thiet-ke-ui.md mục 7) -->
+    <string name="library_cd_image">Ảnh, %1$s, %2$s, %3$s</string> <!-- [mới] -->
+    <string name="library_cd_video">Video, %1$s, %2$s, %3$s, %4$s</string>
+    <string name="library_cd_video_no_duration">Video, %1$s, %2$s, %3$s</string> <!-- [mới] -->
+    <plurals name="library_duration_hours">
+        <item quantity="other">%1$d giờ</item>
+    </plurals>
+    <plurals name="library_duration_minutes">
+        <item quantity="other">%1$d phút</item>
+    </plurals>
+    <plurals name="library_duration_seconds">
+        <item quantity="other">%1$d giây</item>
+    </plurals>
+    <string name="library_fast_scroller">Cuộn nhanh theo thời gian</string>
+
+    <!-- Thư viện trống -->
+    <string name="library_empty_title">Chưa có ảnh hay video</string> <!-- [mới] -->
+    <string name="library_empty_body">Ảnh và video trong OneDrive của bạn sẽ hiện ở đây.</string> <!-- [mới] -->
+    <string name="library_loading">Đang tải</string> <!-- [mới] mô tả cho TalkBack -->
+
+    <!-- Banner đồng bộ (D3, D7, DS-05, TV-06) -->
+    <string name="library_offline">Đang offline. Đang hiển thị dữ liệu đã đồng bộ.</string> <!-- [mới] -->
+    <string name="library_indexing">Đang lập chỉ mục, đã quét %1$s mục</string>
+    <string name="library_indexing_action">Xem Thư mục</string> <!-- [mới] lối tắt TV-06 -->
+    <string name="library_sync_failed">Không đồng bộ được. Dữ liệu có thể chưa mới nhất.</string> <!-- [mới] -->
+    <string name="library_retry">Thử lại</string> <!-- [mới] -->
+</resources>

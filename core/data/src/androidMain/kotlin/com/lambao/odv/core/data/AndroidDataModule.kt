@@ -7,8 +7,20 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
+import coil3.ImageLoader
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
 import com.lambao.odv.core.data.prefs.DataStoreBrowserPreferences
+import com.lambao.odv.core.data.thumbnail.GraphThumbnailFetcherFactory
+import com.lambao.odv.core.data.thumbnail.ThumbnailCacheResetter
+import com.lambao.odv.core.data.thumbnail.ThumbnailKeyer
 import com.lambao.odv.core.domain.repository.BrowserPreferences
+import com.lambao.odv.core.domain.repository.ConfigRepository
+import com.lambao.odv.core.domain.repository.ConnectionResetter
+import com.lambao.odv.core.network.GraphApi
+import okio.Path.Companion.toOkioPath
+import org.koin.dsl.bind
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,7 +33,34 @@ import org.koin.dsl.module
  */
 val androidDataModule = module {
     single<BrowserPreferences> { DataStoreBrowserPreferences(createBrowserDataStore(androidContext())) }
+    // Trình tải thumbnail (Lát 4). Cache đĩa nằm ở cacheDir nên không được sao lưu (CH-04) và hệ thống có thể dọn khi
+    // thiếu chỗ; mất thì chỉ phải tải lại.
+    single<ImageLoader> { createImageLoader(androidContext(), get(), get()) }
+    // Xóa cache thumbnail khi ngắt kết nối: DisconnectUseCase gom mọi ConnectionResetter bằng getAll().
+    single { ThumbnailCacheResetter(get(), get()) } bind ConnectionResetter::class
 }
+
+/** Trần dung lượng cache thumbnail (BN-01). Lát 9 nối giới hạn này với Cài đặt (CD). */
+private const val THUMBNAIL_CACHE_MAX_BYTES = 200L * 1024 * 1024
+
+/** Bộ nhớ RAM cho thumbnail đã giải mã: 15% heap, thấp hơn mặc định của Coil vì Thư viện có thể cuộn rất dài. */
+private const val THUMBNAIL_MEMORY_PERCENT = 0.15
+
+private fun createImageLoader(context: Context, api: GraphApi, configs: ConfigRepository): ImageLoader =
+    ImageLoader.Builder(context)
+        .components {
+            add(ThumbnailKeyer)
+            add(GraphThumbnailFetcherFactory(api, configs))
+        }
+        .diskCache {
+            DiskCache.Builder()
+                .directory(context.cacheDir.resolve("thumbnails").toOkioPath())
+                .maxSizeBytes(THUMBNAIL_CACHE_MAX_BYTES)
+                .build()
+        }
+        .memoryCache { MemoryCache.Builder().maxSizePercent(context, THUMBNAIL_MEMORY_PERCENT).build() }
+        .crossfade(true)
+        .build()
 
 private fun createBrowserDataStore(context: Context): DataStore<Preferences> =
     PreferenceDataStoreFactory.create(

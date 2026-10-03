@@ -25,6 +25,24 @@ private const val MAX_RETRY_AFTER_SECONDS = 60L
  * Cố ý KHÔNG cài plugin Logging (CH-06): header `Authorization` và body request lấy token (chứa `client_secret`) không
  * được vào log. Lưu lượng cho màn Debug đi qua [HttpTrafficRecorder] (chỉ bản debug, đầy đủ, ADR-0013), không qua plugin Logging.
  */
+internal fun createDownloadHttpClient(): HttpClient = HttpClient {
+    // Client riêng, KHÔNG mang bearer, chỉ gọi URL đã ký sẵn do Graph trả (thumbnail, về sau là downloadUrl). Vì không có
+    // bearer để lộ nên được phép theo chuyển hướng của CDN; ngược lại client Graph ở dưới đặt followRedirects = false.
+    expectSuccess = false
+    followRedirects = true
+    install(HttpTimeout) {
+        connectTimeoutMillis = 15_000
+        requestTimeoutMillis = 30_000
+        socketTimeoutMillis = 30_000
+    }
+    install(HttpRequestRetry) {
+        maxRetries = 1
+        retryIf { _, response -> response.status.value == 429 || response.status.value >= 500 }
+        retryOnExceptionIf { _, cause -> cause !is CancellationException && cause.isNetworkFailure() }
+        delayMillis { 1000L }
+    }
+}
+
 internal fun createHttpClient(): HttpClient = HttpClient {
     // 4xx/5xx không ném ngoại lệ: GraphApi tự đọc status và ánh xạ sang AppError.
     expectSuccess = false

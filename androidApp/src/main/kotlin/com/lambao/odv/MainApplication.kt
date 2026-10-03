@@ -2,6 +2,9 @@ package com.lambao.odv
 
 import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import com.lambao.odv.core.data.androidDataModule
 import com.lambao.odv.core.data.dataModule
 import com.lambao.odv.core.database.databaseModule
@@ -12,6 +15,7 @@ import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.di.appModule
 import com.lambao.odv.feature.auth.authModule
 import com.lambao.odv.feature.browser.browserModule
+import com.lambao.odv.feature.library.libraryModule
 import com.lambao.odv.security.AppLockController
 import com.lambao.odv.security.CurrentActivityHolder
 import org.koin.android.ext.android.inject
@@ -20,7 +24,12 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 
-class MainApplication : Application() {
+// SingletonImageLoader.Factory: AsyncImage của Coil lấy ImageLoader (Fetcher thumbnail + cache đĩa của :core:data) từ Koin.
+class MainApplication : Application(), SingletonImageLoader.Factory {
+
+    override fun newImageLoader(context: PlatformContext): ImageLoader = imageLoader
+
+    private val imageLoader: ImageLoader by inject()
 
     override fun onCreate() {
         super.onCreate()
@@ -34,7 +43,7 @@ class MainApplication : Application() {
             modules(
                 listOf(
                     appModule, securityModule, networkModule, databaseModule, dataModule, androidDataModule, authModule,
-                    browserModule,
+                    browserModule, libraryModule,
                 ) + DebugTools.koinModules,
             )
         }

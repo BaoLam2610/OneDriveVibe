@@ -42,6 +42,7 @@ import com.lambao.odv.core.designsystem.component.ODVFileRow
 import com.lambao.odv.core.designsystem.component.ODVFolderCard
 import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVOptionRow
+import com.lambao.odv.core.designsystem.component.ODVRemoteImage
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSearchBar
 import com.lambao.odv.core.designsystem.component.ODVSortBar
@@ -56,7 +57,9 @@ import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.SortDirection
 import com.lambao.odv.core.domain.model.SortField
 import com.lambao.odv.core.domain.model.SortOrder
+import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.ViewMode
+import com.lambao.odv.core.domain.model.thumbnailSource
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -75,14 +78,16 @@ private val ViVn: Locale = Locale.forLanguageTag("vi-VN")
 
 /**
  * Giao diện tab Thư mục (thiet-ke-ui.md mục 4.4, 5.2; D1, D2, D4 → D6, D8): AppBar (hoặc thanh tìm), Banner, Breadcrumb,
- * SortBar, rồi danh sách hoặc lưới, kéo xuống để làm mới. Chưa có Tabs Thư mục/Thư viện (Lát 4), dải Xem tiếp (Lát 8),
- * nút Cài đặt (Lát 9) và dấu `cloud-off` trên thẻ tệp chưa có trong cache (Lát 4).
+ * SortBar, rồi danh sách hoặc lưới, kéo xuống để làm mới. [tabs] là thanh Tabs Thư mục/Thư viện do màn chứa dựng, đặt ngay
+ * dưới AppBar (chỉ hiện khi không tìm kiếm). Chưa có dải Xem tiếp (Lát 8), nút Cài đặt (Lát 9) và dấu `cloud-off` trên
+ * thẻ tệp chưa có trong cache (Lát 5 → 7, khi có cache tệp gốc).
  */
 @Composable
 internal fun ODVBrowserContent(
     state: BrowserState,
     onIntent: (BrowserIntent) -> Unit,
     modifier: Modifier = Modifier,
+    tabs: @Composable () -> Unit = {},
 ) {
     val search = state.search
     ODVScaffold(
@@ -94,7 +99,7 @@ internal fun ODVBrowserContent(
         if (search != null) {
             SearchBody(search, contentPadding, onIntent)
         } else {
-            BrowseBody(state, contentPadding, onIntent)
+            BrowseBody(state, contentPadding, onIntent, tabs)
         }
     }
     if (state.isSortSheetOpen) SortSheet(state.sort, onIntent)
@@ -133,11 +138,17 @@ private fun SearchTopBar(search: SearchState, onIntent: (BrowserIntent) -> Unit)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BrowseBody(state: BrowserState, contentPadding: PaddingValues, onIntent: (BrowserIntent) -> Unit) {
+private fun BrowseBody(
+    state: BrowserState,
+    contentPadding: PaddingValues,
+    onIntent: (BrowserIntent) -> Unit,
+    tabs: @Composable () -> Unit,
+) {
     val rootLabel = stringResource(R.string.browser_root)
     val sortLabel = state.sort.label()
     val isGrid = state.viewMode == ViewMode.Grid
     Column(Modifier.fillMaxSize()) {
+        tabs()
         SyncBanner(state, onIntent)
         ODVBreadcrumb(
             items = listOf(rootLabel) + state.path.map { it.name },
@@ -257,7 +268,7 @@ private fun ItemList(items: List<DriveItem>, contentPadding: PaddingValues, onIn
         items(items, key = { it.id }) { item ->
             ODVFileRow(
                 title = item.name,
-                leading = { ODVThumbnailPlaceholder(item.fileKind(), Modifier.fillMaxSize()) },
+                leading = { ItemThumbnail(item, ThumbnailSize.Cell) },
                 meta = item.meta(resources),
                 metaMono = item.durationMs?.let(::odvFormatDuration),
                 showChevron = item.isFolder,
@@ -267,7 +278,7 @@ private fun ItemList(items: List<DriveItem>, contentPadding: PaddingValues, onIn
     }
 }
 
-/** Lưới 2 cột, khe 12 ngang và 16 dọc (mục 4.4 FileCard); thumbnail thật là việc của Lát 4. */
+/** Lưới 2 cột, khe 12 ngang và 16 dọc (mục 4.4 FileCard). */
 @Composable
 private fun ItemGrid(items: List<DriveItem>, contentPadding: PaddingValues, onIntent: (BrowserIntent) -> Unit) {
     val resources = LocalContext.current.resources
@@ -296,7 +307,7 @@ private fun ItemGrid(items: List<DriveItem>, contentPadding: PaddingValues, onIn
                     onClick = { onIntent(BrowserIntent.Open(item)) },
                     kindIcon = if (item.mediaKind == MediaKind.Video) ODVIcon.Video else null,
                     duration = item.durationMs?.let(::odvFormatDuration),
-                    thumbnail = { ODVThumbnailPlaceholder(item.fileKind(), Modifier.fillMaxSize()) },
+                    thumbnail = { ItemThumbnail(item, ThumbnailSize.Card) },
                 )
             }
         }
@@ -323,7 +334,7 @@ private fun SearchBody(search: SearchState, contentPadding: PaddingValues, onInt
                     val item = result.item
                     ODVFileRow(
                         title = item.name,
-                        leading = { ODVThumbnailPlaceholder(item.fileKind(), Modifier.fillMaxSize()) },
+                        leading = { ItemThumbnail(item, ThumbnailSize.Cell) },
                         meta = item.meta(resources),
                         metaMono = item.durationMs?.let(::odvFormatDuration),
                         path = (listOf(rootLabel) + result.parentPath.map { it.name }).joinToString(" › "),
@@ -365,6 +376,17 @@ private fun SortOrder.label(): String = stringResource(
             if (direction == SortDirection.Ascending) R.string.browser_sort_size_asc else R.string.browser_sort_size_desc
     },
 )
+
+/**
+ * Thumbnail thật cho ảnh/video (DS-01), phủ lên ô giữ chỗ theo loại. Thư mục, PDF và tệp không hỗ trợ không có thumbnail
+ * (`thumbnailSource` null) nên chỉ hiện ô giữ chỗ; ảnh chưa tải được (offline, chưa cache) cũng rơi về ô giữ chỗ.
+ */
+@Composable
+private fun ItemThumbnail(item: DriveItem, size: ThumbnailSize) {
+    ODVRemoteImage(model = item.thumbnailSource(size), modifier = Modifier.fillMaxSize()) {
+        ODVThumbnailPlaceholder(item.fileKind(), Modifier.fillMaxSize())
+    }
+}
 
 /** Thư mục: "N mục"; tệp: dung lượng theo vi-VN. */
 private fun DriveItem.meta(resources: Resources): String? =

@@ -4,6 +4,8 @@ import com.lambao.odv.core.common.dispatcher.DefaultDispatcherProvider
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.domain.repository.BiometricAuthenticator
 import com.lambao.odv.core.domain.repository.NetworkMonitor
+import com.lambao.odv.core.domain.repository.UtcOffsetProvider
+import com.lambao.odv.time.AndroidUtcOffsetProvider
 import com.lambao.odv.network.AndroidNetworkMonitor
 import com.lambao.odv.security.AndroidBiometricAuthenticator
 import com.lambao.odv.security.CurrentActivityHolder
@@ -20,5 +22,7 @@ val appModule = module {
     single<BiometricAuthenticator> { AndroidBiometricAuthenticator(androidContext(), get(), get(), get()) }
     // DS-05: cần Context (ConnectivityManager) nên cài đặt nằm ở app, như BiometricAuthenticator.
     single<NetworkMonitor> { AndroidNetworkMonitor(androidContext()) }
+    // TV-01: nhóm ảnh theo ngày địa phương, cần múi giờ của máy (java.util.TimeZone không dùng được ở commonMain).
+    single<UtcOffsetProvider> { AndroidUtcOffsetProvider() }
     viewModelOf(::SplashViewModel)
 }

@@ -15,6 +15,9 @@ kotlin {
             implementation(project(":core:common"))
             // api: :core:data dùng DriveDao/entity (kiểu Room trong chữ ký) nên cần thấy runtime của Room.
             api(libs.androidx.room.runtime)
+            // api: DriveDao.pagedLibrary trả PagingSource (Lát 4); room3-paging cho KSP sinh PagingSource từ truy vấn.
+            api(libs.androidx.room.paging)
+            api(libs.androidx.paging.common)
             implementation(libs.androidx.sqlite.bundled)
         }
         androidMain.dependencies {

@@ -12,12 +12,15 @@ androidx-lifecycle = "2.11.0"
 # Bản androidx (không phải JetBrains) của lifecycle, chỉ dùng cho lifecycle-viewmodel-navigation3 trong :androidApp.
 androidx-lifecycle-nav3 = "2.11.0"
 androidx-navigation3 = "1.2.0"
+# Paging 3 (KMP) cho tab Thư viện (Lát 4): đọc Room theo trang thay vì nạp cả danh sách.
+androidx-paging = "3.5.1"
 # Cần kiểm tra phiên bản mới nhất, và hỗ trợ trang bộ nhớ 16 KB, khi cập nhật (ADR-0014).
 argon2kt = "1.6.0"
 # Room 3 (nâng từ 2.8.5 để thử khắc phục SIGSEGV trong libsqliteJni lúc applyPage; xem ADR-0007).
 androidx-room = "3.0.3"
 # Phải khớp bản sqlite mà Room kéo theo (room3-runtime 3.0.3 kéo sqlite 2.7.1).
 androidx-sqlite = "2.7.1"
+coil = "3.6.3"
 composeMultiplatform = "1.12.1"
 koin = "4.2.2"
 kermit = "2.2.0"
@@ -87,7 +90,19 @@ androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", 
 # Room KMP (ADR-0007). Gắn vào :core:database ở Lát 3.
 androidx-room-runtime = { module = "androidx.room3:room3-runtime", version.ref = "androidx-room" }
 androidx-room-compiler = { module = "androidx.room3:room3-compiler", version.ref = "androidx-room" }
+# room3-paging sinh PagingSource cho truy vấn DAO (Lát 4). Cùng phiên bản Room.
+androidx-room-paging = { module = "androidx.room3:room3-paging", version.ref = "androidx-room" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "androidx-sqlite" }
+
+# Paging 3 (KMP). paging-common cho domain/data/viewmodel; paging-compose cho giao diện Android.
+androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "androidx-paging" }
+
+# Coil 3 (Lát 4): tải thumbnail. Không dùng coil-network-ktor3 vì Graph trả chuyển hướng (xem GraphThumbnailFetcher).
+coil-core = { module = "io.coil-kt.coil3:coil-core", version.ref = "coil" }
+# SingletonImageLoader nằm ở artifact `coil` (không phải coil-core); chỉ :androidApp dùng để đặt ImageLoader toàn app.
+coil-singleton = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 
 # DataStore Preferences (kế hoạch MVP1 mục 3). Gắn vào module cần lưu cài đặt khi dùng tới.
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }

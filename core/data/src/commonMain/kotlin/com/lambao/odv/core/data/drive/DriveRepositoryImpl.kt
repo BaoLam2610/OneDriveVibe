@@ -1,5 +1,9 @@
 package com.lambao.odv.core.data.drive
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.common.result.map
@@ -9,6 +13,8 @@ import com.lambao.odv.core.database.ItemRef
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.FolderRef
+import com.lambao.odv.core.domain.model.LibraryDay
+import com.lambao.odv.core.domain.model.LibraryFilter
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.SearchResult
 import com.lambao.odv.core.domain.model.SortDirection
@@ -30,6 +36,9 @@ import kotlinx.coroutines.withContext
 /** Giới hạn độ sâu khi dựng đường dẫn cha của kết quả tìm, chống vòng lặp nếu dữ liệu cha-con bị hỏng. */
 private const val MAX_PATH_DEPTH = 64
 private const val REF_CHUNK = 500
+
+/** Số mục mỗi trang của Thư viện: bội của 4 cột để hàng cuối của trang không lẻ. */
+private const val LIBRARY_PAGE_SIZE = 100
 
 internal class DriveRepositoryImpl(
     private val api: GraphApi,
@@ -70,6 +79,27 @@ internal class DriveRepositoryImpl(
             // Sắp xếp và ánh xạ thư mục lớn không được chạy trên luồng chính.
             .flowOn(dispatchers.default)
     }
+
+    override fun libraryPages(filter: LibraryFilter): Flow<PagingData<DriveItem>> =
+        Pager(
+            PagingConfig(
+                pageSize = LIBRARY_PAGE_SIZE,
+                initialLoadSize = LIBRARY_PAGE_SIZE * 2,
+                prefetchDistance = LIBRARY_PAGE_SIZE / 2,
+                // Cần chỗ giữ chỗ để kéo cuộn nhanh nhảy tới đoạn chưa nạp (TV-04) và để giao diện dựng đúng độ dài
+                // từ số mục theo ngày (libraryDays) mà không chờ nạp hết.
+                enablePlaceholders = true,
+            ),
+        ) { dao.pagedLibrary(filter.kinds.map { it.name }) }
+            .flow
+            .map { page -> page.map { it.toDomain() } }
+
+    override fun libraryDays(filter: LibraryFilter, utcOffsetMs: Long): Flow<List<LibraryDay>> =
+        dao.libraryDays(filter.kinds.map { it.name }, utcOffsetMs)
+            .conflate()
+            .map { rows -> rows.map { LibraryDay(it.dayNumber, it.count) } }
+            .distinctUntilChanged()
+            .flowOn(dispatchers.default)
 
     override suspend fun search(query: String, kinds: Set<MediaKind>, limit: Int): List<SearchResult> {
         val key = searchKey(query).trim()

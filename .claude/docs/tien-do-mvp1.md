@@ -6,8 +6,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Đang làm
 
-- **Lát:** 3, Đồng bộ delta và offline (Lát 0, 1, 2, D code xong, còn chờ kiểm tay)
-- **Bước:** Lát 3 xong code cả 3a (Room, delta sync, `SyncCoordinator`, `ConnectionResetter`, `NetworkMonitor`; đã build được) và 3b (tab Thư mục đọc từ Room, sắp xếp, lưới/danh sách, tìm kiếm, banner offline/lập chỉ mục/lỗi, kéo làm mới, DataStore nhớ lựa chọn). 3b chưa build, chưa review. Còn: build, review Lát 3, kiểm tay
+- **Lát:** 4, Thumbnail, bộ nhớ đệm, tab Thư viện (Lát 0, 1, 2, 3, D code xong, còn chờ kiểm tay)
+- **Bước:** Lát 4 xong code (thumbnail Coil + cache đĩa, `:feature:library`, Tabs Thư mục/Thư viện, thumbnail ở tab Thư mục). Chưa build, chưa review. Còn: build, review Lát 4, kiểm tay. **Phải xóa dữ liệu app** (Cài đặt hệ thống → Xóa dữ liệu, hoặc "Xóa dữ liệu local" ở tab Lưu trữ của màn Debug) trước khi chạy: schema Room đổi (thêm cột `sortDate`) mà `version = 1` giữ nguyên, nên bản đã cài sẽ báo lỗi hash Room thay vì tự tạo lại
 - **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật đã có luồng đặt PIN (Lát 2, bước 8). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
@@ -84,10 +84,11 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Lát 4: Thumbnail, bộ nhớ đệm, tab Thư viện
 
-- [ ] Cache (BN-01 → BN-03)
-- [ ] Tab Thư viện (TV-01 → TV-06)
+- [x] Cache thumbnail (BN-01 → BN-03): Coil 3, `GraphThumbnailFetcher` (302 → URL đã ký, client không bearer), `DiskCache` 200 MB khóa id + `cTag` + cỡ, `ThumbnailCacheResetter` (`ConnectionResetter`). Tải tiếp phần dở (BN-03) chỉ cần cho ảnh gốc và PDF, làm ở Lát 5 và 7; giới hạn dung lượng nối với Cài đặt ở Lát 9
+- [x] Tab Thư viện (TV-01 → TV-06): `:feature:library` (MVI), Paging 3 + `room3-paging`, cột `sortDate` + index, lưới 4 cột dựng từ số mục theo ngày, tiêu đề nhóm dính (lớp phủ), chip lọc, cuộn nhanh theo tháng, banner offline/lập chỉ mục (kèm lối tắt sang Thư mục)/lỗi
+- [x] Tabs Thư mục / Thư viện (`ODVHomeScreen` trong `:androidApp`), thumbnail thật ở tab Thư mục (DS-01)
 - [ ] Review
-- [ ] Kiểm tay
+- [ ] Kiểm tay (thumbnail hiện và còn sau khi tắt mạng, đổi nội dung tệp thì thumbnail đổi, cuộn nhanh nhảy đúng tháng, lập chỉ mục lần đầu, Ngắt kết nối xóa cache)
 
 ## Lát 5: Xem ảnh
 
@@ -148,4 +149,5 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-03 | Delta `$top=1000` (`DELTA_PAGE_SIZE`, tách khỏi `CHILDREN_PAGE_SIZE` giữ 200): người dùng đo drive ~3.200 mục, 16 trang (~8 giây) còn 4 trang (~4,5 giây), Graph không cắt về 200. Chưa build |
 | 2026-10-03 | Review Lát 3 (không CRITICAL), đã sửa: (H1) `SyncCoordinator` bắt mọi ngoại lệ ngoài hủy trong `launchSync` (Room/ổ đĩa đầy trước đây rơi ra scope không handler gây crash và kẹt "đang đồng bộ"), (H2) `BrowserViewModel.navigateTo` không đặt `isLoading` khi đích trùng thư mục đang mở (chạm kết quả tìm trùng thư mục hiện tại làm vòng quay treo mãi), (M1) `reset()` đặt cờ `resetting` và hủy mọi job con thay vì dựa vào biến `job` (đóng khe hở một lần đồng bộ mới chen vào giữa lúc dừng và xóa, làm Ngắt kết nối/Quên PIN chờ cả lần quét), (M2) tham số catch trong `DataStoreBrowserPreferences` đặt tên thay vì `_`. Chưa xử lý, cần quyết định: (M3) Room lưu tên tệp/cây thư mục không mã hóa kể cả khi bật PIN (ADR-0008 chỉ mã hóa config); nếu cần che thì phải viết ADR mới. Ghi nhận mức LOW: con của sổ tay OneNote vẫn được lưu (mồ côi), tùy chọn sắp xếp/dạng hiển thị chưa xóa khi ngắt kết nối (Lát 9), log API debug giữ cả body trang delta ~200 KB (nợ M4 của ADR-0013). Chưa build |
 | 2026-10-03 | Công cụ debug, tab Lưu trữ: "Làm mới" chỉ đọc lại danh sách (giữ nguyên). Thêm "Xóa dữ liệu local" (có hộp thoại xác nhận): gọi `DisconnectUseCase` như Ngắt kết nối rồi khởi động lại app ở task mới về màn Kết nối; cài đặt debug được giữ. Hook `DebugHooks.clearLocalData` đặt trong `DebugTools.install` (bản debug) vì `:tools:debug` không phụ thuộc domain. Chưa build |
+| 2026-10-04 | Lát 4: thumbnail và tab Thư viện. Catalog (Coil 3.6.3, Paging 3.5.1, `room3-paging`); `GraphApi.fetchThumbnail` (chấp nhận 302, URL đã ký tải bằng client không bearer, `createDownloadHttpClient`); `GraphThumbnailFetcher` + `ThumbnailKeyer` + `ThumbnailCacheResetter`, `ImageLoader` trong `androidDataModule`, `MainApplication` là `SingletonImageLoader.Factory`; Room thêm `sortDate` + index (TV-02) + `pagedLibrary`/`libraryDays`; `DriveRepository.libraryPages`/`libraryDays`, `LibraryFilter`, `LibraryDay`, `ThumbnailSource`, `UtcOffsetProvider`; `:feature:library` (lưới dựng từ số mục theo ngày, không dùng `insertSeparators`); `ODVRemoteImage`; `ODVHomeScreen` với Tabs; tab Thư mục dùng thumbnail thật. Chưa build, chưa review. Cần xóa dữ liệu app vì schema Room đổi |
 | 2026-10-03 | Crash SIGSEGV (`libsqliteJni.so`, `sqlite3_step` trong `DriveDao.applyPage`/`upsertItems`, lúc đồng bộ lần đầu rồi vào danh sách; không tái hiện đều). Không thấy lỗi ở code app (không có chỗ đóng/tạo lại DB). Thử nâng Room 2.8.5 → 3.0.3 (`androidx.room3`, sqlite 2.6.2 → 2.7.1, plugin `androidx.room3`) vì Room 2.x chỉ còn bảo trì; chưa có bằng chứng bản này sửa crash. Đổi import `androidx.room` → `androidx.room3` trong `:core:database`, schema giữ `version = 1`. Cần xác nhận khi build: chữ ký `fallbackToDestructiveMigration(dropAllTables = true)`, `schemaDirectory`, KSP 2.3.12 với room3-compiler. Chưa build |

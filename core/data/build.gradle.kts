@@ -19,6 +19,9 @@ kotlin {
             implementation(libs.koin.core)
             // Tùy chọn hiển thị của tab Thư mục (TM-05, TM-06): DataStore Preferences là KMP.
             implementation(libs.androidx.datastore.preferences)
+            // Trình tải ảnh (Lát 4): Fetcher tự viết gọi Graph và cache thumbnail trên đĩa (BN-01 → BN-03).
+            // api: AndroidDataModule trả ImageLoader cho giao diện qua Koin.
+            api(libs.coil.core)
         }
         androidMain.dependencies {
             // androidDataModule cần androidContext() để tạo tệp DataStore.

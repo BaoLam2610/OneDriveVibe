@@ -1,9 +1,12 @@
 package com.lambao.odv.core.database
 
+import androidx.paging.PagingSource
 import androidx.room3.Dao
+import androidx.room3.DaoReturnTypeConverters
 import androidx.room3.Query
 import androidx.room3.Transaction
 import androidx.room3.Upsert
+import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import kotlinx.coroutines.flow.Flow
 
 /** Số tham số `?` tối đa cho một câu `IN (...)`; dưới giới hạn của SQLite để an toàn với drive lớn. */
@@ -12,12 +15,33 @@ private const val IN_CHUNK = 500
 /**
  * Truy cập dữ liệu đồng bộ. Lớp trừu tượng (không phải interface) vì Room KMP chỉ cho `@Transaction` trên hàm `open` của
  * lớp trừu tượng; mỗi trang delta phải ghi nguyên tử cùng mốc `pendingNextLink` (DB-04).
+ *
+ * Room 3 không tự nhận `PagingSource` làm kiểu trả về như Room 2: phải đăng ký [PagingSourceDaoReturnTypeConverter] của
+ * `room3-paging` (cho [pagedLibrary]); thiếu thì KSP báo "Not sure how to convert the query result".
  */
 @Dao
+@DaoReturnTypeConverters(PagingSourceDaoReturnTypeConverter::class)
 abstract class DriveDao {
 
     @Query("SELECT * FROM drive_item WHERE parentId = :parentId")
     abstract fun observeChildren(parentId: String): Flow<List<DriveItemEntity>>
+
+    /**
+     * Ảnh và video của Thư viện, mới nhất trước (TV-01, TV-02), theo trang. [kinds] là tên `MediaKind`. Room tự làm mất
+     * hiệu lực nguồn khi bảng đổi nên Pager nạp lại khi đồng bộ ghi thêm (DB-05).
+     */
+    @Query("SELECT * FROM drive_item WHERE mediaKind IN (:kinds) ORDER BY sortDate DESC, id")
+    abstract fun pagedLibrary(kinds: List<String>): PagingSource<Int, DriveItemEntity>
+
+    /**
+     * Số mục theo ngày, mới nhất trước. `dayNumber` dùng phép chia số nguyên của SQLite, khớp `dayNumberOf` ở domain
+     * (cùng [utcOffsetMs]) để tiêu đề nhóm và vị trí cuộn nhanh khớp từng mục.
+     */
+    @Query(
+        "SELECT (sortDate + :utcOffsetMs) / 86400000 AS dayNumber, COUNT(*) AS count FROM drive_item " +
+            "WHERE mediaKind IN (:kinds) GROUP BY dayNumber ORDER BY dayNumber DESC",
+    )
+    abstract fun libraryDays(kinds: List<String>, utcOffsetMs: Long): Flow<List<DayCount>>
 
     @Query("SELECT * FROM sync_state WHERE id = 0")
     abstract fun observeSyncState(): Flow<SyncStateEntity?>

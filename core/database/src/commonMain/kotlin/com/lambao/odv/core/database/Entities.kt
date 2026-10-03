@@ -13,7 +13,8 @@ import androidx.room3.PrimaryKey
  */
 @Entity(
     tableName = "drive_item",
-    indices = [Index("parentId"), Index("nameKey")],
+    // (mediaKind, sortDate) và sortDate phục vụ tab Thư viện (TV-01, TV-02): lọc theo loại rồi xếp theo ngày giảm dần.
+    indices = [Index("parentId"), Index("nameKey"), Index("mediaKind", "sortDate"), Index("sortDate")],
 )
 data class DriveItemEntity(
     @PrimaryKey val id: String,
@@ -33,6 +34,8 @@ data class DriveItemEntity(
     val takenAt: Long?,
     /** Epoch mili giây; ngày tạo tệp gốc, không có thì ngày tải lên (TV-02). */
     val createdAt: Long?,
+    /** Epoch mili giây; ngày xếp và nhóm của Thư viện, tính sẵn khi đồng bộ (TV-02, `libraryDateOf`) để SQL sắp xếp bằng index. */
+    val sortDate: Long,
     val scanId: Long,
 )
 
@@ -60,6 +63,12 @@ data class SyncStateEntity(
         const val SINGLE_ROW_ID = 0
     }
 }
+
+/** Số mục của một ngày trong Thư viện; [dayNumber] là số ngày từ 1970-01-01 theo độ lệch múi giờ đã truyền vào truy vấn. */
+data class DayCount(
+    val dayNumber: Long,
+    val count: Int,
+)
 
 /** Kết quả rút gọn để dựng đường dẫn cha cho kết quả tìm kiếm mà không kéo cả hàng. */
 data class ItemRef(
