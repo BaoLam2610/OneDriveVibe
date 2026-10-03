@@ -3,6 +3,7 @@ package com.lambao.odv.core.network
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.network.dto.ChildrenPageDto
+import com.lambao.odv.core.network.dto.DeltaPageDto
 import com.lambao.odv.core.network.dto.DriveDto
 import com.lambao.odv.core.network.dto.DriveItemDto
 import io.ktor.client.HttpClient
@@ -63,6 +64,27 @@ class GraphApi internal constructor(
             if (nextLink != null && !isOwnUrl(nextLink)) return AppResult.Failure(AppError.Unknown())
         } while (nextLink != null)
         return AppResult.Success(items)
+    }
+
+    /**
+     * Một trang delta (DB-01, DB-02, DB-04). [link] null = bắt đầu quét lại từ `/root/delta`; không null = `nextLink`
+     * (tiếp tục trang dở) hoặc `deltaLink` (lần đồng bộ sau). [link] đọc từ CSDL nên coi như không tin cậy: chỉ gửi
+     * bearer khi nó trỏ về Graph. Mốc hết hiệu lực trả `AppError.Http(410, "resyncRequired")` (DB-03).
+     * Không dùng `$select`: delta chỉ hỗ trợ hạn chế và cần cả `deleted`, `root`, `parentReference`.
+     */
+    suspend fun deltaPage(credentials: GraphCredentials, link: String?): AppResult<DeltaPageDto> {
+        if (link != null && !isOwnUrl(link)) return AppResult.Failure(AppError.Unknown())
+        return authorizedGet(credentials) {
+            if (link == null) {
+                url {
+                    appendDrivePath(credentials)
+                    appendPathSegments("root", "delta")
+                }
+                parameter("\$top", CHILDREN_PAGE_SIZE)
+            } else {
+                url.takeFrom(link)
+            }
+        }.decode()
     }
 
     private fun URLBuilder.appendDrivePath(credentials: GraphCredentials) {

@@ -18,4 +18,29 @@
     <string name="browser_error_other_no_code">Something went wrong.</string>
     <string name="browser_retry">Try again</string>
     <string name="browser_loading">Loading</string>
+
+    <!-- Search (D4, DS-03) -->
+    <string name="browser_search">Search</string>
+    <string name="browser_search_placeholder">Search file or folder names</string>
+    <string name="browser_search_back">Back</string>
+    <string name="browser_search_clear">Clear search</string>
+    <string name="browser_search_empty_title">No results found</string>
+    <string name="browser_search_empty_body">No file or folder matches “%1$s”.</string>
+
+    <!-- Sort and view mode (D5, TM-05, TM-06) -->
+    <string name="browser_sort_title">Sort by</string>
+    <string name="browser_sort_description">Sort: %1$s</string>
+    <string name="browser_sort_name_asc">Name · A to Z</string>
+    <string name="browser_sort_name_desc">Name · Z to A</string>
+    <string name="browser_sort_modified_desc">Date modified · Newest</string>
+    <string name="browser_sort_modified_asc">Date modified · Oldest</string>
+    <string name="browser_sort_size_asc">Size · Small to large</string>
+    <string name="browser_sort_size_desc">Size · Large to small</string>
+    <string name="browser_view_to_grid">Switch to grid view</string>
+    <string name="browser_view_to_list">Switch to list view</string>
+
+    <!-- Sync banners (D6, D7, DS-04, DS-05, TV-06) -->
+    <string name="browser_offline">You are offline. Showing data synced earlier.</string>
+    <string name="browser_indexing">Indexing, %1$s items scanned</string>
+    <string name="browser_sync_failed">Could not sync. Data may be out of date.</string>
 </resources>

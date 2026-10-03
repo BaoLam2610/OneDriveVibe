@@ -4,7 +4,8 @@ package com.lambao.odv.core.domain.model
 enum class MediaKind { Image, Video, Pdf }
 
 /**
- * Một mục trong drive: thư mục hoặc tệp. Lát 1 chỉ cần các trường để duyệt cây; ngày sửa, cTag... thêm khi có Room (Lát 3).
+ * Một mục trong drive: thư mục hoặc tệp. Các trường có giá trị mặc định (ngày, cTag) chỉ có khi mục đến từ Room
+ * (đồng bộ delta, Lát 3); mục lấy trực tiếp từ API để duyệt (TM-07) không có chúng.
  */
 data class DriveItem(
     val id: String,
@@ -18,6 +19,14 @@ data class DriveItem(
     val childCount: Int?,
     /** Thời lượng video, mili giây. */
     val durationMs: Long?,
+    /** Ngày sửa trên OneDrive, epoch mili giây; null nếu máy chủ không trả (TM-05). */
+    val modifiedAt: Long? = null,
+    /** Ngày chụp, epoch mili giây (TV-02, mức đầu). */
+    val takenAt: Long? = null,
+    /** Ngày tạo tệp gốc rồi tới ngày tải lên, epoch mili giây (TV-02, hai mức sau). */
+    val createdAt: Long? = null,
+    /** Dấu nhận biết nội dung đổi, để làm mới thumbnail và cache (BN-02, Lát 4). */
+    val cTag: String? = null,
 )
 
 private val imageExtensions = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif")

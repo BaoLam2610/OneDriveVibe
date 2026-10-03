@@ -17,6 +17,12 @@ kotlin {
             implementation(project(":core:security"))
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.koin.core)
+            // Tùy chọn hiển thị của tab Thư mục (TM-05, TM-06): DataStore Preferences là KMP.
+            implementation(libs.androidx.datastore.preferences)
+        }
+        androidMain.dependencies {
+            // androidDataModule cần androidContext() để tạo tệp DataStore.
+            implementation(libs.koin.android)
         }
     }
 }

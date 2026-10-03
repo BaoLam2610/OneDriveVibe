@@ -2,7 +2,9 @@ package com.lambao.odv
 
 import android.app.Application
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.lambao.odv.core.data.androidDataModule
 import com.lambao.odv.core.data.dataModule
+import com.lambao.odv.core.database.databaseModule
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.network.networkModule
 import com.lambao.odv.core.security.securityModule
@@ -29,7 +31,12 @@ class MainApplication : Application() {
             // Chỉ log lỗi: Koin không được in giá trị đã tiêm (có thể là config hay token, CH-06).
             androidLogger(Level.ERROR)
             androidContext(this@MainApplication)
-            modules(listOf(appModule, securityModule, networkModule, dataModule, authModule, browserModule) + DebugTools.koinModules)
+            modules(
+                listOf(
+                    appModule, securityModule, networkModule, databaseModule, dataModule, androidDataModule, authModule,
+                    browserModule,
+                ) + DebugTools.koinModules,
+            )
         }
         // CH-03, ADR-0014: tự khóa khi cả app xuống nền. Giữ tham chiếu mạnh vì Lifecycle chỉ giữ yếu observer.
         ProcessLifecycleOwner.get().lifecycle.addObserver(lockController)

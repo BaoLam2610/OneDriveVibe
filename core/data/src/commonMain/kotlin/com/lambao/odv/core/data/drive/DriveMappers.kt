@@ -1,12 +1,58 @@
 package com.lambao.odv.core.data.drive
 
+import com.lambao.odv.core.database.DriveItemEntity
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.mediaKindOf
 import com.lambao.odv.core.network.GraphCredentials
 import com.lambao.odv.core.network.dto.DriveItemDto
+import kotlin.time.Instant
 
 internal fun ConnectionConfig.toCredentials() = GraphCredentials(tenantId, clientId, clientSecret, upn)
+
+/** Ngày Graph trả là ISO 8601 UTC; giá trị lạ hoặc thiếu thì null thay vì làm hỏng cả trang đồng bộ. */
+private fun parseInstantMs(value: String?): Long? =
+    value?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() }
+
+/**
+ * Ánh xạ sang hàng Room cho delta (DB-01); null với mục không duyệt được (sổ tay OneNote, như [toDomain]).
+ * Gọi sau khi đã loại mục `deleted` và `root`. [scanId] là lần quét đầy đủ đang chạy.
+ */
+internal fun DriveItemDto.toEntity(scanId: Long): DriveItemEntity? {
+    if (packageFacet != null) return null
+    val isFolder = folder != null
+    return DriveItemEntity(
+        id = id,
+        parentId = parentReference?.id,
+        name = name,
+        nameKey = searchKey(name),
+        sizeBytes = size ?: 0,
+        isFolder = isFolder,
+        mediaKind = if (isFolder) null else mediaKindOf(name, file?.mimeType)?.name,
+        childCount = folder?.childCount,
+        durationMs = video?.duration,
+        modifiedAt = parseInstantMs(lastModifiedDateTime),
+        cTag = cTag,
+        takenAt = parseInstantMs(photo?.takenDateTime),
+        createdAt = parseInstantMs(fileSystemInfo?.createdDateTime) ?: parseInstantMs(createdDateTime),
+        scanId = scanId,
+    )
+}
+
+internal fun DriveItemEntity.toDomain() = DriveItem(
+    id = id,
+    name = name,
+    sizeBytes = sizeBytes,
+    isFolder = isFolder,
+    mediaKind = mediaKind?.let { stored -> MediaKind.entries.firstOrNull { it.name == stored } },
+    childCount = childCount,
+    durationMs = durationMs,
+    modifiedAt = modifiedAt,
+    takenAt = takenAt,
+    createdAt = createdAt,
+    cTag = cTag,
+)
 
 /**
  * Null cho mục không duyệt được: sổ tay OneNote (`package`) có `folder` nhưng không phải thư mục thật.

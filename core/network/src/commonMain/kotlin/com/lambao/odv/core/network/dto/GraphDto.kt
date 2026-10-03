@@ -16,14 +16,45 @@ data class DriveDto(
 @Serializable
 data class DriveItemDto(
     val id: String,
-    val name: String,
+    /** Mục đã xóa trong delta chỉ có `id` và `deleted`, không có tên; do đó có mặc định. */
+    val name: String = "",
     val size: Long? = null,
     val folder: FolderFacetDto? = null,
     val file: FileFacetDto? = null,
     val video: VideoFacetDto? = null,
     /** Có với sổ tay OneNote (`package.type = oneNote`): là thư mục nhưng không duyệt được. */
     @SerialName("package") val packageFacet: PackageFacetDto? = null,
+    // Các trường dưới đây chỉ có ở delta (Lát 3, ADR-0007); `listChildren` dùng `$select` hẹp nên chúng là null.
+    /** Có (kể cả rỗng) khi mục đã bị xóa trên OneDrive: delta chỉ gửi `id` và `deleted` (DS-06). */
+    val deleted: DeletedFacetDto? = null,
+    /** Chỉ có ở thư mục gốc của drive; dùng để biết id gốc, không lưu như một mục. */
+    val root: RootFacetDto? = null,
+    val parentReference: ParentReferenceDto? = null,
+    val cTag: String? = null,
+    /** ISO 8601 UTC. Ngày sửa trên OneDrive (TM-05). */
+    val lastModifiedDateTime: String? = null,
+    /** Ngày tải lên OneDrive (TV-02, mức cuối). */
+    val createdDateTime: String? = null,
+    val fileSystemInfo: FileSystemInfoDto? = null,
+    val photo: PhotoFacetDto? = null,
 )
+
+@Serializable
+data class DeletedFacetDto(val state: String? = null)
+
+@Serializable
+class RootFacetDto
+
+@Serializable
+data class ParentReferenceDto(val id: String? = null)
+
+/** Ngày của tệp gốc trên máy người dùng (TV-02, mức giữa). */
+@Serializable
+data class FileSystemInfoDto(val createdDateTime: String? = null)
+
+/** Ngày chụp (TV-02, mức đầu). */
+@Serializable
+data class PhotoFacetDto(val takenDateTime: String? = null)
 
 @Serializable
 data class FolderFacetDto(val childCount: Int? = null)
@@ -42,6 +73,16 @@ data class PackageFacetDto(val type: String? = null)
 internal data class ChildrenPageDto(
     val value: List<DriveItemDto> = emptyList(),
     @SerialName("@odata.nextLink") val nextLink: String? = null,
+)
+
+/**
+ * Một trang của `delta`: còn trang thì có [nextLink], trang cuối có [deltaLink] (mốc cho lần đồng bộ sau, DB-02).
+ */
+@Serializable
+data class DeltaPageDto(
+    val value: List<DriveItemDto> = emptyList(),
+    @SerialName("@odata.nextLink") val nextLink: String? = null,
+    @SerialName("@odata.deltaLink") val deltaLink: String? = null,
 )
 
 @Serializable

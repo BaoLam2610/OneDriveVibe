@@ -5,6 +5,9 @@
     <!-- Gọi Microsoft Graph và endpoint token. :core:network là thư viện KMP không có manifest riêng nên khai báo ở app. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- DS-05: biết máy có mạng hay không để hiện thanh "Đang offline" (ConnectivityManager). Quyền thường, không hỏi người dùng. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <!--
         CH-04: tắt sao lưu tự động. allowBackup="false" chặn sao lưu đến Android 11;
         dataExtractionRules chặn cả sao lưu đám mây lẫn chuyển máy trên Android 12+.

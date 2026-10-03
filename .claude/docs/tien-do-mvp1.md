@@ -6,8 +6,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Đang làm
 
-- **Lát:** 2, Mã PIN và màn Khóa (Lát 0, 1, D code xong, còn chờ kiểm tay)
-- **Bước:** Lát 2 xong code cả 11 bước (PIN, màn Khóa, tự khóa, Quên PIN, ẩn recents, sinh trắc học). Đã review Kotlin + bảo mật bước 9 và sửa. Còn: kiểm tay trên máy thật (sai PIN 5 lần, bấm Home lúc giải mã, đổi vân tay, đổi PIN)
+- **Lát:** 3, Đồng bộ delta và offline (Lát 0, 1, 2, D code xong, còn chờ kiểm tay)
+- **Bước:** Lát 3 xong code cả 3a (Room, delta sync, `SyncCoordinator`, `ConnectionResetter`, `NetworkMonitor`; đã build được) và 3b (tab Thư mục đọc từ Room, sắp xếp, lưới/danh sách, tìm kiếm, banner offline/lập chỉ mục/lỗi, kéo làm mới, DataStore nhớ lựa chọn). 3b chưa build, chưa review. Còn: build, review Lát 3, kiểm tay
 - **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật đã có luồng đặt PIN (Lát 2, bước 8). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
@@ -72,12 +72,13 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Lát 3: Đồng bộ delta và offline
 
-- [ ] Room: schema, DAO
-- [ ] Delta sync (DB-01 → DB-05)
-- [ ] Tab Thư mục đọc từ Room, sắp xếp, lưới/danh sách, lọc
-- [ ] Kéo làm mới, tự đồng bộ, offline, gỡ tệp đã xóa
-- [ ] Tìm kiếm
-- [ ] TK-05, TK-06
+- [x] 3a. Room: schema, DAO (`:core:database`: `DriveItemEntity`, `SyncStateEntity`, `DriveDao`, `OdvDatabase`, `databaseModule`)
+- [x] 3a. Delta sync (DB-01 → DB-05): `GraphApi.deltaPage`, `SyncEngine`, `SyncCoordinator` (single-flight, scope riêng, cũng là `ConnectionResetter` xóa Room), `DriveRepository.observeChildren`/`search`, `SyncRepository`, `NetworkMonitor` (Android). Chưa build; rủi ro build chính là Room KMP + KSP với convention plugin
+- [x] 3b. Tab Thư mục đọc từ Room (TM-07 gọi API khi quét lần đầu chưa xong), sắp xếp (TM-02, TM-05, bottom sheet D5), lưới/danh sách (TM-06), lọc loại tệp (TM-03, tạm coi cả ba loại bật). `BrowserPreferences` (DataStore) nhớ sắp xếp và dạng hiển thị
+- [x] 3b. Kéo làm mới và tự đồng bộ khi mở (DS-04), banner offline (D6, DS-05) / đang lập chỉ mục (D7, TV-06) / đồng bộ lỗi, mục xóa trên OneDrive được gỡ qua delta (DS-06)
+- [x] 3b. Tìm kiếm (D4, DS-03): thanh tìm tự lấy tiêu điểm, debounce 250 ms, không phân biệt dấu, hiện đường dẫn cha, tô từ khớp, chạm thư mục kết quả thì mở đúng thư mục
+- [x] TK-05, TK-06: dùng chung `HttpRequestRetry` của Lát D cho cả delta (Retry-After tối đa 60 giây)
+- Hoãn có chủ ý: TM-04 (ẩn thư mục không có tệp phù hợp) và bật/tắt loại tệp (Lát 9, CD-01); dấu `cloud-off` trên thẻ tệp chưa cache và Snackbar "Cần kết nối mạng để mở tệp này" (Lát 4–7, khi có cache và màn xem)
 - [ ] Review
 - [ ] Kiểm tay
 
@@ -141,4 +142,6 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-03 | Công cụ debug: nút bọ luôn hiện ở bản debug (kể cả màn Khóa, lúc `Unknown` và trên Dialog), bản release vẫn ẩn; tab API thêm "Sao chép cURL" (thanh trên màn chi tiết và icon cuối mỗi dòng, theo công tắc che); "Sao chép" và "Mở hết/Thu gọn" đổi thành icon gọn (`DebugIconButton` + 4 vector `ic_debug_*` trong `:tools:debug`, ngoài bộ icon sản phẩm). Cập nhật rủi ro ADR-0013. Chưa build |
 | 2026-10-03 | Lát 2 bước 9 và 11: sinh trắc học (`BiometricAuthenticator`, `AndroidBiometricAuthenticator` + `CurrentActivityHolder`, khóa Keystore `odv_bio_key` bọc khóa dẫn xuất ở `bio_wrap`), B6 trong màn đặt PIN, phím sinh trắc học và tự hiện hộp thoại ở màn Khóa, từ chối khi khóa tạm, đổi PIN/tắt bảo vệ xóa phần bọc; chuỗi VI/EN, checklist trong `thiet-ke-ui.md`, ADR-0014. Bước 10 đã xong từ trước. Chưa build, chưa review |
 | 2026-10-03 | Review sinh trắc học và đã sửa: thiếu import `BiometricOutcome` (lỗi biên dịch), `CurrentActivityHolder.awaitResumed` không để Activity bị hủy làm treo ViewModel, kiểm tra RESUMED ngay trước `BiometricPrompt.authenticate`, `isBusy`/`isEnrollingBiometric` trả về `false` trong `finally`, khóa hỏng (mọi `GeneralSecurityException`) thì dọn và về PIN, `cleanup()` không ném ngoại lệ, kiểm tra khóa tạm lại trong mutex, bật sinh trắc học cần xác nhận, B6 không kẹt khi lỗi. Chưa build |
+| 2026-10-03 | Lát 3a: Room KMP (`:core:database`, 2 bảng, DAO với transaction mỗi trang delta), `GraphApi.deltaPage` + DTO delta (`deleted`, `root`, `parentReference`, ngày, `cTag`, `photo`), `SyncEngine` (tiếp tục trang dở DB-04, `410` quét lại DB-03, dọn mục cũ cùng transaction), `SyncCoordinator` (single-flight, quá 15 phút DS-04, reset khi ngắt kết nối), `DriveRepository.observeChildren`/`search` (sắp xếp TM-02/TM-05, tìm không phân biệt dấu DS-03), `NetworkMonitor` + quyền `ACCESS_NETWORK_STATE`. `SyncRepository` tách riêng khỏi `DriveRepository` (blueprint gộp, tách cho gọn). Chưa build, chưa review; 3b (giao diện) chưa làm |
+| 2026-10-03 | Lát 3a build được. Lát 3b: `BrowserViewModel` kết hợp Room/API (TM-07), sắp xếp, tìm kiếm, banner, `BrowserPreferences` (DataStore trong `:core:data`, `androidDataModule`), `FolderRef` trong `SearchResult`, `sortedFor`, giao diện lưới/danh sách + `PullToRefreshBox` + bottom sheet sắp xếp + thanh tìm (`ODVSearchBar` thêm `autoFocus`), chuỗi VI/EN (mục [mới] cần duyệt). Chưa build, chưa review |
 | 2026-10-03 | Công cụ debug, tab Lưu trữ: "Làm mới" chỉ đọc lại danh sách (giữ nguyên). Thêm "Xóa dữ liệu local" (có hộp thoại xác nhận): gọi `DisconnectUseCase` như Ngắt kết nối rồi khởi động lại app ở task mới về màn Kết nối; cài đặt debug được giữ. Hook `DebugHooks.clearLocalData` đặt trong `DebugTools.install` (bản debug) vì `:tools:debug` không phụ thuộc domain. Chưa build |

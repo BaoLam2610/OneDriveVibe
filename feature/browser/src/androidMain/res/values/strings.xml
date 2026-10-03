@@ -20,4 +20,29 @@
     <string name="browser_error_other_no_code">Đã xảy ra lỗi.</string> <!-- [mới] -->
     <string name="browser_retry">Thử lại</string> <!-- [mới] -->
     <string name="browser_loading">Đang tải</string> <!-- [mới] mô tả cho TalkBack -->
+
+    <!-- Tìm kiếm (D4, DS-03) -->
+    <string name="browser_search">Tìm kiếm</string>
+    <string name="browser_search_placeholder">Tìm tên tệp hoặc thư mục</string>
+    <string name="browser_search_back">Quay lại</string>
+    <string name="browser_search_clear">Xóa từ khóa</string>
+    <string name="browser_search_empty_title">Không tìm thấy kết quả</string> <!-- [mới] -->
+    <string name="browser_search_empty_body">Không có tệp hay thư mục nào khớp “%1$s”.</string> <!-- [mới] -->
+
+    <!-- Sắp xếp và dạng hiển thị (D5, TM-05, TM-06). Nhãn "Tên · A đến Z" và "Chuyển sang dạng danh sách" lấy từ thiết kế. -->
+    <string name="browser_sort_title">Sắp xếp theo</string> <!-- [mới] -->
+    <string name="browser_sort_description">Sắp xếp: %1$s</string>
+    <string name="browser_sort_name_asc">Tên · A đến Z</string>
+    <string name="browser_sort_name_desc">Tên · Z đến A</string> <!-- [mới] -->
+    <string name="browser_sort_modified_desc">Ngày sửa · Mới nhất</string> <!-- [mới] -->
+    <string name="browser_sort_modified_asc">Ngày sửa · Cũ nhất</string> <!-- [mới] -->
+    <string name="browser_sort_size_asc">Dung lượng · Nhỏ đến lớn</string> <!-- [mới] -->
+    <string name="browser_sort_size_desc">Dung lượng · Lớn đến nhỏ</string> <!-- [mới] -->
+    <string name="browser_view_to_grid">Chuyển sang dạng lưới</string> <!-- [mới] -->
+    <string name="browser_view_to_list">Chuyển sang dạng danh sách</string>
+
+    <!-- Banner đồng bộ (D6, D7, DS-04, DS-05, TV-06) -->
+    <string name="browser_offline">Đang offline. Đang hiển thị dữ liệu đã đồng bộ.</string> <!-- [mới] -->
+    <string name="browser_indexing">Đang lập chỉ mục, đã quét %1$s mục</string>
+    <string name="browser_sync_failed">Không đồng bộ được. Dữ liệu có thể chưa mới nhất.</string> <!-- [mới] -->
 </resources>

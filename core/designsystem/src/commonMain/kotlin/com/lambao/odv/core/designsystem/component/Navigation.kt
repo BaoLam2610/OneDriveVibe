@@ -17,8 +17,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -88,9 +92,13 @@ fun ODVSearchBar(
     clearContentDescription: String,
     modifier: Modifier = Modifier,
     onSearch: () -> Unit = {},
+    autoFocus: Boolean = false,
 ) {
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
+    // Mở thanh tìm là gõ được ngay (không bắt chạm thêm vào ô); chỉ xin tiêu điểm một lần khi vào composition.
+    val focusRequester = remember { FocusRequester() }
+    if (autoFocus) LaunchedEffect(Unit) { focusRequester.requestFocus() }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -105,6 +113,7 @@ fun ODVSearchBar(
             onValueChange = onQueryChange,
             modifier = Modifier
                 .weight(1f)
+                .focusRequester(focusRequester)
                 // Ô tìm không có nhãn riêng nên dùng placeholder làm nhãn TalkBack.
                 .semantics { contentDescription = placeholder },
             singleLine = true,

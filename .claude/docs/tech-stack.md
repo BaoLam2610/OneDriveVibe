@@ -251,7 +251,7 @@ Tiến độ theo lát xem `tien-do-mvp1.md`; mục này chỉ theo dõi phần 
 - [x] `libs.versions.toml` pin phiên bản các thư viện Lát 0 khai báo (§1)
 - [x] Skeleton module theo §3
 - [x] Ktor client + token + retry (`HttpRequestRetry`) + Kermit + log API đã làm sạch (Lát 1, Lát D)
-- [ ] Room KMP `BundledSQLiteDriver`, export schema (Lát 3)
+- [x] Room KMP `BundledSQLiteDriver`, export schema (Lát 3a, chờ build và kiểm tay)
 - [ ] `SecretStore` (Keystore) (Lát 1) + dẫn xuất khóa từ PIN Argon2id (Lát 2)
 - [ ] CI (nếu dùng): build, ktlint, detekt, không có bước test
 - [ ] Baseline Profile cho danh sách tệp và player (trước khi phát hành)
@@ -278,8 +278,10 @@ Bản tech stack đầu định nghĩa foundation 8 hạng mục. Kế hoạch M
 
 | Bảng | Mục đích |
 |---|---|
-| `drive_item` | Tệp/thư mục: id, parentId, name, size, cTag, mimeType, các mốc ngày, facet photo/video |
-| `sync_state` | `deltaLink` + trang đang quét dở để tiếp tục khi bị gián đoạn (DB-04) |
+| `drive_item` | Tệp/thư mục: id, parentId, name, `nameKey` (chữ thường, bỏ dấu), size, `mediaKind`, childCount, durationMs, `modifiedAt`, cTag, `takenAt`, `createdAt`, `scanId`. Ngày lưu epoch mili giây |
+| `sync_state` | Một dòng: `rootId`, `deltaLink`, `pendingNextLink` (trang đang quét dở, DB-04), `scanId`, `scannedCount`, `initialSyncDone`, `lastSyncedAt` |
+
+Quy ước đồng bộ (Lát 3a): mỗi trang delta ghi nguyên tử cùng `pendingNextLink`; quét đầy đủ mới (chưa có `deltaLink`) tăng `scanId`, trang cuối dọn mục có `scanId` khác trong cùng transaction với `deltaLink` mới (DB-03, DS-06). Tìm kiếm dùng `instr(nameKey, :key)`, không dùng `LIKE`. Schema đổi lúc dev: `fallbackToDestructiveMigration` ở bản Android.
 
 Thêm theo feature: `playback_progress`, `reading_progress`, `cache_entry`. Trước khi phát hành schema giữ `version = 1`; bản debug được xóa và tạo lại DB, chưa cần migration.
 

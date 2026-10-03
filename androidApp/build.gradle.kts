@@ -20,6 +20,8 @@ dependencies {
     // Chỉ để ghép module Koin ở MainApplication (networkModule, securityModule). Code app không gọi thẳng các module này.
     implementation(project(":core:network"))
     implementation(project(":core:security"))
+    // Chỉ để ghép databaseModule ở MainApplication (Room, ADR-0007).
+    implementation(project(":core:database"))
     implementation(project(":core:designsystem"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:browser"))
