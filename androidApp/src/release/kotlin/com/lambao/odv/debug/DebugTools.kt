@@ -17,4 +17,7 @@ object DebugTools {
     fun Overlay() = Unit
 
     val topOverlay: (@Composable (asWindow: Boolean) -> Unit)? = null
+
+    /** Không có gì để xóa ở bản release. */
+    fun onAppLocked() = Unit
 }

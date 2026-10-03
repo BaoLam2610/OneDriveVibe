@@ -36,6 +36,8 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.core.viewmodel)
     implementation(libs.koin.compose.viewmodel)
+    // koinInject (cổng khóa trong ODVNavDisplay, ẩn nút bọ trong MainActivity): khai báo thẳng, không dựa vào transitive.
+    implementation(libs.koin.compose)
 
     // Navigation 3 (ADR-0003)
     implementation(libs.androidx.navigation3.runtime)
@@ -44,6 +46,8 @@ dependencies {
     // SplashViewModel kế thừa BaseMviViewModel (ViewModel không lộ qua :core:common).
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.runtimeCompose)
+    // ProcessLifecycleOwner cho tự khóa khi cả app xuống nền (CH-03, ADR-0014).
+    implementation(libs.androidx.lifecycle.process)
     implementation(libs.kotlinx.serialization.core)
 
     implementation(libs.compose.uiToolingPreview)

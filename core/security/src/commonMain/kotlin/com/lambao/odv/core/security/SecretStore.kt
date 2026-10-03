@@ -6,7 +6,8 @@ import com.lambao.odv.core.common.result.AppResult
  * Kho bí mật mã hóa trên đĩa (CH-01). Mỗi bí mật là một tệp ciphertext đặt theo [name].
  *
  * Bản Android dùng AES-GCM với khóa trong Android Keystore (khóa không xuất ra khỏi thiết bị, nên tệp lấy ra
- * ngoài máy không giải mã được). MVP2: bản iOS dùng Keychain. Lát 2 thêm khóa dẫn xuất từ PIN (Argon2id, ADR-0008).
+ * ngoài máy không giải mã được). MVP2: bản iOS dùng Keychain. Chế độ PIN không đổi lớp này: phong bì PIN (khóa dẫn
+ * xuất từ Argon2id) nằm bên trong plaintext của kho này, xem [PinEnvelopeCodec] và ADR-0014.
  *
  * Mọi hàm không ném ngoại lệ (trừ hủy coroutine); lỗi trả về dạng [com.lambao.odv.core.common.error.AppError.SecureStorage].
  */
@@ -23,4 +24,10 @@ interface SecretStore {
 
     /** Xóa bí mật [name]; không có thì bỏ qua. */
     suspend fun delete(name: String)
+
+    /**
+     * Xóa mọi bí mật và mọi khóa phần cứng của app (ngắt kết nối, Quên PIN, KH-03, CD-05). Lần ghi sau tự tạo khóa mới.
+     * Xóa tệp trước, khóa sau: nếu dở dang thì còn lại ciphertext không có khóa (vô hại) chứ không phải khóa không có tệp.
+     */
+    suspend fun wipeAll()
 }

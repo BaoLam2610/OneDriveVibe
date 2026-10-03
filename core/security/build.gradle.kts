@@ -15,6 +15,8 @@ kotlin {
         androidMain.dependencies {
             // Binding Koin của bản Android (cần androidContext()).
             implementation(libs.koin.android)
+            // Argon2id (ADR-0008, ADR-0014): native nên chỉ ở androidMain, dùng sau interface PinKeyDeriver.
+            implementation(libs.argon2kt)
         }
     }
 }

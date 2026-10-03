@@ -6,11 +6,14 @@ android-targetSdk = "37"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
 androidx-core = "1.19.0"
+androidx-biometric = "1.1.0"
 androidx-datastore = "1.2.1"
 androidx-lifecycle = "2.11.0"
 # Bản androidx (không phải JetBrains) của lifecycle, chỉ dùng cho lifecycle-viewmodel-navigation3 trong :androidApp.
 androidx-lifecycle-nav3 = "2.11.0"
 androidx-navigation3 = "1.2.0"
+# Cần kiểm tra phiên bản mới nhất, và hỗ trợ trang bộ nhớ 16 KB, khi cập nhật (ADR-0014).
+argon2kt = "1.6.0"
 androidx-room = "2.8.5"
 # Phải khớp bản sqlite mà Room kéo theo.
 androidx-sqlite = "2.6.2"
@@ -59,7 +62,8 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-core-viewmodel = { module = "io.insert-koin:koin-core-viewmodel", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
-koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
+koin-compose-viewmodel ={ module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 
 # Navigation 3 (ADR-0003). :androidApp là module Android thuần nên dùng bản androidx.
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "androidx-navigation3" }
@@ -72,6 +76,12 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktor-serialization-kotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+# Bảo mật PIN (ADR-0008, ADR-0014). argon2kt: Argon2id native, chỉ androidMain của :core:security.
+# biometric và lifecycle-process: gắn vào :androidApp ở Lát 2 (sinh trắc học, tự khóa khi rời app).
+argon2kt = { module = "com.lambdapioneer.argon2kt:argon2kt", version.ref = "argon2kt" }
+androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "androidx-biometric" }
+androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "androidx-lifecycle-nav3" }
 
 # Room KMP (ADR-0007). Gắn vào :core:database ở Lát 3.
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }

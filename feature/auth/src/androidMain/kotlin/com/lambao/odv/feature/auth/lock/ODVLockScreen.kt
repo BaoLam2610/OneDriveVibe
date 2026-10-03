@@ -1,4 +1,4 @@
-package com.lambao.odv.feature.auth.security
+package com.lambao.odv.feature.auth.lock
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,16 +12,16 @@ import com.lambao.odv.core.designsystem.component.rememberODVShakeState
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * Màn Thiết lập bảo mật (BM-01 → BM-08), mở từ hộp thoại KN-13. Config đã lưu ở chế độ thiết bị trước khi tới đây
- * (KN-08); xong màn này config được mã hóa lại bằng PIN (BM-04). [onBack] quay lại hộp thoại KN-13 (BM-08); [onDone] vào
- * Danh sách. Chặn chụp màn hình và ẩn ở danh sách app gần đây (CH-05).
+ * Màn Khóa (KH-01 → KH-06). [onUnlocked] bỏ màn Khóa để thấy lại màn đang xem; [onDisconnected] về màn Kết nối sau khi
+ * dữ liệu đã bị xóa (Quên mã PIN hoặc sai quá nhiều). Cả hai gọi từ `State.completion` nên không mất khi xoay màn hình.
+ * Chặn chụp màn hình và ẩn ở danh sách app gần đây (KH-04, CH-05).
  */
 @Composable
-fun ODVSecuritySetupScreen(
-    onBack: () -> Unit,
-    onDone: () -> Unit,
+fun ODVLockScreen(
+    onUnlocked: () -> Unit,
+    onDisconnected: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: SecuritySetupViewModel = koinViewModel(),
+    viewModel: LockViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val shake = rememberODVShakeState()
@@ -30,21 +30,19 @@ fun ODVSecuritySetupScreen(
     ODVSecureWindow()
     ODVCollectEffects(viewModel.effects) { effect ->
         when (effect) {
-            SetupEffect.Shake -> {
+            LockEffect.Shake -> {
                 haptics.reject()
                 shake.shake()
             }
         }
     }
-    LaunchedEffect(state.isDone) {
-        if (state.isDone) onDone()
+    LaunchedEffect(state.completion) {
+        when (state.completion) {
+            LockCompletion.Unlocked -> onUnlocked()
+            LockCompletion.Disconnected -> onDisconnected()
+            null -> Unit
+        }
     }
 
-    ODVSecuritySetupContent(
-        state = state,
-        shake = shake,
-        onIntent = viewModel::onIntent,
-        onBack = onBack,
-        modifier = modifier,
-    )
+    ODVLockContent(state = state, shake = shake, onIntent = viewModel::onIntent, modifier = modifier)
 }

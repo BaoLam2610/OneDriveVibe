@@ -208,7 +208,8 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 - **Config (4 trường):** AES-GCM, lưu ciphertext vào file. Bảo mật **bật**: khóa dẫn xuất từ PIN (Argon2id) kết hợp khóa phần cứng Keystore. Bảo mật **tắt**: khóa phần cứng Keystore.
 - **Không lưu PIN, không lưu hash PIN** (CH-02). PIN đúng hay sai = giải mã config được hay không. Số lần sai và thời gian chờ (KH-02) lưu riêng, bền qua tắt/mở app.
 - **Access token chỉ trong bộ nhớ** (CH-03); khóa app thì xóa token và config đã giải mã khỏi bộ nhớ.
-- Thư viện Argon2id đặt sau interface để thay được.
+- Thư viện Argon2id đặt sau interface (`PinKeyDeriver`) để thay được. Bản Android dùng `argon2kt` (`com.lambdapioneer.argon2kt`, khai báo `androidMain` của `:core:security`); phiên bản trong `libs.versions.toml` cần kiểm tra lại khi cập nhật (ABI, trang bộ nhớ 16 KB). Chi tiết phong bì PIN, bộ đếm sai, sinh trắc học, tự khóa: ADR-0014.
+- `androidx.biometric` và `androidx.lifecycle:lifecycle-process` đã khai báo trong catalog, gắn vào `:androidApp` khi làm sinh trắc học và tự khóa (Lát 2, bước 6 và 9).
 - `FLAG_SECURE` cho màn Kết nối, Khóa, nhập PIN, Cài đặt; ẩn nội dung ở danh sách app gần đây.
 - **CH-04 (đã làm ở Lát 0):** `allowBackup="false"`, `fullBackupContent="false"`, `dataExtractionRules` loại trừ mọi miền cho cả `cloud-backup` và `device-transfer` (Android 12+ bỏ qua `allowBackup` khi chuyển máy).
 - **CH-06:** không cài Ktor `Logging`. Log API cho màn Debug đi qua `HttpTrafficRecorder` (chỉ bản debug, chỉ trong bộ nhớ). Từ ADR-0013 bản ghi là **đầy đủ, chưa che** (kể cả `Authorization`, `client_secret`, token, `downloadUrl`); màn Debug hiện đầy đủ mặc định và có công tắc che (`HttpTrafficEntry.masked()`). Bản release không có recorder. `followRedirects = false` để bearer không bị gửi sang máy chủ khác.
@@ -336,3 +337,6 @@ ADR nằm ở **`.claude/adr/`** (có `README.md` làm mục lục và `template
 | 0009 | Không viết test tự động | accepted |
 | 0010 | Chia module: tách nhỏ core, module feature tạo khi bắt đầu làm feature đó | accepted |
 | 0011 | Đa ngôn ngữ VI + EN qua Android `res/`, domain không chứa chuỗi hiển thị | accepted |
+| 0012 | Công cụ debug trong app (`:tools:debug`, chỉ bản debug), log bằng Kermit, retry bằng `HttpRequestRetry` | accepted |
+| 0013 | Log API bản debug hiển thị đầy đủ (không che), che là tùy chọn | accepted |
+| 0014 | Phong bì PIN hai lớp, bộ đếm sai bền, sinh trắc học bọc khóa dẫn xuất, tự khóa (bổ sung ADR-0008) | accepted |

@@ -6,8 +6,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Đang làm
 
-- **Lát:** 1, Kết nối → Danh sách thư mục gốc (Lát 0 còn chờ kiểm tay). Code xong cho Lát 0, 1, D; chưa bắt đầu Lát 2
-- **Bước:** đã đổi luồng Kết nối theo docs mới (KN-08, KN-13, BM-01, BM-08, KN-12) và đã review Kotlin, sửa xong mục MEDIUM. Còn chờ: người dùng sửa `ODVSecureWindow(enabled = false)` ở màn Kết nối (KN-10), build, kiểm tay Lát 0/1/D. Lát tiếp theo là Lát 2 (PIN, màn Khóa), cần người dùng duyệt trước khi bắt đầu
+- **Lát:** 2, Mã PIN và màn Khóa (Lát 0, 1, D code xong, còn chờ kiểm tay)
+- **Bước:** Lát 2 xong code bước 1 đến 8 (luồng PIN đầy đủ: đặt PIN, màn Khóa, tự khóa, Quên PIN). Còn bước 9 (sinh trắc học), 10 (ẩn nội dung ở danh sách app gần đây), 11 (rà chuỗi và tài liệu UI). Chờ người dùng build và kiểm tay trước khi làm tiếp
 - **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật hiện chỉ là khung (đặt PIN làm ở Lát 2). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
@@ -37,7 +37,7 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 - [x] `:feature:auth`: màn Thiết lập bảo mật (nhánh tắt)
 - [x] Đổi luồng theo docs 2026-10-03: lưu config ngay sau kết nối, hộp thoại K6 (KN-13), bỏ StepBar/công tắc/sheet K4, không đọc quota (KN-12)
 - [x] Review Kotlin đợt đổi luồng (không CRITICAL; đã sửa guard bấm đôi, khôi phục sau process death, thứ tự import)
-- [ ] Người dùng: bật lại FLAG_SECURE ở màn Kết nối (KN-10)
+- [x] Người dùng: bật lại FLAG_SECURE ở màn Kết nối (KN-10)
 - [x] `:feature:browser`: tab Thư mục qua API (TM-07)
 - [x] Điều hướng khởi động
 - [x] Review Kotlin + bảo mật
@@ -56,11 +56,17 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Lát 2: Mã PIN và màn Khóa
 
-- [ ] Argon2id + Keystore
-- [ ] Đặt PIN (BM-01 → BM-07)
-- [ ] Màn Khóa (KH-01 → KH-06)
-- [ ] Tự khóa, xóa token khi khóa
-- [ ] Sinh trắc học
+- [x] 1. ADR-0014, thư viện (`argon2kt`, `biometric`, `lifecycle-process`) trong catalog, cập nhật `tech-stack.md`
+- [x] 2. `AppError.AppLocked`
+- [x] 3. `:core:security`: phong bì PIN (`PinEnvelopeCodec`), Argon2id (`PinKeyDeriver`), `BootAwareClock`, `SecretStore.wipeAll()`
+- [x] 4. `:core:domain`: `SecurityRepository`, `UnlockResult`, `LockState`, `PinPolicy` (BM-06), `ConnectionResetter`, `DisconnectUseCase`
+- [x] 5. `:core:data`: `ConfigVault`, `LockoutStore` (KH-02), `SecurityRepositoryImpl`, Koin
+- [x] 6. `:androidApp`: tự khóa (`AppLockController` + `ProcessLifecycleOwner`), cổng khóa trong `ODVNavDisplay` (Splash không cần đổi), `DebugTools.onAppLocked()`, ẩn nút bọ khi khóa
+- [x] 7. `:feature:auth`: màn Khóa (KH-01 → KH-06), Quên PIN 2 bước, đồng hồ khóa tạm (viết ngay trong `ODVLockContent`, chưa tách `ODVCooldownTimer`); sinh trắc học chưa có
+- [x] 8. `:feature:auth`: đặt PIN B1 → B5, B8 (BM-01 → BM-08); B6 sinh trắc học làm ở bước 9. `ConnectViewModel` không cần sửa
+- [ ] 9. Sinh trắc học (bọc khóa dẫn xuất)
+- [ ] 10. Ẩn nội dung ở danh sách app gần đây khi bảo mật BẬT
+- [ ] 11. Chuỗi VI/EN, rà `thiet-ke-ui.md`
 - [ ] Review Kotlin + bảo mật
 - [ ] Kiểm tay
 
@@ -126,3 +132,7 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-03 | Đổi luồng Kết nối/Thiết lập bảo mật theo docs mới: lưu config ngay (chế độ thiết bị), hộp thoại K6 bắt buộc chọn, bỏ `PendingConnection`/StepBar/công tắc/sheet K4, `verifyConnection` không trả dung lượng; chờ review và kiểm tay |
 | 2026-10-03 | Review Kotlin đợt đổi luồng: sửa guard bấm đôi "Thiết lập mã PIN", `ConnectViewModel` vào Danh sách nếu config đã lưu và giải mã được (process death khi K6 hiện, KN-13), thứ tự import. Đối chiếu kế hoạch: xong code Lát 0, 1, D; chưa có `:feature:library/player/...`; Lát 2 chưa bắt đầu |
 | 2026-10-03 | Review Lát D mở rộng (không CRITICAL/HIGH): che URL ở danh sách API khi bật che (M1), cắt và bắt lỗi khi sao chép body lớn (M2), dựng section/đếm kết quả/pretty-print ngoài luồng chính + debounce tìm kiếm 250 ms (M3), regex che `sig`/`tempauth` không nuốt dấu `"` (M5). Chưa làm, ghi ở ADR-0013: trần bộ nhớ tổng của log API (M4), nút bọ mở được khi app khóa và log không xóa khi khóa (M6, làm cùng Lát 2) |
+| 2026-10-03 | Lát 2 bước 1 → 5: ADR-0014 (phong bì PIN hai lớp, bộ đếm sai bền, sinh trắc bọc khóa, tự khóa), `argon2kt` + `biometric` + `lifecycle-process` trong catalog, `AppError.AppLocked`, `PinEnvelopeCodec`/`PinKeyDeriver`/`BootAwareClock`/`SecretStore.wipeAll()`, `SecurityRepository` + `PinPolicy` + `DisconnectUseCase`, `ConfigVault`/`LockoutStore`/`SecurityRepositoryImpl`. Chưa build; chờ người dùng duyệt trước khi làm bước 6 → 11 |
+| 2026-10-03 | Lát 2 bước 6 → 8: sửa theo review (epoch chống race `lock()`/`adopt()`, `LockoutStore` có mutex, wipe không bị hủy, `Argon2Kt` lazy, `initialize()` thử lại khi đọc lỗi), tự khóa khi cả app xuống nền, cổng khóa + màn Khóa (`LockViewModel`, `ODVLockScreen`), Quên PIN, đặt PIN (`SecuritySetupViewModel`, B1 → B5, B8), `DebugTools.onAppLocked()` xóa log API và đóng màn Debug khi khóa, ẩn nút bọ khi khóa. Chưa build; còn sinh trắc học và ẩn recents |
+| 2026-10-03 | Review Lát 2 bước 6 → 8, đã sửa: cổng khóa không kẹt màn trắng khi bấm Home lúc đang giải mã (`onUnlocked` chỉ pop khi thật sự Unlocked, `LockViewModel` hủy `completion` khi bị khóa lại, cổng đẩy lại `Lock` theo đỉnh back stack), giữ `NavDisplay` trong composition và phủ nền khi khóa (không mất `rememberSaveable`), `UnlockResult.Interrupted`, xóa token khi `adopt` hoàn tác, `AppLockController` quan sát `lockState`, thêm `koin-compose` vào catalog |
+| 2026-10-03 | Sửa lỗi màn hình đen sau Splash: lớp phủ nền của cổng khóa trong `ODVNavDisplay` bị mất điều kiện `if (covered)` (do lệnh căn lề tự động của chính mình), nên luôn vẽ đè lên mọi màn. Đã khôi phục `if (covered)` |

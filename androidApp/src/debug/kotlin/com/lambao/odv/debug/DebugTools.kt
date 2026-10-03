@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import com.lambao.odv.gallery.FoundationsGalleryActivity
 import com.lambao.odv.tools.debug.DebugAction
 import com.lambao.odv.tools.debug.DebugActions
+import com.lambao.odv.tools.debug.DebugActivity
 import com.lambao.odv.tools.debug.DebugLogging
 import com.lambao.odv.tools.debug.DebugSettings
 import com.lambao.odv.tools.debug.ODVDebugBugButton
@@ -45,4 +46,10 @@ object DebugTools {
      * chúng (ADR-0012). Null ở bản release.
      */
     val topOverlay: (@Composable (asWindow: Boolean) -> Unit)? = { asWindow -> ODVDebugBugButton(asWindow = asWindow) }
+
+    /**
+     * App vừa khóa (ADR-0014, bổ sung ADR-0013): xóa log API (chứa token và Client Secret đầy đủ) và đóng màn Debug nếu
+     * đang mở. Bản release là hàm rỗng.
+     */
+    fun onAppLocked() = DebugActivity.onAppLocked()
 }

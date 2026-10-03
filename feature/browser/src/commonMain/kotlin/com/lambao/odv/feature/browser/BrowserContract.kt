@@ -41,5 +41,6 @@ sealed interface BrowserEffect {
 internal fun AppError.toBrowserError(): BrowserError = when (this) {
     AppError.Network, AppError.Timeout -> BrowserError(BrowserErrorKind.Network, null)
     is AppError.Http -> BrowserError(BrowserErrorKind.Other, code ?: status.toString())
-    AppError.SecureStorage, is AppError.Unknown -> BrowserError(BrowserErrorKind.Other, null)
+    // AppLocked: app vừa khóa lại (CH-03), màn Khóa sẽ che; sau khi mở khóa người dùng tải lại.
+    AppError.SecureStorage, AppError.AppLocked, is AppError.Unknown -> BrowserError(BrowserErrorKind.Other, null)
 }

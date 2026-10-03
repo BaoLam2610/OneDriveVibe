@@ -130,5 +130,6 @@ internal fun AppError.toConnectFailure(): ConnectFailure = when (this) {
         ConnectFailure(kind, code ?: status.toString())
     }
     AppError.SecureStorage -> ConnectFailure(ConnectFailureKind.SaveFailed, null)
-    is AppError.Unknown -> ConnectFailure(ConnectFailureKind.Other, null)
+    // AppLocked không xảy ra khi kết nối (config chưa tồn tại), gộp vào lỗi khác cho đủ nhánh.
+    AppError.AppLocked, is AppError.Unknown -> ConnectFailure(ConnectFailureKind.Other, null)
 }

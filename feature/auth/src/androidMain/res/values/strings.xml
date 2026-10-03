@@ -51,4 +51,29 @@
     <string name="security_title">Thiết lập bảo mật</string>
     <string name="security_subtitle">Đặt mã PIN 6 số để chỉ mình bạn mở được OneDrive trong ứng dụng này.</string>
     <string name="security_back">Quay lại</string> <!-- [mới] -->
+    <string name="security_create_title">Đặt mã PIN</string> <!-- [mới] -->
+    <string name="security_confirm_title">Nhập lại mã PIN</string> <!-- [mới] -->
+    <string name="security_hint">Mã PIN gồm 6 chữ số</string> <!-- [mới] -->
+    <string name="security_weak">Mã PIN quá dễ đoán, hãy chọn mã khác</string> <!-- BM-06 -->
+    <string name="security_mismatch">Hai mã PIN không khớp, hãy nhập lại</string> <!-- [mới] -->
+    <string name="security_saving_title">Đang hoàn tất thiết lập</string>
+    <string name="security_saving_description">Đang hoàn tất</string>
+
+    <!-- Khóa (L1–L8, KH-01 → KH-06). Mọi câu chữ dưới đây tự viết, chờ duyệt (ADR-0014) -->
+    <string name="lock_title">Nhập mã PIN</string> <!-- [mới] -->
+    <string name="lock_pin_description">Mã PIN, đã nhập %1$d trên 6 số</string>
+    <string name="lock_wrong_pin">Mã PIN không đúng</string> <!-- [mới] -->
+    <string name="lock_storage_failed">Không mở khóa được, hãy thử lại</string> <!-- [mới] -->
+    <string name="lock_attempts_left">Còn %1$d lần thử trước khi xóa dữ liệu</string> <!-- [mới] KH-06 -->
+    <string name="lock_unlocking">Đang mở khóa</string> <!-- [mới] -->
+    <string name="lock_cooldown_note">Nhập sai quá nhiều lần, hãy thử lại sau</string> <!-- [mới] KH-02 -->
+    <string name="lock_backspace">Xóa số cuối</string>
+    <string name="lock_forgot">Quên mã PIN</string>
+    <string name="lock_cancel">Hủy</string> <!-- [mới] -->
+    <string name="lock_continue">Tiếp tục</string> <!-- [mới] -->
+    <string name="lock_forgot_title">Quên mã PIN?</string> <!-- [mới] KH-03 -->
+    <string name="lock_forgot_body">Mã PIN không thể khôi phục. Bạn cần xóa dữ liệu trên máy và kết nối lại OneDrive từ đầu.</string> <!-- [mới] KH-03 -->
+    <string name="lock_forgot_confirm_title">Xóa dữ liệu và ngắt kết nối?</string> <!-- [mới] KH-03 -->
+    <string name="lock_forgot_confirm_body">Thông tin kết nối, lịch sử xem và cài đặt trên máy sẽ bị xóa. Các tệp trên OneDrive không bị ảnh hưởng.</string> <!-- [mới] KH-03 -->
+    <string name="lock_forgot_confirm_action">Xóa dữ liệu</string> <!-- [mới] -->
 </resources>

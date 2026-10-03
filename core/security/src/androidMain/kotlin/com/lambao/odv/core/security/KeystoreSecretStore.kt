@@ -76,6 +76,24 @@ internal class KeystoreSecretStore(
         }
     }
 
+    override suspend fun wipeAll() {
+        withContext(dispatchers.io) {
+            mutex.withLock {
+                // Tệp trước, khóa sau (xem SecretStore.wipeAll). Lỗi xóa khóa bị bỏ qua: không còn tệp thì khóa vô dụng.
+                // `lock_state` xóa sau cùng: nếu bị dừng giữa chừng thì config còn mà bộ đếm sai không bị về 0 trước (KH-06).
+                directory.listFiles()?.sortedBy { it.name == LAST_WIPED_FILE }?.forEach { it.delete() }
+                try {
+                    val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+                    for (alias in listOf(KEY_ALIAS, BIO_KEY_ALIAS)) {
+                        if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
+                    }
+                } catch (e: Exception) {
+                    // Cố ý bỏ qua.
+                }
+            }
+        }
+    }
+
     /** Chạy [block] trên luồng IO, tuần tự hóa truy cập, gộp mọi lỗi (trừ hủy coroutine) thành [AppError.SecureStorage]. */
     private suspend fun <T> guarded(block: () -> T): AppResult<T> = withContext(dispatchers.io) {
         mutex.withLock {
@@ -113,6 +131,10 @@ internal class KeystoreSecretStore(
         const val DIRECTORY = "secrets"
         const val ANDROID_KEYSTORE = "AndroidKeyStore"
         const val KEY_ALIAS = "odv_config_key"
+
+        // Khóa bọc khóa dẫn xuất cho sinh trắc học (tạo ở bước sinh trắc, ADR-0014); xóa cùng lúc khi ngắt kết nối.
+        const val BIO_KEY_ALIAS = "odv_bio_key"
+        const val LAST_WIPED_FILE = "lock_state.bin"
         const val TRANSFORMATION = "AES/GCM/NoPadding"
         const val TAG_BITS = 128
         const val IV_BYTES = 12

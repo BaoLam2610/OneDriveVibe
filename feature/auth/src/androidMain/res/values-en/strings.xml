@@ -48,4 +48,29 @@
     <string name="security_title">Security setup</string>
     <string name="security_subtitle">Set a 6-digit PIN so only you can open OneDrive in this app.</string>
     <string name="security_back">Back</string>
+    <string name="security_create_title">Set a PIN</string>
+    <string name="security_confirm_title">Enter the PIN again</string>
+    <string name="security_hint">The PIN has 6 digits</string>
+    <string name="security_weak">That PIN is too easy to guess, choose another one</string>
+    <string name="security_mismatch">The two PINs do not match, try again</string>
+    <string name="security_saving_title">Finishing setup</string>
+    <string name="security_saving_description">Finishing</string>
+
+    <!-- Lock (L1–L8, KH-01 → KH-06) -->
+    <string name="lock_title">Enter PIN</string>
+    <string name="lock_pin_description">PIN, %1$d of 6 digits entered</string>
+    <string name="lock_wrong_pin">Incorrect PIN</string>
+    <string name="lock_storage_failed">Could not unlock, please try again</string>
+    <string name="lock_attempts_left">%1$d attempts left before data is erased</string>
+    <string name="lock_unlocking">Unlocking</string>
+    <string name="lock_cooldown_note">Too many wrong attempts, try again later</string>
+    <string name="lock_backspace">Delete last digit</string>
+    <string name="lock_forgot">Forgot PIN</string>
+    <string name="lock_cancel">Cancel</string>
+    <string name="lock_continue">Continue</string>
+    <string name="lock_forgot_title">Forgot your PIN?</string>
+    <string name="lock_forgot_body">A PIN cannot be recovered. You need to erase the data on this device and connect OneDrive again from scratch.</string>
+    <string name="lock_forgot_confirm_title">Erase data and disconnect?</string>
+    <string name="lock_forgot_confirm_body">Connection details, watch history and settings on this device will be erased. Files on OneDrive are not affected.</string>
+    <string name="lock_forgot_confirm_action">Erase data</string>
 </resources>

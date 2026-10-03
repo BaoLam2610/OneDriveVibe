@@ -17,10 +17,27 @@ class DebugActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        current = this
         setContent {
             ODVTheme {
                 ODVDebugScreen(onBack = ::finish)
             }
+        }
+    }
+
+    override fun onDestroy() {
+        if (current === this) current = null
+        super.onDestroy()
+    }
+
+    companion object {
+        // Chỉ để đóng màn Debug khi app khóa (ADR-0013, ADR-0014). Xóa trong onDestroy nên không giữ Activity.
+        private var current: DebugActivity? = null
+
+        /** App vừa khóa (CH-03): log API chứa token và Client Secret đầy đủ nên xóa và đóng màn Debug nếu đang mở. */
+        fun onAppLocked() {
+            ApiTrafficStore.clear()
+            current?.finish()
         }
     }
 }

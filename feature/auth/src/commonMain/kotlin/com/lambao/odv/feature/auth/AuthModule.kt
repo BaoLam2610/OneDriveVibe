@@ -1,13 +1,14 @@
 package com.lambao.odv.feature.auth
 
 import com.lambao.odv.feature.auth.connect.ConnectViewModel
+import com.lambao.odv.feature.auth.lock.LockViewModel
+import com.lambao.odv.feature.auth.security.SecuritySetupViewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
-/**
- * Binding Koin của `:feature:auth`. Ghép ở MainApplication.
- * Màn Thiết lập bảo mật chưa có ViewModel: bước đặt PIN (BM-01 → BM-07) làm ở Lát 2.
- */
+/** Binding Koin của `:feature:auth`. Ghép ở MainApplication. */
 val authModule = module {
     viewModelOf(::ConnectViewModel)
+    viewModelOf(::SecuritySetupViewModel)
+    viewModelOf(::LockViewModel)
 }

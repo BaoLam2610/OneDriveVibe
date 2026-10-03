@@ -1,13 +1,17 @@
 package com.lambao.odv
 
 import android.app.Application
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.lambao.odv.core.data.dataModule
+import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.network.networkModule
 import com.lambao.odv.core.security.securityModule
 import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.di.appModule
 import com.lambao.odv.feature.auth.authModule
 import com.lambao.odv.feature.browser.browserModule
+import com.lambao.odv.security.AppLockController
+import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -26,5 +30,11 @@ class MainApplication : Application() {
             androidContext(this@MainApplication)
             modules(listOf(appModule, securityModule, networkModule, dataModule, authModule, browserModule) + DebugTools.koinModules)
         }
+        // CH-03, ADR-0014: tự khóa khi cả app xuống nền. Giữ tham chiếu mạnh vì Lifecycle chỉ giữ yếu observer.
+        ProcessLifecycleOwner.get().lifecycle.addObserver(lockController)
     }
+
+    private val security: SecurityRepository by inject()
+
+    private val lockController by lazy { AppLockController(security) { DebugTools.onAppLocked() } }
 }

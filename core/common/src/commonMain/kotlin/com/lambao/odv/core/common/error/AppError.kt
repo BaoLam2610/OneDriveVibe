@@ -30,10 +30,17 @@ sealed interface AppError {
     ) : AppError
 
     /**
-     * Kho bí mật không đọc hoặc không giải mã được (khóa Keystore bị mất, tệp hỏng, PIN sai ở Lát 2).
-     * Không kèm nguyên nhân để chi tiết mật mã không lọt ra ngoài.
+     * Kho bí mật không đọc hoặc không giải mã được (khóa Keystore bị mất, tệp hỏng).
+     * Không kèm nguyên nhân để chi tiết mật mã không lọt ra ngoài. PIN sai không phải lỗi này mà là kết quả riêng
+     * của việc mở khóa (`UnlockResult.WrongPin`), vì chỉ PIN sai mới tính vào bộ đếm (KH-02).
      */
     data object SecureStorage : AppError
+
+    /**
+     * Config đang bị khóa (bảo mật BẬT, chưa nhập PIN hoặc app vừa khóa lại, CH-03). Lỗi tạm: không phải lỗi dữ liệu,
+     * UI không hiện như lỗi thật mà chờ màn Khóa; sau khi mở khóa thì thử lại được.
+     */
+    data object AppLocked : AppError
 
     /** Lỗi không phân loại được. [cause] chỉ để ghi log khi debug, không hiển thị. */
     data class Unknown(val cause: Throwable? = null) : AppError {
