@@ -102,6 +102,12 @@ class BrowserViewModel(
     }
 
     private fun navigateTo(path: List<Crumb>) {
+        if (path.lastOrNull()?.id == currentState.path.lastOrNull()?.id) {
+            // Cùng thư mục (vd. chạm kết quả tìm trùng thư mục đang mở): luồng nạp lọc theo id nên sẽ không phát lại,
+            // đặt isLoading = true ở đây sẽ treo vòng quay mãi. Chỉ cập nhật đường dẫn.
+            setState { copy(path = path) }
+            return
+        }
         setState { copy(path = path, items = emptyList(), isLoading = true, error = null) }
     }
 

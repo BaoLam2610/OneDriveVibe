@@ -59,8 +59,9 @@ internal class DataStoreBrowserPreferences(
     private suspend fun write(block: (MutablePreferences) -> Unit) {
         try {
             store.edit(block)
-        } catch (_: IOException) {
+        } catch (e: IOException) {
             // Chỉ là tùy chọn hiển thị: không ghi được thì giữ lựa chọn trong phiên, không báo lỗi.
+            // Đặt tên tham số (không dùng `_`) để không phụ thuộc vào hỗ trợ tham số catch không tên của trình biên dịch.
         }
     }
 }

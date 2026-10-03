@@ -1,5 +1,6 @@
 package com.lambao.odv.core.data.sync
 
+import co.touchlab.kermit.Logger
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
@@ -43,10 +44,11 @@ internal class SyncCoordinator(
     // Giữ suốt một lần đồng bộ: tryLock thất bại nghĩa là đang chạy, yêu cầu mới bị bỏ qua (single-flight).
     private val running = Mutex()
 
-    // Ghi từ luồng gọi launchSync, đọc từ reset() trên luồng khác.
+    // Đặt trong lúc reset(): không cho lần đồng bộ mới chen vào giữa lúc dừng và lúc xóa (CD-05).
     @Volatile
-    private var job: Job? = null
+    private var resetting = false
     private val runtime = MutableStateFlow(RunState())
+    private val log = Logger.withTag("Sync")
 
     override fun observeState(): Flow<SyncState> = combine(dao.observeSyncState(), runtime) { row, rt ->
         SyncState(
@@ -63,8 +65,8 @@ internal class SyncCoordinator(
     override fun refresh() = launchSync(force = true)
 
     private fun launchSync(force: Boolean) {
-        if (!running.tryLock()) return
-        job = scope.launch {
+        if (resetting || !running.tryLock()) return
+        scope.launch {
             try {
                 if (!force && !isStale()) return@launch
                 runtime.value = RunState(syncing = true)
@@ -73,6 +75,11 @@ internal class SyncCoordinator(
             } catch (e: CancellationException) {
                 runtime.value = RunState()
                 throw e
+            } catch (e: Exception) {
+                // Lỗi ngoài dự kiến (Room, ổ đĩa đầy...): bắt ở đây vì scope không có handler, để rơi ra là app crash và
+                // trạng thái kẹt ở "đang đồng bộ". Chỉ ghi tên loại ngoại lệ, không ghi nội dung (CH-06).
+                log.w { "Đồng bộ lỗi ngoài dự kiến: ${e::class.simpleName}" }
+                runtime.value = RunState(error = AppError.Unknown(e))
             } finally {
                 running.unlock()
             }
@@ -88,8 +95,14 @@ internal class SyncCoordinator(
     }
 
     override suspend fun reset() {
-        job?.cancelAndJoin()
-        running.withLock { dao.clearAll() }
-        runtime.value = RunState()
+        resetting = true
+        try {
+            // Dừng mọi lần đồng bộ đang chạy (không dựa vào một biến job có thể chưa kịp gán) rồi mới xóa.
+            scope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
+            running.withLock { dao.clearAll() }
+            runtime.value = RunState()
+        } finally {
+            resetting = false
+        }
     }
 }
