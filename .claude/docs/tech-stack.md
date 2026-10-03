@@ -36,8 +36,8 @@ Cột **Trạng thái**: *đang dùng* = đã gắn vào module; *catalog* = đ�
 | Zoom ảnh | Telephoto (zoomable) hoặc tự viết transform gesture | | Zoom/pan ảnh, trang PDF | Kiểm tra KMP khi vào MVP2 | Lát 5 |
 | Video | Media3 ExoPlayer + `SimpleCache` | | Phát stream từ `downloadUrl` | Android, iOS: AVPlayer | Lát 6 |
 | PDF | `android.graphics.pdf.PdfRenderer` | | Render trang thành bitmap | Android, iOS: PDFKit | Lát 7 |
-| Phân trang | Paging 3 (`paging-common` KMP) | | Danh sách lớn | Common | cân nhắc ở Lát 3 (offline-first đọc Room, §5.2) |
-| Chạy nền | Coroutine trong app; thêm WorkManager khi cần đồng bộ lúc app đã đóng | | Delta sync, tải | Android, iOS: BGTaskScheduler | Lát 3 |
+| Phân trang | Paging 3 (`paging-common` KMP) + `room-paging` | | Danh sách lớn | Common | **Chốt cho Lát 4** (tab Thư viện): đọc Room qua `PagingSource`, sắp xếp bằng SQL, index ghép theo ngày. Tab Thư mục vẫn dùng `Flow<List>` (một thư mục), chuyển sang Paging nếu gặp thư mục rất lớn |
+| Chạy nền | Coroutine trong app (`SyncCoordinator`, scope riêng) | | Delta sync, tải | Android, iOS: BGTaskScheduler | Lát 3. **Chưa dùng WorkManager**: chế độ PIN xóa config và token khỏi bộ nhớ khi khóa (CH-03, ADR-0008) nên nền không gọi được Graph; đặc tả chỉ cần đồng bộ khi mở app và kéo làm mới (DS-04). Muốn đồng bộ lúc app đóng (chỉ chế độ thiết bị) thì viết ADR mới |
 | Ngày giờ | kotlinx-datetime | | Thư viện theo ngày, ngày chụp | Common | khi dùng tới (Lát 3–4) |
 | File I/O | kotlinx-io (hoặc Okio) | | Cache file, thay `java.io.File` trong code chung | Common | khi dùng tới (Lát 4, 7) |
 | Log | Kermit | 2.2.0 | Log local; bản debug thêm LogWriter đẩy vào màn Debug, bản release gỡ hết writer (ADR-0012) | Common | đang dùng (`:core:common`, api) |
@@ -281,7 +281,7 @@ Bản tech stack đầu định nghĩa foundation 8 hạng mục. Kế hoạch M
 | `drive_item` | Tệp/thư mục: id, parentId, name, `nameKey` (chữ thường, bỏ dấu), size, `mediaKind`, childCount, durationMs, `modifiedAt`, cTag, `takenAt`, `createdAt`, `scanId`. Ngày lưu epoch mili giây |
 | `sync_state` | Một dòng: `rootId`, `deltaLink`, `pendingNextLink` (trang đang quét dở, DB-04), `scanId`, `scannedCount`, `initialSyncDone`, `lastSyncedAt` |
 
-Quy ước đồng bộ (Lát 3a): mỗi trang delta ghi nguyên tử cùng `pendingNextLink`; quét đầy đủ mới (chưa có `deltaLink`) tăng `scanId`, trang cuối dọn mục có `scanId` khác trong cùng transaction với `deltaLink` mới (DB-03, DS-06). Tìm kiếm dùng `instr(nameKey, :key)`, không dùng `LIKE`. Schema đổi lúc dev: `fallbackToDestructiveMigration` ở bản Android.
+Quy ước đồng bộ (Lát 3a): mỗi trang delta ghi nguyên tử cùng `pendingNextLink`; quét đầy đủ mới (chưa có `deltaLink`) tăng `scanId`, trang cuối dọn mục có `scanId` khác trong cùng transaction với `deltaLink` mới (DB-03, DS-06). Tìm kiếm dùng `instr(nameKey, :key)`, không dùng `LIKE` (quét toàn bảng, ổn tới khoảng 100k mục; lớn hơn thì cân nhắc FTS). Delta lấy 1000 mục mỗi trang (`DELTA_PAGE_SIZE`; đo thực tế 4 trang thay vì 16, các trang nối đuôi nhau nên số trang quyết định thời gian quét). Delta dùng `$select` đúng các trường đang lưu (`DELTA_SELECT` trong `GraphApi`), chỉ gắn ở request đầu vì `nextLink`/`deltaLink` mang sẵn. Lỗi tạm thời (mạng, `429`, `5xx`) sau khi `HttpRequestRetry` đã thử: `SyncEngine` chờ `Retry-After` hoặc 2→32 giây rồi chạy tiếp từ trang dở, tối đa 5 lần liên tiếp không tiến triển. `observeChildren` có `conflate` + `distinctUntilChanged` để mỗi trang delta không làm thư mục đang mở sắp xếp và vẽ lại vô ích. Schema đổi lúc dev: `fallbackToDestructiveMigration` ở bản Android.
 
 Thêm theo feature: `playback_progress`, `reading_progress`, `cache_entry`. Trước khi phát hành schema giữ `version = 1`; bản debug được xóa và tạo lại DB, chưa cần migration.
 

@@ -19,6 +19,7 @@ import com.lambao.odv.core.domain.repository.DriveRepository
 import com.lambao.odv.core.network.GraphApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -58,7 +59,12 @@ internal class DriveRepositoryImpl(
                 if (parentId == null) {
                     flowOf(emptyList())
                 } else {
-                    dao.observeChildren(parentId).map { rows -> rows.sortedFor(sort).map { it.toDomain() } }
+                    // Mỗi trang delta làm Room phát lại cả bảng: conflate bỏ các lần phát dồn khi đang sắp xếp lần trước,
+                    // distinctUntilChanged bỏ lần phát mà thư mục này không đổi, để UI không vẽ lại vô ích trong lúc đồng bộ.
+                    dao.observeChildren(parentId)
+                        .conflate()
+                        .map { rows -> rows.sortedFor(sort).map { it.toDomain() } }
+                        .distinctUntilChanged()
                 }
             }
             // Sắp xếp và ánh xạ thư mục lớn không được chạy trên luồng chính.

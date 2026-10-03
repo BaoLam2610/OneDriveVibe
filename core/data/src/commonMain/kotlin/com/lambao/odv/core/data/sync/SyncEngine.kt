@@ -10,6 +10,7 @@ import com.lambao.odv.core.database.SyncStateEntity
 import com.lambao.odv.core.domain.repository.ConfigRepository
 import com.lambao.odv.core.network.GraphApi
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 
 /**
@@ -31,17 +32,36 @@ internal class SyncEngine(
     private val clock: () -> Long,
 ) {
 
-    /** [onProgress] nhận số mục đã quét trong lần quét đầy đủ (TV-06). Trả lỗi theo [AppError], không ném ngoại lệ. */
+    /**
+     * [onProgress] nhận số mục đã quét trong lần quét đầy đủ (TV-06). Trả lỗi theo [AppError], không ném ngoại lệ.
+     *
+     * Lỗi tạm thời (mạng, `429`, `5xx`) đã được HttpRequestRetry thử lại vài lần trong một request; nếu vẫn lỗi thì ở đây
+     * chờ thêm (theo `Retry-After` nếu có, không thì tăng dần) rồi chạy tiếp từ trang dở, vì mốc đã lưu theo từng trang
+     * (TK-05, TK-06, DB-04). Bộ đếm lỗi đặt lại mỗi khi ghi được thêm trang, nên drive lớn bị throttle rải rác vẫn đi hết.
+     */
     suspend fun run(onProgress: (Int) -> Unit): AppResult<Unit> {
         var restarted = false
+        var transientFailures = 0
         while (true) {
-            val result = runOnce(onProgress)
-            if (result is AppResult.Failure && result.error.isResyncRequired() && !restarted) {
-                restarted = true
-                dropCursor()
-                continue
+            var progressed = false
+            val result = runOnce { scanned ->
+                progressed = true
+                onProgress(scanned)
             }
-            return result
+            if (result !is AppResult.Failure) return result
+            val error = result.error
+            when {
+                error.isResyncRequired() && !restarted -> {
+                    restarted = true
+                    dropCursor()
+                }
+                error.isTransient() -> {
+                    if (progressed) transientFailures = 0
+                    if (++transientFailures > MAX_TRANSIENT_RETRIES) return result
+                    delay(backoffMs(error, transientFailures))
+                }
+                else -> return result
+            }
         }
     }
 
@@ -111,4 +131,24 @@ internal class SyncEngine(
     }
 
     private fun AppError.isResyncRequired(): Boolean = this is AppError.Http && status == 410
+
+    /** Lỗi có thể tự hết: mạng, quá giờ, bị throttle, máy chủ tạm lỗi. 4xx khác (400, 401, 403, 404) thử lại vô ích. */
+    private fun AppError.isTransient(): Boolean = when (this) {
+        AppError.Network, AppError.Timeout -> true
+        is AppError.Http -> status == 429 || status >= 500
+        else -> false
+    }
+
+    /** `Retry-After` nếu máy chủ gửi (TK-06), không thì 2, 4, 8, 16, 32 giây (TK-05). */
+    private fun backoffMs(error: AppError, attempt: Int): Long {
+        val retryAfter = (error as? AppError.Http)?.retryAfterSeconds
+        if (retryAfter != null) return retryAfter.coerceIn(1, MAX_RETRY_AFTER_SECONDS) * 1000
+        return (1000L shl attempt).coerceAtMost(MAX_BACKOFF_MS)
+    }
+
+    private companion object {
+        const val MAX_TRANSIENT_RETRIES = 5
+        const val MAX_RETRY_AFTER_SECONDS = 300L
+        const val MAX_BACKOFF_MS = 60_000L
+    }
 }

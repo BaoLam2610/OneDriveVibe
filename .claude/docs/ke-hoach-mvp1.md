@@ -83,6 +83,7 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 - Cache thumbnail, giới hạn dung lượng, nhận diện theo `cTag` (BN-01 → BN-03).
 - Đăng ký `ConnectionResetter` xóa cache khi ngắt kết nối.
 - `:feature:library`: TV-01 → TV-06 (nhóm theo ngày, chip lọc, thanh cuộn nhanh, "Đang lập chỉ mục").
+- Thư viện đọc Room qua **Paging 3** (`room-paging`), không nạp cả danh sách vào bộ nhớ: sắp xếp theo ngày (TV-02) bằng SQL, index ghép (`mediaKind`, ngày). Bổ sung 2026-10-03 sau review kiến trúc đồng bộ.
 
 ### Lát 5: Xem ảnh
 
