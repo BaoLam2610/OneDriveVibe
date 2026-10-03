@@ -25,6 +25,16 @@
     </plurals>
     <string name="library_fast_scroller">Cuộn nhanh theo thời gian</string>
 
+    <!-- Tiêu đề nhóm ngày (TV-01): nhãn gần đây và số ảnh/video của ngày -->
+    <string name="library_today">Hôm nay</string> <!-- [mới] -->
+    <string name="library_yesterday">Hôm qua</string> <!-- [mới] -->
+    <plurals name="library_count_photos">
+        <item quantity="other">%1$s ảnh</item> <!-- [mới] -->
+    </plurals>
+    <plurals name="library_count_videos">
+        <item quantity="other">%1$s video</item> <!-- [mới] -->
+    </plurals>
+
     <!-- Thư viện trống -->
     <string name="library_empty_title">Chưa có ảnh hay video</string> <!-- [mới] -->
     <string name="library_empty_body">Ảnh và video trong OneDrive của bạn sẽ hiện ở đây.</string> <!-- [mới] -->

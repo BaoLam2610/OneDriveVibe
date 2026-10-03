@@ -25,6 +25,8 @@ private const val CHILDREN_PAGE_SIZE = 200
  * Số mục mỗi trang delta. Đo thực tế trên drive khoảng 3.200 mục: `200` ra 16 trang (~8 giây vì các trang nối đuôi nhau,
  * mỗi trang ~450 ms), `1000` ra 4 trang (~4,5 giây, mỗi trang 175 đến 210 KB, 1,2 đến 1,4 giây). Graph chấp nhận 1000 nên
  * không bị cắt về 200. Đánh đổi: mỗi transaction Room lớn hơn và tắt app giữa chừng mất tối đa một trang lớn hơn (DB-04).
+ * Chốt `500` (2026-10-04): với `1000` người dùng gặp app crash khi gọi delta (nghi trang quá lớn, xem crash SIGSEGV
+ * `libsqliteJni` ở nhật ký tiến độ); `500` ổn hơn trên thiết bị thật. Chưa đo lại thời gian quét đầy đủ ở `500`.
  * `children` giữ [CHILDREN_PAGE_SIZE] vì chưa đo.
  */
 private const val DELTA_PAGE_SIZE = 500

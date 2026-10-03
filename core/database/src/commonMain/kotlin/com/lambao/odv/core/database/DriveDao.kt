@@ -38,7 +38,8 @@ abstract class DriveDao {
      * (cùng [utcOffsetMs]) để tiêu đề nhóm và vị trí cuộn nhanh khớp từng mục.
      */
     @Query(
-        "SELECT (sortDate + :utcOffsetMs) / 86400000 AS dayNumber, COUNT(*) AS count FROM drive_item " +
+        "SELECT (sortDate + :utcOffsetMs) / 86400000 AS dayNumber, COUNT(*) AS count, " +
+            "SUM(CASE WHEN mediaKind = 'Video' THEN 1 ELSE 0 END) AS videoCount FROM drive_item " +
             "WHERE mediaKind IN (:kinds) GROUP BY dayNumber ORDER BY dayNumber DESC",
     )
     abstract fun libraryDays(kinds: List<String>, utcOffsetMs: Long): Flow<List<DayCount>>

@@ -26,6 +26,18 @@
     </plurals>
     <string name="library_fast_scroller">Fast scroll through time</string>
 
+    <!-- Day group header (TV-01): recent labels and the photo/video count of the day -->
+    <string name="library_today">Today</string>
+    <string name="library_yesterday">Yesterday</string>
+    <plurals name="library_count_photos">
+        <item quantity="one">%1$s photo</item>
+        <item quantity="other">%1$s photos</item>
+    </plurals>
+    <plurals name="library_count_videos">
+        <item quantity="one">%1$s video</item>
+        <item quantity="other">%1$s videos</item>
+    </plurals>
+
     <!-- Empty library -->
     <string name="library_empty_title">No photos or videos yet</string>
     <string name="library_empty_body">Photos and videos in your OneDrive will show up here.</string>

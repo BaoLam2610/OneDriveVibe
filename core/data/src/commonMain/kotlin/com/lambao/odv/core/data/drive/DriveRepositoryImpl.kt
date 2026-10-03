@@ -97,7 +97,7 @@ internal class DriveRepositoryImpl(
     override fun libraryDays(filter: LibraryFilter, utcOffsetMs: Long): Flow<List<LibraryDay>> =
         dao.libraryDays(filter.kinds.map { it.name }, utcOffsetMs)
             .conflate()
-            .map { rows -> rows.map { LibraryDay(it.dayNumber, it.count) } }
+            .map { rows -> rows.map { LibraryDay(it.dayNumber, it.count, it.videoCount) } }
             .distinctUntilChanged()
             .flowOn(dispatchers.default)
 

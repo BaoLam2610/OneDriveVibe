@@ -25,5 +25,8 @@ private const val MS_PER_DAY = 86_400_000L
  */
 fun dayNumberOf(epochMs: Long, utcOffsetMs: Long): Long = (epochMs + utcOffsetMs) / MS_PER_DAY
 
-/** Số mục của một ngày trong Thư viện (tiêu đề nhóm, TV-01) và vị trí của nhóm trong danh sách (cuộn nhanh, TV-04). */
-data class LibraryDay(val dayNumber: Long, val count: Int)
+/**
+ * Số mục của một ngày trong Thư viện (tiêu đề nhóm, TV-01) và vị trí của nhóm trong danh sách (cuộn nhanh, TV-04).
+ * [videoCount] là số video trong [count]; phần còn lại là ảnh (tiêu đề nhóm ghi "N ảnh · M video").
+ */
+data class LibraryDay(val dayNumber: Long, val count: Int, val videoCount: Int = 0)

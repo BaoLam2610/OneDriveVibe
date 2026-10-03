@@ -68,6 +68,8 @@ data class SyncStateEntity(
 data class DayCount(
     val dayNumber: Long,
     val count: Int,
+    /** Số video trong [count]. */
+    val videoCount: Int,
 )
 
 /** Kết quả rút gọn để dựng đường dẫn cha cho kết quả tìm kiếm mà không kéo cả hàng. */

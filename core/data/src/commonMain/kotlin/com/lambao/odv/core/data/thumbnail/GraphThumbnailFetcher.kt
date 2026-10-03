@@ -27,9 +27,11 @@ private const val MAX_PARALLEL_DOWNLOADS = 6
 /** Cỡ thumbnail Graph có sẵn, dùng khi cỡ tùy chỉnh bị từ chối (HTTP 400). */
 private const val FALLBACK_SIZE = "medium"
 
+// Chất lượng trung bình có chủ ý: đủ rõ trên lưới mà nhẹ và nhanh (người dùng không cần cao). Ô Thư viện rộng khoảng
+// 90dp (~250px ở xxhdpi) nên 240 hơi mềm nhưng chấp nhận được; thẻ Thư mục 2 cột rộng khoảng 160dp.
 private fun ThumbnailSize.graphSize(): String = when (this) {
-    ThumbnailSize.Cell -> "c300x300_crop"
-    ThumbnailSize.Card -> "c480x360_crop"
+    ThumbnailSize.Cell -> "c240x240_crop"
+    ThumbnailSize.Card -> "c360x270_crop"
 }
 
 /**

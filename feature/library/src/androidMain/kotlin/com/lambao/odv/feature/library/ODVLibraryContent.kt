@@ -1,6 +1,9 @@
 package com.lambao.odv.feature.library
 
 import android.content.res.Resources
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +17,14 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -46,11 +53,16 @@ import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.ThumbnailSize
+import com.lambao.odv.core.domain.model.dayNumberOf
 import com.lambao.odv.core.domain.model.libraryDate
 import com.lambao.odv.core.domain.model.thumbnailSource
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -65,6 +77,9 @@ private val DateHeaderHeight = 42.dp
 
 // Cuộn nhanh chỉ hiện khi nội dung dài hơn khoảng 3 màn hình (mục 4.4 FastScroller).
 private const val FAST_SCROLLER_MIN_SCREENS = 3
+
+// Cuộn nhanh mờ đi sau chừng này mili giây kể từ lần cuộn cuối.
+private const val SCROLLER_HIDE_DELAY_MS = 2_000L
 
 private const val HEADER = "header"
 private const val CELL = "cell"
@@ -187,7 +202,7 @@ private fun LibraryGrid(
     val resources = LocalContext.current.resources
     val locale = LocalConfiguration.current.locales[0]
     val dates = remember(locale) { LibraryDateFormatter(locale) }
-    val counts = remember { NumberFormat.getIntegerInstance(ViVn) }
+    val labels = remember(resources, dates, state.utcOffsetMs) { DayLabels(resources, dates, state.utcOffsetMs) }
     val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
     val headerHeightPx = with(LocalDensity.current) { DateHeaderHeight.toPx() }
@@ -219,6 +234,16 @@ private fun LibraryGrid(
             (gridState.firstVisibleItemIndex.toFloat() / scrollable).coerceIn(0f, 1f)
         }
     }
+    // Cuộn nhanh chỉ hiện lúc đang cuộn rồi mờ đi sau một lúc: rãnh và tay cầm luôn hiện thì vạch dọc đè lên mép phải của
+    // cả lưới (và số mục của tiêu đề nhóm) trông thừa.
+    var scrollerActive by remember { mutableStateOf(false) }
+    LaunchedEffect(gridState) {
+        snapshotFlow { gridState.firstVisibleItemIndex }.drop(1).collectLatest {
+            scrollerActive = true
+            delay(SCROLLER_HIDE_DELAY_MS)
+            scrollerActive = false
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         LazyVerticalGrid(
@@ -239,7 +264,7 @@ private fun LibraryGrid(
             ) { index ->
                 if (layout.isHeader(index)) {
                     val day = layout.days[layout.dayIndexAt(index)]
-                    ODVDateHeader(title = dates.day(day.dayNumber), count = counts.format(day.count))
+                    ODVDateHeader(title = labels.title(day), count = labels.count(day))
                 } else {
                     val position = layout.mediaPositionAt(index)
                     // pages[position] kích hoạt nạp trang chứa ô này; chưa nạp (hoặc số mục lệch nhau lúc đang đồng bộ) là khung chờ (TV-06).
@@ -264,12 +289,20 @@ private fun LibraryGrid(
             val day = layout.days[stickyDay.coerceIn(0, layout.days.lastIndex)]
             // Bản dính chỉ để nhìn: tiêu đề thật đã có nhãn TalkBack nên bỏ ngữ nghĩa của bản này để không đọc lặp.
             ODVDateHeader(
-                title = dates.day(day.dayNumber),
-                count = counts.format(day.count),
+                title = labels.title(day),
+                count = labels.count(day),
                 modifier = Modifier.align(Alignment.TopStart).clearAndSetSemantics {},
             )
         }
-        if (showScroller) {
+        AnimatedVisibility(
+            visible = showScroller && scrollerActive,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                // Bắt đầu dưới tiêu đề nhóm để rãnh không cắt qua tiêu đề và số mục.
+                .padding(top = DateHeaderHeight + 8.dp, bottom = 8.dp),
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
             val bubbleDay = layout.days[layout.dayIndexAt(gridState.firstVisibleItemIndex)]
             ODVFastScroller(
                 fraction = fraction,
@@ -278,9 +311,36 @@ private fun LibraryGrid(
                 },
                 bubbleText = dates.month(bubbleDay.dayNumber),
                 contentDescription = stringResource(R.string.library_fast_scroller),
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 8.dp, bottom = 8.dp),
             )
         }
+    }
+}
+
+/**
+ * Chữ của tiêu đề nhóm ngày: "Hôm nay" / "Hôm qua" cho hai ngày gần nhất, các ngày khác ghi ngày đầy đủ theo ngôn ngữ;
+ * bên phải là số ảnh và số video của ngày đó ("12 ảnh · 3 video") thay vì một con số trơ trọi. [today] tính theo cùng độ
+ * lệch múi giờ với cách nhóm của lưới.
+ */
+private class DayLabels(
+    private val resources: Resources,
+    private val dates: LibraryDateFormatter,
+    utcOffsetMs: Long,
+) {
+    private val today = dayNumberOf(System.currentTimeMillis(), utcOffsetMs)
+    private val numbers = NumberFormat.getIntegerInstance(ViVn)
+
+    fun title(day: LibraryDay): String = when (day.dayNumber) {
+        today -> resources.getString(R.string.library_today)
+        today - 1 -> resources.getString(R.string.library_yesterday)
+        else -> dates.day(day.dayNumber)
+    }
+
+    fun count(day: LibraryDay): String {
+        val photos = day.count - day.videoCount
+        return listOfNotNull(
+            photos.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.library_count_photos, it, numbers.format(it)) },
+            day.videoCount.takeIf { it > 0 }?.let { resources.getQuantityString(R.plurals.library_count_videos, it, numbers.format(it)) },
+        ).joinToString(" · ")
     }
 }
 
