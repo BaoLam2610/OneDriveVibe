@@ -8,16 +8,25 @@ import com.lambao.odv.core.network.dto.DriveDto
 import com.lambao.odv.core.network.dto.DriveItemDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpTimeoutConfig
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLBuilder
 import io.ktor.http.isSuccess
 import io.ktor.http.appendPathSegments
 import io.ktor.http.takeFrom
+import io.ktor.utils.io.readAvailable
+import kotlinx.coroutines.CancellationException
 
 private const val GRAPH_BASE = "https://graph.microsoft.com/v1.0"
+private const val ITEM_INFO_SELECT = "id,name,image,photo,fileSystemInfo"
+private const val DOWNLOAD_CHUNK_BYTES = 64 * 1024
 private const val CHILDREN_SELECT = "id,name,size,folder,file,video,package"
 private const val CHILDREN_PAGE_SIZE = 200
 
@@ -140,6 +149,80 @@ class GraphApi internal constructor(
             ?: return AppResult.Failure(AppError.Unknown())
         return try {
             signedDownloads.get(location).readBytes()
+        } catch (e: Throwable) {
+            AppResult.Failure(e.toAppError())
+        }
+    }
+
+    /**
+     * Thông tin ảnh để hiện ở bảng thông tin (AN-05): kích thước, thiết bị chụp, ngày. Lấy theo yêu cầu thay vì đồng bộ
+     * hàng loạt vì chỉ cần khi người dùng mở bảng cho đúng một ảnh (quyết định 2026-10-04, không đổi schema Room).
+     */
+    suspend fun getItemInfo(credentials: GraphCredentials, itemId: String): AppResult<DriveItemDto> =
+        authorizedGet(credentials) {
+            url {
+                appendDrivePath(credentials)
+                appendPathSegments("items", itemId)
+            }
+            parameter("\$select", ITEM_INFO_SELECT)
+        }.decode()
+
+    /**
+     * Tải nội dung gốc của [itemId] theo luồng, từ byte [offset] (BN-03). `GET /items/{id}/content` trả `302` sang URL đã
+     * ký; bước hai tải bằng client không bearer với header `Range` nên bearer không rời Graph.
+     *
+     * [onStart] gọi một lần khi có phản hồi: `resumed` là true khi máy chủ trả `206` (tiếp tục từ [offset]), false khi trả
+     * `200` (bỏ qua Range, nơi gọi phải ghi lại từ đầu); `totalBytes` là dung lượng cả tệp nếu biết. [onBytes] nhận từng
+     * khúc đã đọc (`length` byte đầu của mảng, mảng được dùng lại nên phải ghi ngay). Đã đủ [offset] mà máy chủ trả `416`
+     * thì lỗi `Http(416)`: nơi gọi tải lại từ đầu.
+     */
+    suspend fun downloadContent(
+        credentials: GraphCredentials,
+        itemId: String,
+        offset: Long,
+        onStart: suspend (resumed: Boolean, totalBytes: Long?) -> Unit,
+        onBytes: suspend (buffer: ByteArray, length: Int) -> Unit,
+    ): AppResult<Unit> {
+        val redirect = when (
+            val result = authorizedGet(credentials, acceptRedirect = true) {
+                url {
+                    appendDrivePath(credentials)
+                    appendPathSegments("items", itemId, "content")
+                }
+            }
+        ) {
+            is AppResult.Success -> result.value
+            is AppResult.Failure -> return result
+        }
+        // Graph luôn trả 302 cho /content; không thì không có URL ký để tải theo luồng.
+        if (redirect.status.value !in 300..399) return AppResult.Failure(AppError.Unknown())
+        val location = redirect.headers[HttpHeaders.Location]?.takeIf { it.startsWith("https://") }
+            ?: return AppResult.Failure(AppError.Unknown())
+        return try {
+            signedDownloads.prepareGet(location) {
+                if (offset > 0) header(HttpHeaders.Range, "bytes=$offset-")
+                // Ảnh gốc lớn tải lâu hơn 30 giây là bình thường: bỏ trần tổng, chỉ giữ trần im lặng của socket.
+                timeout { requestTimeoutMillis = HttpTimeoutConfig.INFINITE_TIMEOUT_MS }
+            }.execute { response ->
+                if (!response.status.isSuccess()) return@execute AppResult.Failure(response.toGraphError())
+                val resumed = response.status.value == 206
+                val total = if (resumed) {
+                    response.headers[HttpHeaders.ContentRange]?.substringAfterLast('/')?.toLongOrNull()
+                } else {
+                    response.headers[HttpHeaders.ContentLength]?.toLongOrNull()
+                }
+                onStart(resumed, total)
+                val channel = response.bodyAsChannel()
+                val buffer = ByteArray(DOWNLOAD_CHUNK_BYTES)
+                while (true) {
+                    val read = channel.readAvailable(buffer)
+                    if (read == -1) break
+                    onBytes(buffer, read)
+                }
+                AppResult.Success(Unit)
+            }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             AppResult.Failure(e.toAppError())
         }

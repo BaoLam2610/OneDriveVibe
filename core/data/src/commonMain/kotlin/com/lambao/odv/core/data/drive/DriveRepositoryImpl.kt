@@ -13,6 +13,7 @@ import com.lambao.odv.core.database.ItemRef
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.FolderRef
+import com.lambao.odv.core.domain.model.ImageInfo
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
 import com.lambao.odv.core.domain.model.MediaKind
@@ -20,6 +21,7 @@ import com.lambao.odv.core.domain.model.SearchResult
 import com.lambao.odv.core.domain.model.SortDirection
 import com.lambao.odv.core.domain.model.SortField
 import com.lambao.odv.core.domain.model.SortOrder
+import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.repository.ConfigRepository
 import com.lambao.odv.core.domain.repository.DriveRepository
 import com.lambao.odv.core.network.GraphApi
@@ -100,6 +102,37 @@ internal class DriveRepositoryImpl(
             .map { rows -> rows.map { LibraryDay(it.dayNumber, it.count, it.videoCount) } }
             .distinctUntilChanged()
             .flowOn(dispatchers.default)
+
+    override fun observeViewerImages(context: ViewerContext): Flow<List<DriveItem>> = when (context) {
+        is ViewerContext.Folder -> observeChildren(context.folderId, context.sort)
+            .map { items -> items.filter { it.mediaKind == MediaKind.Image } }
+        is ViewerContext.Library -> {
+            // Bộ lọc "Tất cả" gồm cả video; màn xem ảnh chỉ vuốt giữa các ảnh (video có màn riêng, Lát 6).
+            val kinds = context.filter.kinds.filter { it == MediaKind.Image }.map { it.name }
+            if (kinds.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                dao.observeLibraryItems(kinds)
+                    .conflate()
+                    .map { rows -> rows.map { it.toDomain() } }
+                    .distinctUntilChanged()
+                    .flowOn(dispatchers.default)
+            }
+        }
+    }
+
+    override suspend fun getImageInfo(itemId: String): AppResult<ImageInfo> {
+        val config = when (val loaded = configs.load()) {
+            is AppResult.Success -> loaded.value
+            is AppResult.Failure -> return loaded
+        }
+        return api.getItemInfo(config.toCredentials(), itemId).map { it.toImageInfo() }
+    }
+
+    override suspend fun folderPathOf(itemId: String): List<FolderRef> = withContext(dispatchers.io) {
+        val parentId = dao.refs(listOf(itemId)).firstOrNull()?.parentId ?: return@withContext emptyList()
+        folderPaths(setOf(parentId), dao.getSyncState()?.rootId)[parentId].orEmpty()
+    }
 
     override suspend fun search(query: String, kinds: Set<MediaKind>, limit: Int): List<SearchResult> {
         val key = searchKey(query).trim()

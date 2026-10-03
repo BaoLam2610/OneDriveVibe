@@ -7,6 +7,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.lambao.odv.core.designsystem.ODVCollectEffects
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.ViewerContext
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -17,7 +18,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ODVLibraryScreen(
     modifier: Modifier = Modifier,
-    onOpenFile: (DriveItem) -> Unit = {},
+    onOpenFile: (DriveItem, ViewerContext) -> Unit = { _, _ -> },
     onShowFolders: () -> Unit = {},
     tabs: @Composable () -> Unit = {},
     viewModel: LibraryViewModel = koinViewModel(),
@@ -27,7 +28,7 @@ fun ODVLibraryScreen(
 
     ODVCollectEffects(viewModel.effects) { effect ->
         when (effect) {
-            is LibraryEffect.OpenFile -> onOpenFile(effect.item)
+            is LibraryEffect.OpenFile -> onOpenFile(effect.item, effect.context)
         }
     }
 

@@ -44,6 +44,13 @@ abstract class DriveDao {
     )
     abstract fun libraryDays(kinds: List<String>, utcOffsetMs: Long): Flow<List<DayCount>>
 
+    /**
+     * Toàn bộ mục thuộc [kinds] theo thứ tự của Thư viện, không phân trang: màn xem ảnh cần chỉ số theo vị trí để vuốt
+     * trước/sau (AN-03). Cùng thứ tự với [pagedLibrary] nên ảnh ở đâu trên lưới thì ở đúng vị trí đó khi vuốt.
+     */
+    @Query("SELECT * FROM drive_item WHERE mediaKind IN (:kinds) ORDER BY sortDate DESC, id")
+    abstract fun observeLibraryItems(kinds: List<String>): Flow<List<DriveItemEntity>>
+
     @Query("SELECT * FROM sync_state WHERE id = 0")
     abstract fun observeSyncState(): Flow<SyncStateEntity?>
 

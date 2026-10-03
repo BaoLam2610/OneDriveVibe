@@ -39,6 +39,9 @@ private fun scaled(base: Int, scalePercent: Int): Int = (base * scalePercent / 1
 internal fun ThumbnailSize.graphSize(scalePercent: Int): String = when (this) {
     ThumbnailSize.Cell -> scaled(240, scalePercent).let { "c${it}x${it}_crop" }
     ThumbnailSize.Card -> "c${scaled(360, scalePercent)}x${scaled(270, scalePercent)}_crop"
+    // Tên có sẵn của Graph (tối đa 800 px cạnh dài, giữ tỉ lệ, không cắt): đủ nét để hiện ngay ở màn xem rồi thay bằng ảnh gốc.
+    // Không nhân tỉ lệ chất lượng vì bản debug chỉ chỉnh thumbnail lưới.
+    ThumbnailSize.Viewer -> "large"
 }
 
 /**

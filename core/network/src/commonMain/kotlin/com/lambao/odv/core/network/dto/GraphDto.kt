@@ -37,6 +37,8 @@ data class DriveItemDto(
     val createdDateTime: String? = null,
     val fileSystemInfo: FileSystemInfoDto? = null,
     val photo: PhotoFacetDto? = null,
+    /** Kích thước ảnh. Không nằm trong `DELTA_SELECT`: chỉ lấy theo yêu cầu khi mở bảng thông tin (AN-05). */
+    val image: ImageFacetDto? = null,
 )
 
 @Serializable
@@ -52,9 +54,17 @@ data class ParentReferenceDto(val id: String? = null)
 @Serializable
 data class FileSystemInfoDto(val createdDateTime: String? = null)
 
-/** Ngày chụp (TV-02, mức đầu). */
+/** Ngày chụp (TV-02, mức đầu) và thiết bị chụp (AN-05, chỉ đọc khi mở bảng thông tin). */
 @Serializable
-data class PhotoFacetDto(val takenDateTime: String? = null)
+data class PhotoFacetDto(
+    val takenDateTime: String? = null,
+    val cameraMake: String? = null,
+    val cameraModel: String? = null,
+)
+
+/** Chiều rộng, cao của ảnh tính bằng pixel (AN-05). */
+@Serializable
+data class ImageFacetDto(val width: Int? = null, val height: Int? = null)
 
 @Serializable
 data class FolderFacetDto(val childCount: Int? = null)

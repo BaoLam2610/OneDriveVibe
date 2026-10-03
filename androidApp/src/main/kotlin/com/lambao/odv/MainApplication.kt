@@ -15,6 +15,7 @@ import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.di.appModule
 import com.lambao.odv.feature.auth.authModule
 import com.lambao.odv.feature.browser.browserModule
+import com.lambao.odv.feature.imageviewer.imageViewerModule
 import com.lambao.odv.feature.library.libraryModule
 import com.lambao.odv.security.AppLockController
 import com.lambao.odv.security.CurrentActivityHolder
@@ -43,7 +44,7 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
             modules(
                 listOf(
                     appModule, securityModule, networkModule, databaseModule, dataModule, androidDataModule, authModule,
-                    browserModule, libraryModule,
+                    browserModule, libraryModule, imageViewerModule,
                 ) + DebugTools.koinModules,
             )
         }

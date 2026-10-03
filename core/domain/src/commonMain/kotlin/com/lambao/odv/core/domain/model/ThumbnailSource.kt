@@ -1,7 +1,10 @@
 package com.lambao.odv.core.domain.model
 
-/** Kích thước thumbnail cần: ô vuông nhỏ (Thư viện, hàng danh sách) hoặc thẻ lưới Thư mục. */
-enum class ThumbnailSize { Cell, Card }
+/**
+ * Kích thước thumbnail cần: ô vuông nhỏ (Thư viện, hàng danh sách), thẻ lưới Thư mục, hoặc cỡ lớn giữ nguyên tỉ lệ cho màn
+ * xem ảnh ([Viewer], AN-01: hiện ngay trong lúc chờ ảnh gốc). Hai cỡ đầu cắt vuông/ngang nên không dùng được ở màn xem.
+ */
+enum class ThumbnailSize { Cell, Card, Viewer }
 
 /**
  * Khóa nhận diện một thumbnail để tải và cache (BN-02): theo id tệp và phiên bản nội dung [cTag], không theo tên hay

@@ -10,6 +10,7 @@ import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.SortOrder
 import com.lambao.odv.core.domain.model.SyncPhase
 import com.lambao.odv.core.domain.model.ViewMode
+import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.model.sortedFor
 import com.lambao.odv.core.domain.repository.BrowserPreferences
 import com.lambao.odv.core.domain.repository.DriveRepository
@@ -76,7 +77,7 @@ class BrowserViewModel(
                 if (intent.item.isFolder) {
                     navigateTo(currentState.path + Crumb(intent.item.id, intent.item.name))
                 } else {
-                    sendEffect(BrowserEffect.OpenFile(intent.item))
+                    sendEffect(BrowserEffect.OpenFile(intent.item, ViewerContext.Folder(currentState.path.lastOrNull()?.id, currentState.sort)))
                 }
             BrowserIntent.GoUp -> if (currentState.path.isNotEmpty()) navigateTo(currentState.path.dropLast(1))
             is BrowserIntent.GoToCrumb ->
@@ -131,7 +132,8 @@ class BrowserViewModel(
     private fun openSearchResult(intent: BrowserIntent.OpenSearchResult) {
         val item = intent.result.item
         if (!item.isFolder) {
-            sendEffect(BrowserEffect.OpenFile(item))
+            // Tệp từ kết quả tìm: vuốt trong thư mục chứa nó (parentPath rỗng = gốc), không phải thư mục đang mở.
+            sendEffect(BrowserEffect.OpenFile(item, ViewerContext.Folder(intent.result.parentPath.lastOrNull()?.id, currentState.sort)))
             return
         }
         closeSearch()

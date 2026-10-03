@@ -1,6 +1,7 @@
 package com.lambao.odv.core.data
 
 import android.content.Context
+import android.os.Build
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -9,8 +10,11 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import coil3.ImageLoader
 import coil3.disk.DiskCache
+import coil3.gif.AnimatedImageDecoder
+import coil3.gif.GifDecoder
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
+import com.lambao.odv.core.data.original.FileOriginalImageRepository
 import com.lambao.odv.core.data.prefs.DataStoreBrowserPreferences
 import com.lambao.odv.core.data.thumbnail.FixedThumbnailQuality
 import com.lambao.odv.core.data.thumbnail.GraphThumbnailFetcherFactory
@@ -19,6 +23,7 @@ import com.lambao.odv.core.data.thumbnail.ThumbnailKeyer
 import com.lambao.odv.core.domain.repository.BrowserPreferences
 import com.lambao.odv.core.domain.repository.ConfigRepository
 import com.lambao.odv.core.domain.repository.ConnectionResetter
+import com.lambao.odv.core.domain.repository.OriginalImageRepository
 import com.lambao.odv.core.domain.repository.ThumbnailCache
 import com.lambao.odv.core.domain.repository.ThumbnailQuality
 import com.lambao.odv.core.network.GraphApi
@@ -44,7 +49,15 @@ val androidDataModule = module {
     // Xóa cache thumbnail khi ngắt kết nối: DisconnectUseCase gom mọi ConnectionResetter bằng getAll(). Cũng là ThumbnailCache
     // để màn Debug xóa tay.
     single { ThumbnailCacheResetter(get(), get()) } binds arrayOf(ConnectionResetter::class, ThumbnailCache::class)
+    // Ảnh gốc (Lát 5): kho tệp riêng, tách khỏi cache thumbnail vì thumbnail cố ý chất lượng thấp; cũng là ConnectionResetter
+    // để ngắt kết nối xóa sạch (CD-05).
+    single {
+        FileOriginalImageRepository(get(), get(), get(), androidContext().cacheDir.resolve("originals"), ORIGINAL_CACHE_MAX_BYTES)
+    } binds arrayOf(OriginalImageRepository::class, ConnectionResetter::class)
 }
+
+/** Trần dung lượng cache ảnh gốc (BN-01), tạm cố định; Lát 9 nối với giới hạn cache trong Cài đặt (CD). */
+private const val ORIGINAL_CACHE_MAX_BYTES = 1024L * 1024 * 1024
 
 /** Trần dung lượng cache thumbnail (BN-01). Lát 9 nối giới hạn này với Cài đặt (CD). */
 private const val THUMBNAIL_CACHE_MAX_BYTES = 200L * 1024 * 1024
@@ -60,6 +73,8 @@ private fun createImageLoader(
 ): ImageLoader =
     ImageLoader.Builder(context)
         .components {
+            // GIF động (AN-06): ImageDecoder từ Android 9, bản thấp hơn dùng decoder tự viết của coil-gif.
+            if (Build.VERSION.SDK_INT >= 28) add(AnimatedImageDecoder.Factory()) else add(GifDecoder.Factory())
             add(ThumbnailKeyer(quality))
             add(GraphThumbnailFetcherFactory(api, configs, quality))
         }

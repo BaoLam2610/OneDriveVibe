@@ -5,6 +5,7 @@ import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.SearchResult
 import com.lambao.odv.core.domain.model.SortOrder
 import com.lambao.odv.core.domain.model.ViewMode
+import com.lambao.odv.core.domain.model.ViewerContext
 
 /** Một cấp trong đường dẫn từ thư mục gốc xuống thư mục đang xem (không gồm thư mục gốc). */
 data class Crumb(val id: String, val name: String)
@@ -77,8 +78,11 @@ sealed interface BrowserIntent {
 }
 
 sealed interface BrowserEffect {
-    /** Mở tệp trong màn xem tương ứng. Màn xem làm ở Lát 5–7; tới lúc đó nơi gọi chưa xử lý. */
-    data class OpenFile(val item: DriveItem) : BrowserEffect
+    /**
+     * Mở tệp trong màn xem tương ứng. [context] là thư mục đang xem (cho kết quả tìm: thư mục chứa tệp) và kiểu sắp xếp đang
+     * chọn, để màn xem vuốt trước/sau đúng thứ tự đang thấy (AN-03).
+     */
+    data class OpenFile(val item: DriveItem, val context: ViewerContext) : BrowserEffect
 }
 
 internal fun AppError.toBrowserError(): BrowserError = when (this) {

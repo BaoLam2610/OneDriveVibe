@@ -3,6 +3,9 @@ package com.lambao.odv.core.domain.repository
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.FolderRef
+import com.lambao.odv.core.domain.model.ImageInfo
+import com.lambao.odv.core.domain.model.ViewerContext
 import androidx.paging.PagingData
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
@@ -53,6 +56,25 @@ interface DriveRepository {
      * số mục ở tiêu đề nhóm (TV-01) và cuộn nhanh (TV-04).
      */
     fun libraryDays(filter: LibraryFilter, utcOffsetMs: Long): Flow<List<LibraryDay>>
+
+    /**
+     * Các ảnh để vuốt trước/sau trong màn xem ảnh (AN-03), đúng thứ tự người dùng thấy ở nơi mở: tab Thư mục theo
+     * [ViewerContext.Folder.sort], tab Thư viện mới nhất trước. Chỉ gồm ảnh (video và PDF có màn xem riêng). Đọc từ Room
+     * nên dùng được offline, tự phát lại khi đồng bộ đổi dữ liệu (ảnh bị xóa trên OneDrive tự biến mất, DS-06).
+     */
+    fun observeViewerImages(context: ViewerContext): Flow<List<DriveItem>>
+
+    /**
+     * Kích thước ảnh và thiết bị chụp cho bảng thông tin (AN-05). Gọi Graph theo yêu cầu cho một ảnh (không lưu Room),
+     * nên offline trả lỗi và UI chỉ hiện các dòng đã có trong Room.
+     */
+    suspend fun getImageInfo(itemId: String): AppResult<ImageInfo>
+
+    /**
+     * Các thư mục từ cấp dưới gốc xuống thư mục chứa [itemId], đọc từ Room (bảng thông tin: đường dẫn thư mục, AN-05).
+     * Rỗng nếu tệp nằm ngay ở gốc hoặc chưa có trong Room.
+     */
+    suspend fun folderPathOf(itemId: String): List<FolderRef>
 
     companion object {
         const val SEARCH_LIMIT = 100

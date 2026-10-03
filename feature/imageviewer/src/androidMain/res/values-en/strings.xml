@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: English. Keys match values/strings.xml; all strings are [new] and need review. -->
+
+    <string name="image_viewer_back">Back</string> <!-- [mới] -->
+    <string name="image_viewer_info">Info</string> <!-- [mới] -->
+    <string name="image_viewer_counter">%1$d / %2$d</string> <!-- [mới] -->
+
+    <string name="image_viewer_loading_original">Loading original</string> <!-- [mới] -->
+    <string name="image_viewer_offline">Connect to the internet to view the original</string> <!-- [mới] -->
+    <string name="image_viewer_load_failed">Couldn\'t load the original</string> <!-- [mới] -->
+
+    <string name="image_viewer_zoom_percent">%1$d%%</string> <!-- [mới] -->
+    <string name="image_viewer_zoom_hint">Double-tap to fit the screen</string> <!-- [mới] -->
+
+    <string name="image_viewer_error_title">Can\'t open this image</string> <!-- [mới] -->
+    <string name="image_viewer_error_body">The format isn\'t supported or the file is damaged. Swipe to see another image.</string> <!-- [mới] -->
+
+    <string name="image_info_title">Info</string> <!-- [mới] -->
+    <string name="image_info_close">Close</string> <!-- [mới] -->
+    <string name="image_info_name">File name</string> <!-- [mới] -->
+    <string name="image_info_dimensions">Dimensions</string> <!-- [mới] -->
+    <string name="image_info_size">Size</string> <!-- [mới] -->
+    <string name="image_info_taken">Date taken</string> <!-- [mới] -->
+    <string name="image_info_camera">Camera</string> <!-- [mới] -->
+    <string name="image_info_folder">Folder</string> <!-- [mới] -->
+</resources>

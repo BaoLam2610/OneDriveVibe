@@ -43,6 +43,7 @@ include(":core:designsystem")
 include(":feature:auth")
 include(":feature:browser")
 include(":feature:library")
+include(":feature:imageviewer")
 
 // Công cụ chỉ cho bản debug (ADR-0012). androidApp gắn bằng debugImplementation.
 include(":tools:debug")

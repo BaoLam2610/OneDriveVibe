@@ -24,10 +24,12 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.domain.model.LockState
+import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.feature.auth.connect.ODVConnectScreen
 import com.lambao.odv.feature.auth.lock.ODVLockScreen
 import com.lambao.odv.feature.auth.security.ODVSecuritySetupScreen
+import com.lambao.odv.feature.imageviewer.ODVImageViewerScreen
 import com.lambao.odv.ui.home.ODVHomeScreen
 import com.lambao.odv.ui.splash.ODVSplashScreen
 import org.koin.compose.koinInject
@@ -125,8 +127,24 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                         onDisconnected = { backStack.resetTo(AppRoute.Connect) },
                     )
                 }
-                // Màn xem (Lát 5–7) sẽ truyền vào onOpenFile.
-                entry<AppRoute.Home> { ODVHomeScreen() }
+                entry<AppRoute.Home> {
+                    ODVHomeScreen(
+                        onOpenFile = { item, viewerContext ->
+                            // Guard: chạm đôi ô ảnh không được đẩy hai màn xem. Video (Lát 6) và PDF (Lát 7) chưa có màn xem.
+                            if (item.mediaKind == MediaKind.Image && backStack.lastOrNull() !is AppRoute.ImageViewer) {
+                                backStack.add(viewerContext.toImageViewerRoute(item.id))
+                            }
+                        },
+                    )
+                }
+                entry<AppRoute.ImageViewer> { route ->
+                    ODVImageViewerScreen(
+                        context = route.toViewerContext(),
+                        startItemId = route.startItemId,
+                        // Nút quay lại và "không còn ảnh nào" cùng đi qua đây; chỉ bỏ khi nó đang ở trên cùng (không bỏ nhầm màn Khóa).
+                        onBack = { if (backStack.size > 1 && backStack.lastOrNull() == route) backStack.removeLastOrNull() },
+                    )
+                }
             },
         )
         // Chỉ phủ khi đang khóa mà màn Khóa chưa lên trên cùng; mọi trường hợp khác phải thấy NavDisplay.

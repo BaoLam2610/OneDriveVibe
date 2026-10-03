@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
+         Thiết kế (ODV Image detail) chưa cung cấp câu chữ nên mọi chuỗi đều đánh dấu [mới], cần duyệt. -->
+
+    <!-- Thanh trên và bộ đếm -->
+    <string name="image_viewer_back">Quay lại</string> <!-- [mới] -->
+    <string name="image_viewer_info">Thông tin</string> <!-- [mới] -->
+    <string name="image_viewer_counter">%1$d / %2$d</string> <!-- [mới] -->
+
+    <!-- Trạng thái tải ảnh gốc (AN-01) -->
+    <string name="image_viewer_loading_original">Đang tải ảnh gốc</string> <!-- [mới] -->
+    <string name="image_viewer_offline">Cần kết nối mạng để xem ảnh gốc</string> <!-- [mới] -->
+    <string name="image_viewer_load_failed">Không tải được ảnh gốc</string> <!-- [mới] -->
+
+    <!-- Zoom (AN-02) -->
+    <string name="image_viewer_zoom_percent">%1$d%%</string> <!-- [mới] -->
+    <string name="image_viewer_zoom_hint">Chạm đúp để về vừa khung</string> <!-- [mới] -->
+
+    <!-- Ảnh lỗi định dạng (AN-07) -->
+    <string name="image_viewer_error_title">Không mở được ảnh này</string> <!-- [mới] -->
+    <string name="image_viewer_error_body">Định dạng ảnh không được hỗ trợ hoặc tệp bị lỗi. Vuốt để xem ảnh khác.</string> <!-- [mới] -->
+
+    <!-- Bảng thông tin (AN-05) -->
+    <string name="image_info_title">Thông tin</string> <!-- [mới] -->
+    <string name="image_info_close">Đóng</string> <!-- [mới] -->
+    <string name="image_info_name">Tên tệp</string> <!-- [mới] -->
+    <string name="image_info_dimensions">Kích thước ảnh</string> <!-- [mới] -->
+    <string name="image_info_size">Dung lượng</string> <!-- [mới] -->
+    <string name="image_info_taken">Ngày chụp</string> <!-- [mới] -->
+    <string name="image_info_camera">Thiết bị chụp</string> <!-- [mới] -->
+    <string name="image_info_folder">Thư mục</string> <!-- [mới] -->
+    <string name="image_info_root" translatable="false">OneDrive</string>
+</resources>

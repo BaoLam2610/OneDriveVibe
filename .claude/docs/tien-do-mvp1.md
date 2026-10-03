@@ -6,8 +6,8 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Đang làm
 
-- **Lát:** 4 xong (code, review, kiểm tay). Tiếp theo: Lát 5, Xem ảnh (Lát 0, 1, 2, 3, D code xong, còn chờ kiểm tay)
-- **Bước:** Lát 4 đã build, review hai đợt và được người dùng kiểm tay thành công (2026-10-04). Chưa bắt đầu Lát 5. Lưu ý khi đổi schema Room lúc dev (`version = 1` giữ nguyên): phải xóa dữ liệu app hoặc dùng "Xóa dữ liệu local" ở màn Debug, bản đã cài sẽ báo lỗi hash Room thay vì tự tạo lại
+- **Lát:** 5, Xem ảnh: code xong bước 1–9, chờ build, review và kiểm tay (Lát 4 xong; Lát 0, 1, 2, 3, D code xong, còn chờ kiểm tay)
+- **Bước:** Lát 5 đã viết xong toàn bộ code (2026-10-04), chưa build màn xem. Lát 4 đã build, review hai đợt và được người dùng kiểm tay thành công. Lưu ý khi đổi schema Room lúc dev (`version = 1` giữ nguyên): phải xóa dữ liệu app hoặc dùng "Xóa dữ liệu local" ở màn Debug, bản đã cài sẽ báo lỗi hash Room thay vì tự tạo lại
 - **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật đã có luồng đặt PIN (Lát 2, bước 8). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
 ## Đã xong trước kế hoạch
@@ -93,8 +93,20 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Lát 5: Xem ảnh
 
-- [ ] AN-01 → AN-07
-- [ ] Review
+Quyết định (2026-10-04): thông tin ảnh lấy theo yêu cầu qua Graph (`image`, `photo`, `fileSystemInfo`), không đổi schema Room; `DiskCache` riêng cho ảnh gốc; Telephoto + `coil-gif`.
+
+- [x] 1. Catalog: `telephoto`, `coil-gif`; cập nhật `tech-stack.md`
+- [x] 2. `:core:network`: `GraphApi.getItemInfo`, `GraphApi.downloadContent` (302 → URL ký, `Range`, đọc theo luồng) + `ImageFacetDto`, `PhotoFacetDto` thêm camera. Rủi ro build: `readAvailable`, `HttpTimeoutConfig.INFINITE_TIMEOUT_MS`
+- [x] 3. Domain/data: `ViewerContext`, `ImageInfo`, `DriveRepository.observeViewerImages`/`getImageInfo`, `DriveDao.observeLibraryItems`, `toImageInfo`. Còn phải nối `ViewerContext` vào `onOpenFile` của Thư mục/Thư viện (bước 8)
+- [x] 4. Ảnh gốc: đổi so với plan, không dùng Coil `Fetcher` mà dùng `OriginalImageRepository` (domain) + `FileOriginalImageRepository` (`:core:data` androidMain): thư mục `cacheDir/originals` riêng, tệp `.part` tải tiếp bằng `Range` (BN-03), chỉ đổi tên khi đủ byte, dọn bản cũ theo `cTag` (BN-02), LRU 1 GB tạm cố định (Lát 9 nối Cài đặt), `ConnectionResetter` xóa sạch + chặn ghi sau reset. Lý do: Telephoto cần tệp seek được để cắt vùng ảnh lớn
+- [x] 5. `:feature:imageviewer` (MVI): `HorizontalPager` + Telephoto (`ZoomableAsyncImage`), thumbnail lớn không cắt (`ThumbnailSize.Viewer` = Graph `large`) mờ dần sang ảnh gốc, viên thuốc "Đang tải ảnh gốc", GIF qua Coil + `coil-gif`, ảnh hỏng → `ODVViewerError` (đọc kích thước bằng `BitmapFactory` trước, AN-07), khóa vuốt ngang khi đang zoom, chạm một lần ẩn/hiện thanh và system bar (`ODVViewerSystemBars`)
+- [x] 6. Bảng thông tin: bottom sheet (dọc) / `ODVSidePanel` (ngang); dòng từ Room hiện ngay, kích thước ảnh + thiết bị chụp lấy từ Graph khi mở bảng (`getImageInfo`), đường dẫn từ `folderPathOf`
+- [x] 7. Chuỗi VI/EN (toàn bộ đánh dấu [mới], thiết kế chưa có câu chữ; cần duyệt)
+- [x] 8. `AppRoute.ImageViewer` + `ViewerContext` đi qua `onOpenFile(item, context)` của Thư mục (kể cả kết quả tìm) và Thư viện; video/PDF chưa mở (Lát 6, 7)
+- [x] 9. FLAG_SECURE: màn xem chạy trong cùng cửa sổ nên `ODVSecureWindow` toàn cửa sổ (Android ≤ 12) và `setRecentsScreenshotEnabled(false)` đã phủ; bottom sheet kế thừa. Cần kiểm tay khi bật PIN
+- Đã build, người dùng thử máy thấy ổn (2026-10-04); lỗi biên dịch `await` trong lambda đã sửa.
+- Giới hạn đã biết: (a) mở ảnh khi quét lần đầu chưa xong (TM-07, danh sách lấy từ API) thì màn xem tự đóng vì chưa có trong Room; (b) % zoom ở viên thuốc quy ước xấp xỉ theo `maxZoomFactor = 4`; (c) GIF zoom theo khung chứ không theo cạnh ảnh; (d) chỉ tải ảnh của trang đang hiện, chưa tải trước ảnh kế
+- [x] Review Lát 5 (2026-10-04): không CRITICAL/HIGH; đã sửa M1, M2 (xem nhật ký). Còn MEDIUM/LOW chưa sửa: ảnh gốc trong cache không mã hóa (cùng nhóm M3 của Lát 3, chờ quyết định ADR), Thư viện nạp cả danh sách ảnh vào bộ nhớ, khoảng cách 72/84dp tự đặt cần đối chiếu thiết kế, thumbnail vẫn tải khi ảnh gốc đã có sẵn, `.part` mồ côi khi `reset()` chen giữa lúc tải, tệp không có `Content-Length` không kiểm được độ đầy, `ImageViewerInfo.isLoadingDetails` chưa dùng, màn xem vẫn ẩn system bar khi màn Khóa chèn lên, chưa có nhãn TalkBack "Ảnh X trên Y"
 - [ ] Kiểm tay
 
 ## Lát 6: Xem video
@@ -153,4 +165,6 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 | 2026-10-04 | Lát 4: thumbnail và tab Thư viện. Catalog (Coil 3.6.3, Paging 3.5.1, `room3-paging`); `GraphApi.fetchThumbnail` (chấp nhận 302, URL đã ký tải bằng client không bearer, `createDownloadHttpClient`); `GraphThumbnailFetcher` + `ThumbnailKeyer` + `ThumbnailCacheResetter`, `ImageLoader` trong `androidDataModule`, `MainApplication` là `SingletonImageLoader.Factory`; Room thêm `sortDate` + index (TV-02) + `pagedLibrary`/`libraryDays`; `DriveRepository.libraryPages`/`libraryDays`, `LibraryFilter`, `LibraryDay`, `ThumbnailSource`, `UtcOffsetProvider`; `:feature:library` (lưới dựng từ số mục theo ngày, không dùng `insertSeparators`); `ODVRemoteImage`; `ODVHomeScreen` với Tabs; tab Thư mục dùng thumbnail thật. Chưa build, chưa review. Cần xóa dữ liệu app vì schema Room đổi |
 | 2026-10-04 | Chỉnh Lát 4 sau thử máy: `DELTA_PAGE_SIZE` 500 (1000 gây crash khi gọi delta), thumbnail hạ xuống cỡ trung bình (ô 240 px, thẻ 360×270 px), cuộn nhanh Thư viện tự ẩn và bắt đầu dưới tiêu đề nhóm, tiêu đề nhóm ghi "Hôm nay/Hôm qua" và "N ảnh · M video" (`videoCount` trong `libraryDays`). Sửa lỗi build: đăng ký `PagingSourceDaoReturnTypeConverter` cho `DriveDao` (Room 3), thêm `coil-singleton` cho `SingletonImageLoader`. Công cụ debug (tab Khác, nhóm Thumbnail): chọn tỉ lệ chất lượng thumbnail 50 → 150% (`ThumbnailQuality`, khóa cache có cỡ thực) và "Xóa cache thumbnail" (`ThumbnailCache`). Chưa build |
 | 2026-10-04 | Review Lát 4 (hai đợt, kotlin-reviewer): không CRITICAL; đã sửa mục MEDIUM ghi cache sau khi ngắt kết nối bằng `ThumbnailCacheGeneration`. Người dùng kiểm tay Lát 4 thành công; đóng Lát 4. Mục LOW còn lại ghi ở checklist Lát 4 |
+| 2026-10-04 | Lát 5 (code, chưa build màn xem): Telephoto + `coil-gif` trong catalog; `GraphApi.getItemInfo`/`downloadContent` (302 → URL ký, `Range`); `ViewerContext`, `ImageInfo`, `observeViewerImages`/`getImageInfo`/`folderPathOf`; kho ảnh gốc riêng `FileOriginalImageRepository` (`.part` tải tiếp, LRU 1 GB, `ConnectionResetter`); `:feature:imageviewer`; route `ImageViewer`, `onOpenFile` mang ngữ cảnh. Người dùng build thành công phần catalog, bước 1–4, thumbnail không lỗi. Chưa review, chưa kiểm tay |
+| 2026-10-04 | Review Lát 5 (không CRITICAL/HIGH), đã sửa: (M1) `ODVImageViewerContent` giữ vị trí theo ảnh Pager đang dừng (`anchorId`) thay vì `currentId` của ViewModel, nếu không sau khi tiến trình bị thu hồi Pager khôi phục đúng trang nhưng bị kéo về ảnh mở đầu; (M2) `showInfo` bắt lỗi Room để không làm sập app qua `viewModelScope`. Xác nhận FLAG_SECURE/ẩn recents (`MainActivity`) phủ màn xem. Mục còn lại ghi ở checklist Lát 5 |
 | 2026-10-03 | Crash SIGSEGV (`libsqliteJni.so`, `sqlite3_step` trong `DriveDao.applyPage`/`upsertItems`, lúc đồng bộ lần đầu rồi vào danh sách; không tái hiện đều). Không thấy lỗi ở code app (không có chỗ đóng/tạo lại DB). Thử nâng Room 2.8.5 → 3.0.3 (`androidx.room3`, sqlite 2.6.2 → 2.7.1, plugin `androidx.room3`) vì Room 2.x chỉ còn bảo trì; chưa có bằng chứng bản này sửa crash. Đổi import `androidx.room` → `androidx.room3` trong `:core:database`, schema giữ `version = 1`. Cần xác nhận khi build: chữ ký `fallbackToDestructiveMigration(dropAllTables = true)`, `schemaDirectory`, KSP 2.3.12 với room3-compiler. Chưa build |

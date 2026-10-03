@@ -7,6 +7,7 @@ import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.SyncPhase
+import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.repository.DriveRepository
 import com.lambao.odv.core.domain.repository.NetworkMonitor
 import com.lambao.odv.core.domain.repository.SyncRepository
@@ -62,7 +63,7 @@ class LibraryViewModel(
                     // Bỏ số mục của bộ lọc cũ ngay: lưới cũ không khớp luồng trang mới.
                     setState { copy(filter = intent.filter, days = emptyList(), daysLoaded = false) }
                 }
-            is LibraryIntent.Open -> sendEffect(LibraryEffect.OpenFile(intent.item))
+            is LibraryIntent.Open -> sendEffect(LibraryEffect.OpenFile(intent.item, ViewerContext.Library(currentState.filter)))
             LibraryIntent.Refresh -> sync.refresh()
         }
     }

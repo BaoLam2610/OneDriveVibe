@@ -3,6 +3,7 @@ package com.lambao.odv.core.data.drive
 import com.lambao.odv.core.database.DriveItemEntity
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.ImageInfo
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.libraryDateOf
 import com.lambao.odv.core.domain.model.mediaKindOf
@@ -44,6 +45,18 @@ internal fun DriveItemDto.toEntity(scanId: Long): DriveItemEntity? {
         scanId = scanId,
     )
 }
+
+/** Thông tin ảnh cho bảng thông tin (AN-05). Hãng và model nối thành một chuỗi; thiếu cả hai thì null để ẩn dòng. */
+internal fun DriveItemDto.toImageInfo() = ImageInfo(
+    width = image?.width,
+    height = image?.height,
+    camera = listOfNotNull(photo?.cameraMake, photo?.cameraModel)
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .joinToString(" ")
+        .ifEmpty { null },
+    takenAt = parseInstantMs(photo?.takenDateTime),
+)
 
 internal fun DriveItemEntity.toDomain() = DriveItem(
     id = id,

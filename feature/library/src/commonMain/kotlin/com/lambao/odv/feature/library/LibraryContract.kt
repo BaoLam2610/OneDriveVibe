@@ -3,6 +3,7 @@ package com.lambao.odv.feature.library
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
+import com.lambao.odv.core.domain.model.ViewerContext
 
 /** Phần của trạng thái đồng bộ mà tab Thư viện cần để hiện banner (TV-06, DS-05). */
 data class LibrarySync(
@@ -44,6 +45,6 @@ sealed interface LibraryIntent {
 }
 
 sealed interface LibraryEffect {
-    /** Mở tệp trong màn xem tương ứng. Màn xem làm ở Lát 5–6; tới lúc đó nơi gọi chưa xử lý. */
-    data class OpenFile(val item: DriveItem) : LibraryEffect
+    /** Mở tệp trong màn xem tương ứng; [context] là bộ lọc đang chọn để màn xem vuốt đúng danh sách (AN-03). */
+    data class OpenFile(val item: DriveItem, val context: ViewerContext) : LibraryEffect
 }

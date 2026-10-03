@@ -17,6 +17,7 @@ import com.lambao.odv.core.designsystem.component.ODVTab
 import com.lambao.odv.core.designsystem.component.ODVTabs
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.feature.browser.ODVBrowserScreen
 import com.lambao.odv.feature.library.ODVLibraryScreen
 
@@ -33,7 +34,7 @@ private const val TAB_LIBRARY = 1
 @Composable
 fun ODVHomeScreen(
     modifier: Modifier = Modifier,
-    onOpenFile: (DriveItem) -> Unit = {},
+    onOpenFile: (DriveItem, ViewerContext) -> Unit = { _, _ -> },
 ) {
     var selected by rememberSaveable { mutableIntStateOf(TAB_FOLDERS) }
     val stateHolder = rememberSaveableStateHolder()

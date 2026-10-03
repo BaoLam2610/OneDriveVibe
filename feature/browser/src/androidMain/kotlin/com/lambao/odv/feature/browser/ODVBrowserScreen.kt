@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lambao.odv.core.designsystem.ODVCollectEffects
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.ViewerContext
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -18,7 +19,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ODVBrowserScreen(
     modifier: Modifier = Modifier,
-    onOpenFile: (DriveItem) -> Unit = {},
+    onOpenFile: (DriveItem, ViewerContext) -> Unit = { _, _ -> },
     tabs: @Composable () -> Unit = {},
     viewModel: BrowserViewModel = koinViewModel(),
 ) {
@@ -26,7 +27,7 @@ fun ODVBrowserScreen(
 
     ODVCollectEffects(viewModel.effects) { effect ->
         when (effect) {
-            is BrowserEffect.OpenFile -> onOpenFile(effect.item)
+            is BrowserEffect.OpenFile -> onOpenFile(effect.item, effect.context)
         }
     }
     val searching = state.search != null

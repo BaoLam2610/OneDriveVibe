@@ -26,6 +26,8 @@ kotlin {
         androidMain.dependencies {
             // androidDataModule cần androidContext() để tạo tệp DataStore.
             implementation(libs.koin.android)
+            // Decoder GIF động (AN-06, Lát 5) đăng ký trong ImageLoader của androidDataModule.
+            implementation(libs.coil.gif)
         }
     }
 }
