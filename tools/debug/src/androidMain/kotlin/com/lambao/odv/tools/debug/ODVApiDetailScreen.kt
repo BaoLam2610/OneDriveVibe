@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,9 +44,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.lambao.odv.core.designsystem.component.ODVAppBar
-import com.lambao.odv.core.designsystem.component.ODVButton
-import com.lambao.odv.core.designsystem.component.ODVButtonSize
-import com.lambao.odv.core.designsystem.component.ODVButtonStyle
 import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSearchBar
@@ -122,7 +120,7 @@ private fun buildSections(request: DebugRequest, entry: HttpTrafficEntry): List<
 // sẽ ném TransactionTooLargeException làm sập app. Chừa dư vì ký tự UTF-8 có thể chiếm tới 3 byte.
 private const val MAX_COPY_CHARS = 200_000
 
-private fun copyToClipboard(context: Context, label: String, text: String) {
+internal fun copyToClipboard(context: Context, label: String, text: String) {
     val truncated = text.length > MAX_COPY_CHARS
     val clip = ClipData.newPlainText(label, if (truncated) text.take(MAX_COPY_CHARS) else text)
     // Có thể chứa token/secret: yêu cầu hệ thống không hiện bản xem trước nội dung vừa sao chép (Android 13+).
@@ -187,6 +185,13 @@ internal fun ODVApiDetailScreen(request: DebugRequest, maskTraffic: Boolean, onB
                     title = "${request.entry.method} ${request.entry.status ?: "—"}",
                     navigation = { ODVIconButton(ODVIcon.ArrowLeft, "Quay lại", onBack) },
                     actions = {
+                        // cURL của cả request (theo công tắc che), dựng ngoài luồng chính.
+                        DebugIconButton(
+                            R.drawable.ic_debug_curl,
+                            "Sao chép cURL",
+                            { scope.launch { copyCurl(context, request, maskTraffic) } },
+                            tint = ODVTheme.colors.ink,
+                        )
                         ODVIconButton(ODVIcon.Search, "Tìm kiếm", { searching = true })
                         ODVIconButton(ODVIcon.Close, "Đóng", onBack)
                     },
@@ -272,9 +277,16 @@ private fun LazyListScope.sectionItems(
 private fun SectionHeader(section: Section, expanded: Boolean, matches: Int, query: String, state: SectionState, onCopy: () -> Unit) {
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+    // Một hàng: bấm vào tiêu đề để mở/thu phần; bên phải là các icon thao tác (chỉ khi phần đang mở) thay cho 3 nút chữ.
+    Row(
+        Modifier.fillMaxWidth().padding(top = 8.dp, start = 16.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Row(
-            Modifier.fillMaxWidth().clickable { state.expanded = !state.expanded }.padding(horizontal = 16.dp, vertical = 6.dp),
+            Modifier
+                .weight(1f)
+                .heightIn(min = 48.dp)
+                .clickable { state.expanded = !state.expanded },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -283,29 +295,21 @@ private fun SectionHeader(section: Section, expanded: Boolean, matches: Int, que
                 section.title + if (query.isNotEmpty()) "  ($matches)" else "",
                 style = type.bodyStrong,
                 color = colors.ink,
-                modifier = Modifier.weight(1f),
             )
         }
         if (expanded) {
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                ODVButton("Sao chép", onCopy, style = ODVButtonStyle.Secondary, size = ODVButtonSize.Sm)
-                if (section.json != null) {
-                    ODVButton(
-                        "+ Mở hết",
-                        { state.defaultDepth = Int.MAX_VALUE; state.overrides.clear() },
-                        style = ODVButtonStyle.Ghost,
-                        size = ODVButtonSize.Sm,
-                    )
-                    ODVButton(
-                        "− Thu gọn",
-                        { state.defaultDepth = 1; state.overrides.clear() },
-                        style = ODVButtonStyle.Ghost,
-                        size = ODVButtonSize.Sm,
-                    )
-                }
+            DebugIconButton(R.drawable.ic_debug_copy, "Sao chép ${section.title}", onCopy)
+            if (section.json != null) {
+                DebugIconButton(
+                    R.drawable.ic_debug_unfold,
+                    "Mở hết",
+                    { state.defaultDepth = Int.MAX_VALUE; state.overrides.clear() },
+                )
+                DebugIconButton(
+                    R.drawable.ic_debug_fold,
+                    "Thu gọn",
+                    { state.defaultDepth = 1; state.overrides.clear() },
+                )
             }
         }
     }

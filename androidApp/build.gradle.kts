@@ -36,7 +36,7 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.core.viewmodel)
     implementation(libs.koin.compose.viewmodel)
-    // koinInject (cổng khóa trong ODVNavDisplay, ẩn nút bọ trong MainActivity): khai báo thẳng, không dựa vào transitive.
+    // koinInject (cổng khóa trong ODVNavDisplay, trạng thái bảo mật trong MainActivity): khai báo thẳng, không dựa vào transitive.
     implementation(libs.koin.compose)
 
     // Navigation 3 (ADR-0003)

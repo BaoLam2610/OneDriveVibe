@@ -16,7 +16,6 @@ import androidx.lifecycle.lifecycleScope
 import com.lambao.odv.core.designsystem.component.LocalODVTopOverlay
 import com.lambao.odv.core.designsystem.component.ODVSecureWindow
 import com.lambao.odv.core.designsystem.theme.ODVTheme
-import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.navigation.ODVNavDisplay
@@ -51,24 +50,19 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun ODVApp() {
     ODVTheme {
-        // Khi app đang khóa (ADR-0014) không vẽ nút bọ: nó mở được màn Debug mà không cần PIN, và màn Debug có thể
-        // chứa token. Cũng không cung cấp lớp phủ cho Dialog trên màn Khóa (Quên mã PIN).
         val security = koinInject<SecurityRepository>()
-        // collectAsState (không gắn lifecycle): xem ODVNavDisplay, tránh lộ vài khung hình cũ khi mở lại sau lúc bị khóa.
-        val lockState by security.lockState.collectAsState()
         val isProtected by security.isProtected.collectAsState()
-        // Chỉ khi đã biết chắc là mở khóa: lúc Unknown (khởi động nguội) chưa biết app có khóa hay không nên chưa hiện.
-        val showDebug = lockState == LockState.Unlocked
         // Android 12 trở xuống không có API ẩn riêng ảnh ở danh sách app gần đây nên dùng FLAG_SECURE toàn cửa sổ khi bảo mật
         // BẬT (đánh đổi: mất chụp màn hình trong app, chấp nhận theo ADR-0014). Android 13+ xử lý ở MainActivity.onCreate.
         ODVSecureWindow(enabled = isProtected && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU)
-        // Lớp phủ nổi của công cụ debug: Dialog/BottomSheet đọc LocalODVTopOverlay để vẽ lại nút bọ phía trên chúng. Bản
-        // release cung cấp null nên không có gì được vẽ (ADR-0012).
-        CompositionLocalProvider(LocalODVTopOverlay provides if (showDebug) DebugTools.topOverlay else null) {
+        // Nút bọ debug luôn hiện ở mọi nơi trong bản debug, kể cả màn Khóa, lúc chưa biết trạng thái khóa và trên Dialog
+        // (yêu cầu của người dùng, thay cho việc ẩn khi khóa ở ADR-0014; rủi ro ghi ở ADR-0013). Bản release: `topOverlay` là
+        // null và `Overlay()` là hàm rỗng nên không có gì được vẽ (ADR-0012).
+        // Dialog/BottomSheet đọc LocalODVTopOverlay để vẽ lại nút bọ phía trên chúng.
+        CompositionLocalProvider(LocalODVTopOverlay provides DebugTools.topOverlay) {
             Box(Modifier.fillMaxSize()) {
                 ODVNavDisplay()
-                // Nút bọ nổi chỉ có ở bản debug; bản release là hàm rỗng.
-                if (showDebug) DebugTools.Overlay()
+                DebugTools.Overlay()
             }
         }
     }

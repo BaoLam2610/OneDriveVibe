@@ -23,8 +23,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +51,7 @@ import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.network.maskedUrl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -228,23 +231,33 @@ private fun RequestRow(request: DebugRequest, matches: Int, query: String, maskT
         status < 500 -> colors.warning
         else -> colors.danger
     }
-    Column(
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    Row(
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(start = 16.dp, top = 6.dp, end = 4.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(entry.method, style = type.timecode, color = colors.ink)
-            Text(status?.toString() ?: (entry.error ?: "-"), style = type.timecode, color = statusColor)
-            Text("${entry.durationMs} ms", style = type.timecode, color = colors.inkMuted)
-            Text(formatTime(request.timeMs), style = type.timecode, color = colors.inkFaint)
-            if (query.isNotEmpty()) Text("$matches khớp", style = type.timecode, color = colors.voltText)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(entry.method, style = type.timecode, color = colors.ink)
+                Text(status?.toString() ?: (entry.error ?: "-"), style = type.timecode, color = statusColor)
+                Text("${entry.durationMs} ms", style = type.timecode, color = colors.inkMuted)
+                Text(formatTime(request.timeMs), style = type.timecode, color = colors.inkFaint)
+                if (query.isNotEmpty()) Text("$matches khớp", style = type.timecode, color = colors.voltText)
+            }
+            // URL có thể mang `sig`/`tempauth`: cũng phải che khi công tắc che đang bật (ADR-0013).
+            val url = remember(entry, maskTraffic) { if (maskTraffic) entry.maskedUrl() else entry.url }
+            Text(url, style = type.code, color = colors.inkMuted, maxLines = 2)
         }
-        // URL có thể mang `sig`/`tempauth`: cũng phải che khi công tắc che đang bật (ADR-0013).
-        val url = remember(entry, maskTraffic) { if (maskTraffic) entry.maskedUrl() else entry.url }
-        Text(url, style = type.code, color = colors.inkMuted, maxLines = 2)
+        // Sao chép nhanh cURL không cần mở chi tiết.
+        DebugIconButton(
+            R.drawable.ic_debug_curl,
+            "Sao chép cURL",
+            { scope.launch { copyCurl(context, request, maskTraffic) } },
+        )
     }
 }
 
