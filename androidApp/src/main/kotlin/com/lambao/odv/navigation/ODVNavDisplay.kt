@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,14 +53,20 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
         if (lockState == LockState.Locked && top != AppRoute.Lock) backStack.add(AppRoute.Lock)
     }
 
-    // Chưa biết chế độ: không vẽ gì để màn khôi phục từ back stack không lọt ra dù một khung hình.
-    if (lockState == LockState.Unknown) {
+    val covered = lockState == LockState.Locked && top != AppRoute.Lock
+    // NavDisplay đã được dựng ít nhất một lần chưa. Không lưu qua process death nên khởi động nguội luôn bắt đầu false.
+    var navShown by remember { mutableStateOf(false) }
+
+    // Chưa biết chế độ, hoặc khởi động nguội mà đang khóa: chưa dựng NavDisplay. Nếu dựng khi Lock chưa lên trên cùng thì
+    // Splash/Kết nối (màn dưới cùng của back stack) sẽ chạy và tự điều hướng khi config còn khóa, và lúc Lock trượt vào
+    // thì Splash nhấp nháy. Chờ Lock lên trên cùng rồi mới dựng, nên màn đầu tiên người dùng thấy là màn Khóa.
+    if (lockState == LockState.Unknown || (!navShown && covered)) {
         Box(modifier.fillMaxSize().background(ODVTheme.colors.bg))
         return
     }
-    // Đang khóa mà màn Khóa chưa lên trên cùng: giữ NavDisplay trong composition (để không mất rememberSaveable của màn
-    // đang xem) nhưng phủ kín nền lên trên.
-    val covered = lockState == LockState.Locked && top != AppRoute.Lock
+    if (!navShown) LaunchedEffect(Unit) { navShown = true }
+    // Đã dựng rồi mà bị khóa (xuống nền) trong khi màn Khóa chưa lên trên cùng: giữ NavDisplay trong composition (để không
+    // mất rememberSaveable của màn đang xem) nhưng phủ kín nền lên trên (`covered`).
 
     Box(modifier.fillMaxSize()) {
         NavDisplay(
