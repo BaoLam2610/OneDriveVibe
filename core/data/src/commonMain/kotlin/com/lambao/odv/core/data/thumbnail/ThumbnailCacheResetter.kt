@@ -23,6 +23,8 @@ internal class ThumbnailCacheResetter(
     override suspend fun reset() = clear()
 
     override suspend fun clear() {
+        // Trước khi xóa: tải đang bay thấy thế hệ đổi và không ghi lại ảnh cũ sau khi cache đã dọn.
+        ThumbnailCacheGeneration.advance()
         try {
             imageLoader.memoryCache?.clear()
             withContext(dispatchers.io) { imageLoader.diskCache?.clear() }

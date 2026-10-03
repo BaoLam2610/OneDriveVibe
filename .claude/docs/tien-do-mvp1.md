@@ -86,6 +86,7 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 - [x] Cache thumbnail (BN-01 → BN-03): Coil 3, `GraphThumbnailFetcher` (302 → URL đã ký, client không bearer), `DiskCache` 200 MB khóa id + `cTag` + cỡ, `ThumbnailCacheResetter` (`ConnectionResetter`). Tải tiếp phần dở (BN-03) chỉ cần cho ảnh gốc và PDF, làm ở Lát 5 và 7; giới hạn dung lượng nối với Cài đặt ở Lát 9
 - [x] Tab Thư viện (TV-01 → TV-06): `:feature:library` (MVI), Paging 3 + `room3-paging`, cột `sortDate` + index, lưới 4 cột dựng từ số mục theo ngày, tiêu đề nhóm dính (lớp phủ), chip lọc, cuộn nhanh theo tháng, banner offline/lập chỉ mục (kèm lối tắt sang Thư mục)/lỗi
+- Hoãn có chủ ý: TV-03 chỉ hiện loại đang bật trong Cài đặt (hiện đủ ba chip, làm ở Lát 9, CD-01); `ThumbnailCacheGeneration` chặn ghi cache sau khi xóa (review 2026-10-04). Còn lại, mức LOW: log API debug bị thumbnail làm tràn (`MAX_REQUESTS = 200`), nhãn "Hôm nay/Hôm qua" không đổi khi qua nửa đêm
 - [x] Tabs Thư mục / Thư viện (`ODVHomeScreen` trong `:androidApp`), thumbnail thật ở tab Thư mục (DS-01)
 - [ ] Review
 - [ ] Kiểm tay (thumbnail hiện và còn sau khi tắt mạng, đổi nội dung tệp thì thumbnail đổi, cuộn nhanh nhảy đúng tháng, lập chỉ mục lần đầu, Ngắt kết nối xóa cache)

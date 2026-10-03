@@ -49,6 +49,21 @@ internal fun ThumbnailSize.graphSize(scalePercent: Int): String = when (this) {
 internal fun thumbnailCacheKey(source: ThumbnailSource, scalePercent: Int): String =
     "thumb:${source.itemId}:${source.cTag ?: "-"}:${source.size.graphSize(scalePercent)}"
 
+/**
+ * Thế hệ của cache thumbnail, tăng mỗi lần cache bị xóa. Fetcher ghi nhớ giá trị lúc bắt đầu và bỏ ghi nếu nó đã đổi, nên
+ * request đang bay (hoặc đang chờ lượt tải) khi ngắt kết nối không ghi ảnh cũ vào cache vừa dọn. Không phụ thuộc thứ tự
+ * `reset()` và `wipe()` của `DisconnectUseCase`. Một cache cho cả tiến trình nên dùng object.
+ */
+internal object ThumbnailCacheGeneration {
+    @Volatile
+    var value: Int = 0
+        private set
+
+    fun advance() {
+        value++
+    }
+}
+
 /** Bản phát hành: luôn 100%, không có cách chỉnh. Bản debug ghi đè ở `DebugTools` (xem `ThumbnailQuality`). */
 internal object FixedThumbnailQuality : ThumbnailQuality {
     override fun scalePercent(): Int = 100
@@ -91,14 +106,15 @@ internal class GraphThumbnailFetcher(
     private val key = thumbnailCacheKey(source, scalePercent)
 
     override suspend fun fetch(): FetchResult {
+        val generation = ThumbnailCacheGeneration.value
         diskCache?.openSnapshot(key)?.let { return it.toResult() }
         val bytes = gate.withPermit {
             // Một ô khác có thể vừa tải xong cùng thumbnail trong lúc chờ lượt.
             diskCache?.openSnapshot(key)?.let { return it.toResult() }
             download()
         }
-        // Ngắt kết nối có thể chạy xong trong lúc đang tải: config đã bị xóa thì không ghi ảnh của tài khoản cũ vào cache (CD-05).
-        if (configs.load() !is AppResult.Success) throw ThumbnailUnavailableException(AppError.AppLocked)
+        // Cache vừa bị xóa (ngắt kết nối, xóa tay) trong lúc đang tải: bỏ ảnh này, không ghi lại ảnh của tài khoản cũ (CD-05).
+        if (ThumbnailCacheGeneration.value != generation) throw ThumbnailUnavailableException(AppError.AppLocked)
         return store(bytes) ?: SourceFetchResult(
             source = ImageSource(Buffer().write(bytes), options.fileSystem),
             mimeType = null,
