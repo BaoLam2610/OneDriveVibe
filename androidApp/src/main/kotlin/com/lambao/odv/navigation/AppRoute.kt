@@ -50,6 +50,19 @@ sealed interface AppRoute : NavKey {
         val sortDirection: String = SortDirection.Ascending.name,
         val libraryFilter: String? = null,
     ) : AppRoute
+
+    /**
+     * Màn xem video (VD). Cùng dạng tham số với [ImageViewer]: ngữ cảnh mở quyết định danh sách phát (VD-10), màn tự nạp
+     * các video cùng ngữ cảnh từ Room.
+     */
+    @Serializable
+    data class VideoPlayer(
+        val startItemId: String,
+        val folderId: String? = null,
+        val sortField: String = SortField.Name.name,
+        val sortDirection: String = SortDirection.Ascending.name,
+        val libraryFilter: String? = null,
+    ) : AppRoute
 }
 
 internal fun ViewerContext.toImageViewerRoute(startItemId: String): AppRoute.ImageViewer = when (this) {
@@ -57,7 +70,19 @@ internal fun ViewerContext.toImageViewerRoute(startItemId: String): AppRoute.Ima
     is ViewerContext.Library -> AppRoute.ImageViewer(startItemId, libraryFilter = filter.name)
 }
 
-internal fun AppRoute.ImageViewer.toViewerContext(): ViewerContext {
+internal fun AppRoute.ImageViewer.toViewerContext(): ViewerContext =
+    viewerContextOf(folderId, sortField, sortDirection, libraryFilter)
+
+internal fun ViewerContext.toVideoPlayerRoute(startItemId: String): AppRoute.VideoPlayer = when (this) {
+    is ViewerContext.Folder -> AppRoute.VideoPlayer(startItemId, folderId, sort.field.name, sort.direction.name)
+    is ViewerContext.Library -> AppRoute.VideoPlayer(startItemId, libraryFilter = filter.name)
+}
+
+internal fun AppRoute.VideoPlayer.toViewerContext(): ViewerContext =
+    viewerContextOf(folderId, sortField, sortDirection, libraryFilter)
+
+/** Dựng lại ngữ cảnh mở từ các trường của route (màn xem ảnh và video dùng chung dạng tham số). */
+private fun viewerContextOf(folderId: String?, sortField: String, sortDirection: String, libraryFilter: String?): ViewerContext {
     val filter = libraryFilter?.let { name -> LibraryFilter.entries.firstOrNull { it.name == name } }
     if (filter != null) return ViewerContext.Library(filter)
     return ViewerContext.Folder(

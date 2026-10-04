@@ -24,8 +24,9 @@ private fun buildDatabase(context: Context): OdvDatabase {
         // ADR-0007: BundledSQLiteDriver để cùng một bản SQLite trên mọi máy và sẵn sàng cho iOS (MVP2).
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        // Schema giữ version = 1 đến khi phát hành (ADR-0007) nên không viết Migration. Dữ liệu chỉ là bản sao của
-        // OneDrive nên mất cũng chỉ tốn một lần quét lại; đổi cột lúc dev không làm app crash.
+        // ADR-0015: trước khi phát hành không viết Migration; mỗi lần đổi schema chỉ cần TĂNG version ở OdvDatabase thì DB cũ
+        // bị xóa và quét lại (dữ liệu chỉ là bản sao của OneDrive). Cờ này KHÔNG cứu được trường hợp đổi cột mà quên tăng
+        // version (Room báo lỗi hash). Từ lần phát hành đầu tiên phải bỏ cờ này và viết Migration.
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }

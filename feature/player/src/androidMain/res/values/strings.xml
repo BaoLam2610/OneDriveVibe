@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
+         Câu chữ lấy từ đặc tả (VD-15) và bảng Trình xem trong gallery; mục đánh dấu [mới] chưa có trong thiết kế, cần duyệt. -->
+
+    <!-- Thanh trên và cụm điều khiển (VD-02, VD-10, VD-21) -->
+    <string name="player_back">Quay lại</string> <!-- [mới] -->
+    <string name="player_previous">Video trước</string>
+    <string name="player_next">Video kế tiếp</string>
+    <string name="player_rewind">Tua lùi %1$d giây</string>
+    <string name="player_forward">Tua tới %1$d giây</string>
+    <string name="player_play">Phát</string>
+    <string name="player_pause">Tạm dừng</string>
+    <string name="player_replay">Phát lại</string>
+    <string name="player_loading">Đang tải video</string>
+
+    <!-- Gợn chạm đúp (VD-03) -->
+    <string name="player_seek_forward">+%1$d giây</string>
+    <string name="player_seek_back">-%1$d giây</string>
+
+    <!-- Thanh tua, đọc bằng lời cho TalkBack (VD-02) -->
+    <string name="player_seek_description">Vị trí phát</string>
+    <string name="player_seek_value">%1$s trên %2$s</string>
+    <string name="player_spoken_hms">%1$d giờ %2$d phút %3$d giây</string> <!-- [mới] -->
+    <string name="player_spoken_ms">%1$d phút %2$d giây</string> <!-- [mới] -->
+    <string name="player_spoken_s">%1$d giây</string> <!-- [mới] -->
+
+    <!-- Tốc độ phát (VD-05) -->
+    <string name="player_speed_title">Tốc độ phát</string>
+    <string name="player_speed_description">Tốc độ phát %1$s</string>
+    <string name="player_speed_normal">%1$s · Bình thường</string>
+    <string name="player_close">Đóng</string> <!-- [mới] -->
+
+    <!-- Lỗi (VD-15, VD-16) -->
+    <string name="player_error_unsupported_title">Thiết bị không hỗ trợ phát định dạng này</string>
+    <string name="player_error_unsupported_body">Máy chưa có bộ giải mã cho tệp này.</string>
+    <string name="player_error_removed_title">Video này không còn trên OneDrive</string> <!-- [mới] -->
+    <string name="player_error_removed_body">Tệp có thể đã bị xóa. Hãy quay lại và làm mới danh sách.</string> <!-- [mới] -->
+    <string name="player_error_other_title">Không phát được video này</string> <!-- [mới] -->
+    <string name="player_error_other_body">Đã có lỗi khi tải video. Hãy thử lại.</string> <!-- [mới] -->
+    <string name="player_error_network_title">Mất kết nối mạng</string>
+    <string name="player_error_network_body">Đã phát hết phần đã tải trước. Kiểm tra mạng rồi nhấn Tiếp tục.</string>
+    <string name="player_error_network_hint">Nút bật lại khi có mạng</string>
+    <string name="player_resume">Tiếp tục</string>
+    <string name="player_retry">Thử lại</string> <!-- [mới] -->
+</resources>

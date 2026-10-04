@@ -6,12 +6,18 @@ import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
 
 /**
- * CSDL Room KMP, nguồn dữ liệu duy nhất cho UI (ADR-0007). `version = 1` giữ nguyên đến khi phát hành: đổi cột trong
- * lúc dev thì bản đã cài tự tạo lại (xem `fallbackToDestructiveMigration` ở bản Android) và đồng bộ lại từ OneDrive.
+ * CSDL Room KMP, nguồn dữ liệu duy nhất cho UI (ADR-0007). **Mỗi lần đổi schema (thêm/bỏ/đổi cột, bảng, index) phải tăng
+ * `version`** (ADR-0015): Room so mã băm schema chứ không so số version, nên đổi cột mà quên tăng thì bản đã cài crash
+ * "Room cannot verify the data integrity". Trước khi phát hành, tăng version là đủ: bản Android có
+ * `fallbackToDestructiveMigration` nên DB cũ bị xóa và đồng bộ lại từ OneDrive. Sau khi phát hành phải viết `Migration`.
+ *
+ * Lịch sử version:
+ * - 1: bảng `drive_item`, `sync_state` (Lát 3, 4).
+ * - 2: `drive_item` thêm 5 cột facet video cho bảng thông tin (Lát 6, VD-17).
  */
 @Database(
     entities = [DriveItemEntity::class, SyncStateEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @ConstructedBy(OdvDatabaseConstructor::class)

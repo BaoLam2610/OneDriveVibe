@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":feature:browser"))
     implementation(project(":feature:library"))
     implementation(project(":feature:imageviewer"))
+    implementation(project(":feature:player"))
 
     // SingletonImageLoader.Factory ở MainApplication (Lát 4): AsyncImage lấy ImageLoader từ Koin qua singleton này.
     implementation(libs.coil.singleton)

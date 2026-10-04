@@ -17,6 +17,8 @@ import com.lambao.odv.feature.auth.authModule
 import com.lambao.odv.feature.browser.browserModule
 import com.lambao.odv.feature.imageviewer.imageViewerModule
 import com.lambao.odv.feature.library.libraryModule
+import com.lambao.odv.feature.player.androidPlayerModule
+import com.lambao.odv.feature.player.playerModule
 import com.lambao.odv.security.AppLockController
 import com.lambao.odv.security.CurrentActivityHolder
 import org.koin.android.ext.android.inject
@@ -44,7 +46,7 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
             modules(
                 listOf(
                     appModule, securityModule, networkModule, databaseModule, dataModule, androidDataModule, authModule,
-                    browserModule, libraryModule, imageViewerModule,
+                    browserModule, libraryModule, imageViewerModule, playerModule, androidPlayerModule,
                 ) + DebugTools.koinModules,
             )
         }

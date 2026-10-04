@@ -23,6 +23,8 @@ androidx-sqlite = "2.7.1"
 coil = "3.6.3"
 # Telephoto (Lát 5): zoom/pan + subsampling ảnh lớn. Bản 0.19.0 dùng với Coil 3; kiểm tra khớp Coil/Compose khi build.
 telephoto = "0.19.0"
+# Media3 (Lát 6): phát video stream + SimpleCache. Chưa tra bản mới nhất; kiểm tra khi build (media3-ui-compose cần từ 1.6 trở lên).
+androidx-media3 = "1.8.0"
 composeMultiplatform = "1.12.1"
 koin = "4.2.2"
 kermit = "2.2.0"
@@ -109,6 +111,10 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 # Telephoto (Lát 5): ZoomableAsyncImage cho Coil 3, chạm đúp/pinch/pan, subsampling theo vùng (AN-02, AN-06).
 telephoto-zoomable-image-coil3 = { module = "me.saket.telephoto:zoomable-image-coil3", version.ref = "telephoto" }
+
+# Media3 (Lát 6): ExoPlayer + SimpleCache + DataSource cho video (VD-11, VD-14); ui-compose cho PlayerSurface (TextureView để zoom ở 6b).
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
+androidx-media3-uiCompose = { module = "androidx.media3:media3-ui-compose", version.ref = "androidx-media3" }
 
 # DataStore Preferences (kế hoạch MVP1 mục 3). Gắn vào module cần lưu cài đặt khi dùng tới.
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }

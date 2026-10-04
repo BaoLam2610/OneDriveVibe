@@ -103,12 +103,12 @@ internal class DriveRepositoryImpl(
             .distinctUntilChanged()
             .flowOn(dispatchers.default)
 
-    override fun observeViewerImages(context: ViewerContext): Flow<List<DriveItem>> = when (context) {
+    override fun observeViewerItems(context: ViewerContext, kind: MediaKind): Flow<List<DriveItem>> = when (context) {
         is ViewerContext.Folder -> observeChildren(context.folderId, context.sort)
-            .map { items -> items.filter { it.mediaKind == MediaKind.Image } }
+            .map { items -> items.filter { it.mediaKind == kind } }
         is ViewerContext.Library -> {
-            // Bộ lọc "Tất cả" gồm cả video; màn xem ảnh chỉ vuốt giữa các ảnh (video có màn riêng, Lát 6).
-            val kinds = context.filter.kinds.filter { it == MediaKind.Image }.map { it.name }
+            // Bộ lọc "Tất cả" gồm cả ảnh lẫn video; mỗi màn xem chỉ chuyển giữa các mục cùng loại với nó.
+            val kinds = context.filter.kinds.filter { it == kind }.map { it.name }
             if (kinds.isEmpty()) {
                 flowOf(emptyList())
             } else {

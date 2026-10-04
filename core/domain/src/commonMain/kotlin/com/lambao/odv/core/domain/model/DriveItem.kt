@@ -27,6 +27,20 @@ data class DriveItem(
     val createdAt: Long? = null,
     /** Dấu nhận biết nội dung đổi, để làm mới thumbnail và cache (BN-02, Lát 4). */
     val cTag: String? = null,
+    /** Thông tin kỹ thuật của video (VD-17); chỉ có khi mục đến từ Room hoặc API và Graph có trả. */
+    val video: VideoMeta? = null,
+)
+
+/** Độ phân giải, tốc độ khung hình, bitrate và codec của video cho bảng thông tin (VD-17). Trường nào không có thì null và UI ẩn dòng. */
+data class VideoMeta(
+    val width: Int? = null,
+    val height: Int? = null,
+    /** Khung hình/giây, có thể lẻ (28,83). */
+    val frameRate: Double? = null,
+    /** Bit/giây. */
+    val bitRate: Long? = null,
+    /** Mã codec Graph trả, ví dụ `H264`, `AV01`. */
+    val fourCc: String? = null,
 )
 
 private val imageExtensions = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif")

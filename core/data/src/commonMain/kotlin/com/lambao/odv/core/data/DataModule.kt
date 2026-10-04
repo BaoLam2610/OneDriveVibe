@@ -3,6 +3,7 @@ package com.lambao.odv.core.data
 import com.lambao.odv.core.data.config.ConfigRepositoryImpl
 import com.lambao.odv.core.data.config.ConfigVault
 import com.lambao.odv.core.data.drive.DriveRepositoryImpl
+import com.lambao.odv.core.data.drive.VideoStreamRepositoryImpl
 import com.lambao.odv.core.data.security.LockoutStore
 import com.lambao.odv.core.data.security.SecurityRepositoryImpl
 import com.lambao.odv.core.data.sync.SyncCoordinator
@@ -12,6 +13,7 @@ import com.lambao.odv.core.domain.repository.ConnectionResetter
 import com.lambao.odv.core.domain.repository.DriveRepository
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.domain.repository.SyncRepository
+import com.lambao.odv.core.domain.repository.VideoStreamRepository
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
 import org.koin.dsl.binds
 import org.koin.dsl.module
@@ -28,6 +30,8 @@ val dataModule = module {
     // BiometricAuthenticator do :androidApp cung cấp (cần Activity để hiện BiometricPrompt).
     single<SecurityRepository> { SecurityRepositoryImpl(get(), get(), get(), get(), get(), get()) }
     single<DriveRepository> { DriveRepositoryImpl(get(), get(), get(), get()) }
+    // Link phát video (Lát 6, VD-14): trình phát hỏi lại mỗi lần mở kết nối vì link chỉ sống khoảng 1 giờ.
+    single<VideoStreamRepository> { VideoStreamRepositoryImpl(get(), get()) }
     // Đồng bộ delta về Room (ADR-0007). SyncCoordinator vừa là SyncRepository vừa là ConnectionResetter của Room nên
     // DisconnectUseCase (getAll) tự thấy nó mà không sửa chỗ khác.
     single { SyncEngine(get(), get(), get(), ::currentTimeMillis) }

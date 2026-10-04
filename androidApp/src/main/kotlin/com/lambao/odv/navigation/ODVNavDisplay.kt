@@ -30,6 +30,7 @@ import com.lambao.odv.feature.auth.connect.ODVConnectScreen
 import com.lambao.odv.feature.auth.lock.ODVLockScreen
 import com.lambao.odv.feature.auth.security.ODVSecuritySetupScreen
 import com.lambao.odv.feature.imageviewer.ODVImageViewerScreen
+import com.lambao.odv.feature.player.ODVPlayerScreen
 import com.lambao.odv.ui.home.ODVHomeScreen
 import com.lambao.odv.ui.splash.ODVSplashScreen
 import org.koin.compose.koinInject
@@ -130,9 +131,14 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                 entry<AppRoute.Home> {
                     ODVHomeScreen(
                         onOpenFile = { item, viewerContext ->
-                            // Guard: chạm đôi ô ảnh không được đẩy hai màn xem. Video (Lát 6) và PDF (Lát 7) chưa có màn xem.
-                            if (item.mediaKind == MediaKind.Image && backStack.lastOrNull() !is AppRoute.ImageViewer) {
-                                backStack.add(viewerContext.toImageViewerRoute(item.id))
+                            // Guard: chạm đôi một ô không được đẩy hai màn xem. PDF (Lát 7) chưa có màn xem.
+                            val top = backStack.lastOrNull()
+                            if (top !is AppRoute.ImageViewer && top !is AppRoute.VideoPlayer) {
+                                when (item.mediaKind) {
+                                    MediaKind.Image -> backStack.add(viewerContext.toImageViewerRoute(item.id))
+                                    MediaKind.Video -> backStack.add(viewerContext.toVideoPlayerRoute(item.id))
+                                    else -> Unit
+                                }
                             }
                         },
                     )
@@ -142,6 +148,14 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                         context = route.toViewerContext(),
                         startItemId = route.startItemId,
                         // Nút quay lại và "không còn ảnh nào" cùng đi qua đây; chỉ bỏ khi nó đang ở trên cùng (không bỏ nhầm màn Khóa).
+                        onBack = { if (backStack.size > 1 && backStack.lastOrNull() == route) backStack.removeLastOrNull() },
+                    )
+                }
+                entry<AppRoute.VideoPlayer> { route ->
+                    ODVPlayerScreen(
+                        context = route.toViewerContext(),
+                        startItemId = route.startItemId,
+                        // Cùng cách đóng với màn xem ảnh: chỉ bỏ khi nó đang ở trên cùng (không bỏ nhầm màn Khóa).
                         onBack = { if (backStack.size > 1 && backStack.lastOrNull() == route) backStack.removeLastOrNull() },
                     )
                 }

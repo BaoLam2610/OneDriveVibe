@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: English. Keys match values/strings.xml; entries marked [mới] are new and need review. -->
+
+    <string name="player_back">Back</string> <!-- [mới] -->
+    <string name="player_previous">Previous video</string>
+    <string name="player_next">Next video</string>
+    <string name="player_rewind">Rewind %1$d seconds</string>
+    <string name="player_forward">Forward %1$d seconds</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_replay">Replay</string>
+    <string name="player_loading">Loading video</string>
+
+    <string name="player_seek_forward">+%1$d s</string>
+    <string name="player_seek_back">-%1$d s</string>
+
+    <string name="player_seek_description">Playback position</string>
+    <string name="player_seek_value">%1$s of %2$s</string>
+    <string name="player_spoken_hms">%1$d hours %2$d minutes %3$d seconds</string> <!-- [mới] -->
+    <string name="player_spoken_ms">%1$d minutes %2$d seconds</string> <!-- [mới] -->
+    <string name="player_spoken_s">%1$d seconds</string> <!-- [mới] -->
+
+    <string name="player_speed_title">Playback speed</string>
+    <string name="player_speed_description">Playback speed %1$s</string>
+    <string name="player_speed_normal">%1$s · Normal</string>
+    <string name="player_close">Close</string> <!-- [mới] -->
+
+    <string name="player_error_unsupported_title">This device can\'t play this format</string>
+    <string name="player_error_unsupported_body">This device has no decoder for this file.</string>
+    <string name="player_error_removed_title">This video is no longer on OneDrive</string> <!-- [mới] -->
+    <string name="player_error_removed_body">The file may have been deleted. Go back and refresh the list.</string> <!-- [mới] -->
+    <string name="player_error_other_title">Can\'t play this video</string> <!-- [mới] -->
+    <string name="player_error_other_body">Something went wrong while loading the video. Try again.</string> <!-- [mới] -->
+    <string name="player_error_network_title">No internet connection</string>
+    <string name="player_error_network_body">Everything that was buffered has played. Check your connection, then tap Resume.</string>
+    <string name="player_error_network_hint">The button turns on when you\'re back online</string>
+    <string name="player_resume">Resume</string>
+    <string name="player_retry">Try again</string> <!-- [mới] -->
+</resources>

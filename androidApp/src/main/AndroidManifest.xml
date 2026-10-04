@@ -25,7 +25,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OneDriveVibe"
         tools:targetApi="33">
+        <!--
+            VD-19: xoay màn hình không được làm gián đoạn video. Tự xử lý các thay đổi cấu hình liên quan tới xoay/kích thước để
+            Activity không bị tạo lại (Compose tự thích ứng qua LocalConfiguration). Cố ý KHÔNG có `locale` và `uiMode`: đổi ngôn
+            ngữ trong app (ADR-0011, CD-10) và đổi giao diện Sáng/Tối vẫn cần tạo lại Activity.
+        -->
         <activity
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden"
             android:exported="true"
             android:name=".MainActivity">
             <intent-filter>

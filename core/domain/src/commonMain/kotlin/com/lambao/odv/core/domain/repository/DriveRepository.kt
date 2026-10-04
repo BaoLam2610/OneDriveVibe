@@ -58,11 +58,12 @@ interface DriveRepository {
     fun libraryDays(filter: LibraryFilter, utcOffsetMs: Long): Flow<List<LibraryDay>>
 
     /**
-     * Các ảnh để vuốt trước/sau trong màn xem ảnh (AN-03), đúng thứ tự người dùng thấy ở nơi mở: tab Thư mục theo
-     * [ViewerContext.Folder.sort], tab Thư viện mới nhất trước. Chỉ gồm ảnh (video và PDF có màn xem riêng). Đọc từ Room
-     * nên dùng được offline, tự phát lại khi đồng bộ đổi dữ liệu (ảnh bị xóa trên OneDrive tự biến mất, DS-06).
+     * Các mục loại [kind] để chuyển trước/sau trong màn xem: vuốt ảnh (AN-03) hoặc danh sách phát video (VD-10), đúng thứ
+     * tự người dùng thấy ở nơi mở: tab Thư mục theo [ViewerContext.Folder.sort], tab Thư viện mới nhất trước và chỉ trong
+     * bộ lọc đang chọn. Mỗi màn xem chỉ lấy đúng loại của nó (ảnh không lẫn video, PDF có màn riêng). Đọc từ Room nên
+     * dùng được offline, tự phát lại khi đồng bộ đổi dữ liệu (mục bị xóa trên OneDrive tự biến mất, DS-06).
      */
-    fun observeViewerImages(context: ViewerContext): Flow<List<DriveItem>>
+    fun observeViewerItems(context: ViewerContext, kind: MediaKind): Flow<List<DriveItem>>
 
     /**
      * Kích thước ảnh và thiết bị chụp cho bảng thông tin (AN-05). Gọi Graph theo yêu cầu cho một ảnh (không lưu Room),

@@ -23,7 +23,7 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 - **Koin 4.x** (ADR-0004), không dùng Hilt.
 - **Xác thực Client Credentials** (ADR-0005): 4 trường Tenant ID, Client ID, Client Secret, UPN; gọi qua `/users/{UPN}/drive`. Không MSAL, không OneDrive cá nhân.
 - **Graph REST qua Ktor** (ADR-0006), kotlinx.serialization. Không dùng Graph SDK, Retrofit.
-- **Offline-first** (ADR-0007): Room KMP (`BundledSQLiteDriver`) là nguồn dữ liệu duy nhất cho UI, đồng bộ bằng delta query. Schema giữ `version = 1` đến khi phát hành.
+- **Offline-first** (ADR-0007): Room KMP (`BundledSQLiteDriver`) là nguồn dữ liệu duy nhất cho UI, đồng bộ bằng delta query. **Mỗi lần đổi schema (thêm/bỏ/đổi cột, bảng, index) phải tăng `version` ở `OdvDatabase`** và ghi vào "Lịch sử version" (ADR-0015); quên là crash "Room cannot verify the data integrity". Trước phát hành: tăng version là đủ (có `fallbackToDestructiveMigration`); từ bản phát hành đầu: bắt buộc viết Migration.
 - **Bảo mật config** (ADR-0008): AES-GCM, khóa dẫn xuất từ PIN bằng Argon2id + Android Keystore. **Không lưu PIN, không lưu hash PIN.** Access token chỉ giữ trong bộ nhớ.
 - **Không viết test tự động** (ADR-0009): không unit test, UI test, coverage. Đừng thêm junit, kotlin-test, MockK, Turbine, Kover.
 - **Đa ngôn ngữ VI + EN** (ADR-0011): chuỗi trong Android `res/values` (VI, mặc định) và `res/values-en`. `domain` và `data` không chứa chuỗi hiển thị; lỗi là kiểu có cấu trúc (`AppError` → `UiError`).

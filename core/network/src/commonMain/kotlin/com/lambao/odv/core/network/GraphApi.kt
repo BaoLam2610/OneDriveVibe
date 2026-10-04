@@ -1,5 +1,6 @@
 package com.lambao.odv.core.network
 
+import co.touchlab.kermit.Logger
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.network.dto.ChildrenPageDto
@@ -226,6 +227,38 @@ class GraphApi internal constructor(
         } catch (e: Throwable) {
             AppResult.Failure(e.toAppError())
         }
+    }
+
+    /**
+     * Link tải đã ký sẵn của [itemId] (`@microsoft.graph.downloadUrl`, sống khoảng 1 giờ) để đưa vào trình phát video
+     * (VD-11, VD-14). Gọi lại hàm này là cách lấy link mới khi link cũ hết hạn: không lấy lại access token.
+     * Link chứa `tempauth` nên coi là bí mật: không ghi log (CH-06). Chỉ nhận `https` vì giá trị do máy chủ trả.
+     * Tệp đã bị xóa trả `AppError.Http(404, ...)`.
+     */
+    suspend fun getDownloadUrl(credentials: GraphCredentials, itemId: String): AppResult<String> {
+        // Dùng `/content` (302 → link ký ở header Location) thay vì `$select=@microsoft.graph.downloadUrl`: cách này đã chạy ở
+        // ảnh gốc (`downloadContent`), còn `$select` có chứa `@` đã trả phản hồi không có link khi thử ở Lát 6 (log 2026-10-04).
+        // Không gọi link ở đây: chỉ đọc header, nên không tải byte nào của video.
+        val response = when (
+            val result = authorizedGet(credentials, acceptRedirect = true) {
+                url {
+                    appendDrivePath(credentials)
+                    appendPathSegments("items", itemId, "content")
+                }
+            }
+        ) {
+            is AppResult.Success -> result.value
+            is AppResult.Failure -> return result
+        }
+        val status = response.status.value
+        val location = response.headers[HttpHeaders.Location]
+        // Chỉ nhận chuyển hướng tới HTTPS: URL do máy chủ trả nên coi là không tin cậy.
+        if (status !in 300..399 || location == null || !location.startsWith("https://")) {
+            // Không ghi giá trị: link chứa tempauth (CH-06). Chỉ ghi mã trạng thái và có/không có Location.
+            Logger.withTag("GraphApi").w { "getDownloadUrl: không có chuyển hướng hợp lệ (HTTP $status, Location=${location != null})" }
+            return AppResult.Failure(AppError.Unknown())
+        }
+        return AppResult.Success(location)
     }
 
     private suspend fun HttpResponse.readBytes(): AppResult<ByteArray> =

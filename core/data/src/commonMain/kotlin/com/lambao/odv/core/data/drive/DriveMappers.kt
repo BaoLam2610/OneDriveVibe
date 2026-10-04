@@ -5,6 +5,7 @@ import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.ImageInfo
 import com.lambao.odv.core.domain.model.MediaKind
+import com.lambao.odv.core.domain.model.VideoMeta
 import com.lambao.odv.core.domain.model.libraryDateOf
 import com.lambao.odv.core.domain.model.mediaKindOf
 import com.lambao.odv.core.network.GraphCredentials
@@ -37,6 +38,11 @@ internal fun DriveItemDto.toEntity(scanId: Long): DriveItemEntity? {
         mediaKind = if (isFolder) null else mediaKindOf(name, file?.mimeType)?.name,
         childCount = folder?.childCount,
         durationMs = video?.duration,
+        videoWidth = video?.width,
+        videoHeight = video?.height,
+        videoFrameRate = video?.frameRate,
+        videoBitRate = video?.bitRate,
+        videoFourCc = video?.fourCC,
         modifiedAt = modifiedAt,
         cTag = cTag,
         takenAt = takenAt,
@@ -70,7 +76,16 @@ internal fun DriveItemEntity.toDomain() = DriveItem(
     takenAt = takenAt,
     createdAt = createdAt,
     cTag = cTag,
+    video = videoMetaOf(videoWidth, videoHeight, videoFrameRate, videoBitRate, videoFourCc),
 )
+
+/** Gom các cột video thành [VideoMeta]; null khi không có cột nào (mục không phải video, hoặc Graph không trả facet). */
+private fun videoMetaOf(width: Int?, height: Int?, frameRate: Double?, bitRate: Long?, fourCc: String?): VideoMeta? =
+    if (width == null && height == null && frameRate == null && bitRate == null && fourCc == null) {
+        null
+    } else {
+        VideoMeta(width, height, frameRate, bitRate, fourCc)
+    }
 
 /**
  * Null cho mục không duyệt được: sổ tay OneNote (`package`) có `folder` nhưng không phải thư mục thật.
@@ -87,5 +102,6 @@ internal fun DriveItemDto.toDomain(): DriveItem? {
         mediaKind = if (isFolder) null else mediaKindOf(name, file?.mimeType),
         childCount = folder?.childCount,
         durationMs = video?.duration,
+        video = video?.let { videoMetaOf(it.width, it.height, it.frameRate, it.bitRate, it.fourCC) },
     )
 }

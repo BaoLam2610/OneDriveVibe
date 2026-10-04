@@ -72,9 +72,19 @@ data class FolderFacetDto(val childCount: Int? = null)
 @Serializable
 data class FileFacetDto(val mimeType: String? = null)
 
-/** `duration` tính bằng mili giây. */
+/**
+ * `duration` tính bằng mili giây. Các trường còn lại chỉ để hiện ở bảng thông tin video (VD-17); facet `video` đã nằm
+ * trọn trong `$select` của delta và `children` nên đọc thêm không tốn request. `frameRate` có thể là số lẻ (28.83).
+ */
 @Serializable
-data class VideoFacetDto(val duration: Long? = null)
+data class VideoFacetDto(
+    val duration: Long? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val frameRate: Double? = null,
+    val bitRate: Long? = null,
+    val fourCC: String? = null,
+)
 
 @Serializable
 data class PackageFacetDto(val type: String? = null)

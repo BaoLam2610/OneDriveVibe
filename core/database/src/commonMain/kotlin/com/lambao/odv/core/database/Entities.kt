@@ -27,6 +27,12 @@ data class DriveItemEntity(
     val mediaKind: String?,
     val childCount: Int?,
     val durationMs: Long?,
+    // Facet video cho bảng thông tin (VD-17, dùng được khi offline); null với mục không phải video hoặc Graph không trả.
+    val videoWidth: Int?,
+    val videoHeight: Int?,
+    val videoFrameRate: Double?,
+    val videoBitRate: Long?,
+    val videoFourCc: String?,
     /** Epoch mili giây. */
     val modifiedAt: Long?,
     val cTag: String?,

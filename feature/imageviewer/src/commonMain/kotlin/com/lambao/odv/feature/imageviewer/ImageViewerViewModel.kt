@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.repository.DriveRepository
 import com.lambao.odv.core.domain.repository.OriginalImageRef
@@ -55,7 +56,7 @@ class ImageViewerViewModel(
 
     private fun observeImages() {
         viewModelScope.launch {
-            drives.observeViewerImages(context).collect { images ->
+            drives.observeViewerItems(context, MediaKind.Image).collect { images ->
                 if (images.isEmpty()) {
                     setState { copy(images = emptyList(), isLoaded = true) }
                     if (!closed) {
