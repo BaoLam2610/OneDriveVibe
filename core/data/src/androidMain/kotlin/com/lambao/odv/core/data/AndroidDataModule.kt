@@ -16,6 +16,7 @@ import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import com.lambao.odv.core.data.original.FileOriginalImageRepository
 import com.lambao.odv.core.data.prefs.DataStoreBrowserPreferences
+import com.lambao.odv.core.data.prefs.DataStorePlayerPreferences
 import com.lambao.odv.core.data.thumbnail.FixedThumbnailQuality
 import com.lambao.odv.core.data.thumbnail.GraphThumbnailFetcherFactory
 import com.lambao.odv.core.data.thumbnail.ThumbnailCacheResetter
@@ -24,6 +25,7 @@ import com.lambao.odv.core.domain.repository.BrowserPreferences
 import com.lambao.odv.core.domain.repository.ConfigRepository
 import com.lambao.odv.core.domain.repository.ConnectionResetter
 import com.lambao.odv.core.domain.repository.OriginalImageRepository
+import com.lambao.odv.core.domain.repository.PlayerPreferences
 import com.lambao.odv.core.domain.repository.ThumbnailCache
 import com.lambao.odv.core.domain.repository.ThumbnailQuality
 import com.lambao.odv.core.network.GraphApi
@@ -40,7 +42,9 @@ import org.koin.dsl.module
  * [dataModule]. Tệp `browser.preferences_pb` nằm trong bộ nhớ riêng của app, không sao lưu (CH-04).
  */
 val androidDataModule = module {
-    single<BrowserPreferences> { DataStoreBrowserPreferences(createBrowserDataStore(androidContext())) }
+    single<BrowserPreferences> { DataStoreBrowserPreferences(createPreferencesDataStore(androidContext(), "browser")) }
+    // Chế độ phát và khung hình của màn xem video (Lát 6b, VD-06, VD-20): tệp DataStore riêng (mỗi tệp chỉ được một instance).
+    single<PlayerPreferences> { DataStorePlayerPreferences(createPreferencesDataStore(androidContext(), "player")) }
     // Trình tải thumbnail (Lát 4). Cache đĩa nằm ở cacheDir nên không được sao lưu (CH-04) và hệ thống có thể dọn khi
     // thiếu chỗ; mất thì chỉ phải tải lại.
     // Tỉ lệ chất lượng mặc định 100%; bản debug ghi đè bằng giá trị chỉnh ở màn Debug (DebugTools, module Koin đứng sau).
@@ -88,10 +92,10 @@ private fun createImageLoader(
         .crossfade(true)
         .build()
 
-private fun createBrowserDataStore(context: Context): DataStore<Preferences> =
+private fun createPreferencesDataStore(context: Context, name: String): DataStore<Preferences> =
     PreferenceDataStoreFactory.create(
         // Tệp hỏng thì bắt đầu lại từ mặc định; đây chỉ là tùy chọn hiển thị.
         corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-        produceFile = { context.preferencesDataStoreFile("browser") },
+        produceFile = { context.preferencesDataStoreFile(name) },
     )

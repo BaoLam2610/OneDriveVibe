@@ -14,6 +14,7 @@ val playerModule = module {
             startItemId = params.get(),
             drives = get(),
             network = get(),
+            prefs = get(),
         )
     }
 }

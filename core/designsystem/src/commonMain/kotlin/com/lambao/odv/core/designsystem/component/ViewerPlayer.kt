@@ -22,7 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -215,7 +217,19 @@ fun ODVViewerBottomBar(
     Column(modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp)) {
         Box(Modifier.padding(end = 8.dp)) { seekBar() }
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(timeText, modifier = Modifier.weight(1f), style = ODVTheme.typography.timecode, color = ODVMediaColors.onMedia)
+            // Thời gian luôn một dòng ("1:17:50 / 1:26:02"): không xuống dòng, và nếu hàng nút chiếm hết chỗ thì thu nhỏ chữ dần
+            // (tối thiểu 70%) cho vừa thay vì bị cắt hoặc rớt dòng. Mốc co lại về 1 khi độ dài chữ đổi (qua giờ, đổi video).
+            val style = ODVTheme.typography.timecode
+            var shrink by remember(timeText.length) { mutableFloatStateOf(1f) }
+            Text(
+                timeText,
+                modifier = Modifier.weight(1f),
+                style = style.copy(fontSize = style.fontSize * shrink),
+                color = ODVMediaColors.onMedia,
+                maxLines = 1,
+                softWrap = false,
+                onTextLayout = { if (it.hasVisualOverflow && shrink > 0.7f) shrink *= 0.92f },
+            )
             actions()
         }
     }

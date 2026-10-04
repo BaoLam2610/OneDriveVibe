@@ -31,6 +31,56 @@
     <string name="player_speed_normal">%1$s · Bình thường</string>
     <string name="player_close">Đóng</string> <!-- [mới] -->
 
+    <!-- Thanh trên: thông tin, khóa thao tác (VD-17, VD-08) -->
+    <string name="player_info">Thông tin tệp</string>
+    <string name="player_lock">Khóa thao tác</string>
+
+    <!-- Chế độ phát và khung hình (VD-20, VD-06) -->
+    <string name="player_mode_no_repeat">Không lặp</string>
+    <string name="player_mode_auto_next">Tự phát tiếp</string>
+    <string name="player_mode_repeat_one">Lặp một video</string>
+    <string name="player_mode_repeat_list">Lặp danh sách</string>
+    <string name="player_mode_description">Chế độ phát: %1$s</string>
+    <string name="player_fit_fit">Vừa khung</string>
+    <string name="player_fit_crop">Cắt đầy</string>
+    <string name="player_fit_stretch">Kéo giãn</string>
+    <string name="player_fit_description">Khung hình: %1$s</string>
+    <string name="player_rotate">Xoay màn hình</string>
+
+    <!-- Vuốt độ sáng / âm lượng (VD-04) -->
+    <string name="player_brightness_description">Độ sáng %1$d%%</string>
+    <string name="player_volume_description">Âm lượng %1$d%%</string>
+    <string name="player_hud_percent">%1$d%%</string>
+
+    <!-- Khóa thao tác (VD-08) -->
+    <string name="player_locked">Đã khóa thao tác</string>
+    <string name="player_unlock_description">Giữ để mở khóa thao tác</string>
+    <string name="player_unlock_hint">Giữ để mở khóa</string>
+    <string name="player_unlock_sub_hint">Mọi thao tác chạm khác đang bị chặn</string>
+
+    <!-- Zoom (VD-18) -->
+    <string name="player_zoom_reset">Đặt lại zoom</string>
+    <string name="player_zoom_hint">Hai ngón để zoom, một ngón để kéo</string> <!-- [mới] -->
+
+    <!-- Tự phát tiếp (VD-13) -->
+    <string name="player_next_up">Tiếp theo sau %1$d giây</string>
+    <string name="player_next_up_cancel">Hủy</string>
+
+    <!-- Bảng thông tin tệp (VD-17) -->
+    <string name="player_info_title">Thông tin tệp</string>
+    <string name="player_info_name">Tên tệp</string>
+    <string name="player_info_size">Dung lượng</string>
+    <string name="player_info_duration">Thời lượng</string>
+    <string name="player_info_resolution">Độ phân giải</string>
+    <string name="player_info_frame_rate">Tốc độ khung hình</string>
+    <string name="player_info_fps">%1$s fps</string>
+    <string name="player_info_codec">Codec</string>
+    <string name="player_info_bitrate">Bitrate</string>
+    <string name="player_info_created">Ngày tạo</string> <!-- [mới] -->
+    <string name="player_info_modified">Ngày sửa gần nhất</string>
+    <string name="player_info_folder">Thư mục</string>
+    <string name="player_info_root" translatable="false">OneDrive</string>
+
     <!-- Lỗi (VD-15, VD-16) -->
     <string name="player_error_unsupported_title">Thiết bị không hỗ trợ phát định dạng này</string>
     <string name="player_error_unsupported_body">Máy chưa có bộ giải mã cho tệp này.</string>

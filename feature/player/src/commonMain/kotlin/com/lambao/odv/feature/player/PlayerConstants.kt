@@ -99,6 +99,37 @@ internal object PlayerConstants {
     /** Gợn chạm đúp và bộ cộng dồn "+20 giây" sống thêm chừng này sau lần chạm cuối. */
     const val SEEK_FEEDBACK_MS = 700L
 
+    // --- Lát 6b ---
+
+    /** Đếm ngược trước khi tự chuyển video (VD-13, `duration.autoplay-countdown`). */
+    const val AUTOPLAY_COUNTDOWN_MS = 5000
+
+    /** Viên thuốc nhãn đổi khung hình / chế độ phát hiện chừng này (VD-06, VD-20, `duration.toast-label`). */
+    const val LABEL_MS = 2000L
+
+    /** HUD độ sáng/âm lượng ở lại chừng này sau lần vuốt cuối. */
+    const val HUD_HOLD_MS = 800L
+
+    /**
+     * Độ nhạy vuốt độ sáng/âm lượng (VD-04): vuốt hết chiều cao khung đổi chừng này lần toàn dải, nên 2,2 nghĩa là vuốt chừng 45%
+     * chiều cao là đi hết dải. (Bản đầu là 1,2 và người dùng thấy chậm.)
+     */
+    const val SWIPE_FULL_RANGE_RATIO = 2.2f
+
+    /** Vuốt dọc bắt đầu sát mép hoặc sát đáy thì bỏ qua: mép là cử chỉ Back của hệ thống, đáy là thanh tua và cử chỉ về Home. */
+    const val SWIPE_EDGE_DEAD_ZONE_DP = 24
+    const val SWIPE_BOTTOM_DEAD_ZONE_DP = 56
+
+    /** Vuốt từ mép trên kéo thanh trạng thái/điều hướng của hệ thống xuống (khi đang ẩn) thì không được coi là vuốt độ sáng/âm lượng. */
+    const val SWIPE_TOP_DEAD_ZONE_DP = 56
+
+    /** Zoom tối đa (VD-18), và ngưỡng coi là đang zoom (sai số làm tròn của cử chỉ). */
+    const val MAX_ZOOM = 4f
+    const val ZOOMED_THRESHOLD = 1.02f
+
+    /** Khi khóa thao tác (VD-08), gợi ý "Giữ để mở khóa" hiện chừng này sau mỗi lần chạm rồi mờ đi. */
+    const val LOCK_HINT_MS = 3000L
+
     // --- Log ---
 
     /** Id Graph dài và khó đọc; log chỉ ghi chừng này ký tự đầu. */

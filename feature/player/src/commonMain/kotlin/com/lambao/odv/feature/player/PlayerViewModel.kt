@@ -3,9 +3,13 @@ package com.lambao.odv.feature.player
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.domain.model.MediaKind
+import com.lambao.odv.core.domain.model.PlayMode
 import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.repository.DriveRepository
 import com.lambao.odv.core.domain.repository.NetworkMonitor
+import com.lambao.odv.core.domain.repository.PlayerPreferences
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -18,29 +22,111 @@ class PlayerViewModel(
     startItemId: String,
     private val drives: DriveRepository,
     private val network: NetworkMonitor,
+    private val prefs: PlayerPreferences,
 ) : BaseMviViewModel<PlayerState, PlayerIntent, PlayerEffect>(PlayerState(currentId = startItemId)) {
 
     private var closed = false
+    private var infoJob: Job? = null
 
     init {
         observeVideos()
         observeNetwork()
+        observePreferences()
     }
 
     override fun onIntent(intent: PlayerIntent) {
         when (intent) {
             PlayerIntent.Previous -> step(-1)
             PlayerIntent.Next -> step(1)
+            PlayerIntent.Advance -> advance()
+            is PlayerIntent.VideoFailed -> skipFailed(intent.itemId)
             is PlayerIntent.SavePosition -> setState { copy(resumePositionMs = intent.positionMs, autoPlay = intent.playing) }
             is PlayerIntent.SetSpeed -> setState { copy(speed = intent.speed) }
+            PlayerIntent.CyclePlayMode -> cyclePlayMode()
+            PlayerIntent.CycleVideoFit -> cycleVideoFit()
+            PlayerIntent.ShowInfo -> showInfo()
+            PlayerIntent.HideInfo -> {
+                infoJob?.cancel()
+                setState { copy(info = null) }
+            }
         }
     }
 
-    /** Chuyển video thủ công, không phụ thuộc chế độ phát (VD-10); video mới phát từ đầu. */
+    /**
+     * Chuyển video thủ công, không phụ thuộc chế độ phát (VD-10); video mới phát từ đầu. Chế độ Lặp danh sách thì quay vòng.
+     * Chuyển tay là lựa chọn của người xem nên xóa danh sách video lỗi để họ có thể thử lại.
+     */
     private fun step(delta: Int) {
         setState {
-            val target = videos.getOrNull(videos.indexOfFirst { it.id == currentId } + delta) ?: return@setState this
+            val index = videos.indexOfFirst { it.id == currentId }
+            val target = if (playMode == PlayMode.RepeatList && videos.size > 1) {
+                videos[(index + delta).mod(videos.size)]
+            } else {
+                videos.getOrNull(index + delta)
+            } ?: return@setState this
+            copy(currentId = target.id, resumePositionMs = 0L, autoPlay = true, failedIds = emptySet())
+        }
+    }
+
+    /** Video chạy hết và đếm ngược xong (VD-13): sang video kế tiếp theo chế độ phát. Không có thì giữ nguyên (đã ở cuối). */
+    private fun advance() {
+        setState {
+            val target = nextInQueue ?: return@setState this
+            if (target.id == currentId) return@setState this
             copy(currentId = target.id, resumePositionMs = 0L, autoPlay = true)
+        }
+    }
+
+    /**
+     * VD-15: video không phát được. Ở Tự phát tiếp và Lặp danh sách thì bỏ qua và chuyển sang video chưa lỗi kế tiếp; nếu mọi
+     * video đều đã lỗi thì dừng ở thẻ lỗi (không có video nào để chuyển tới nên không lặp vô hạn). Chế độ khác chỉ ghi nhận.
+     */
+    private fun skipFailed(itemId: String) {
+        setState {
+            if (itemId != currentId) return@setState this
+            val failed = failedIds + itemId
+            val target = nextPlayable(failed)
+            playerLog.w { "[VM] video lỗi id=${itemId.shortId()}, bỏ qua sang ${target?.id?.shortId() ?: "không còn video nào"}" }
+            if (target == null) {
+                copy(failedIds = failed)
+            } else {
+                copy(failedIds = failed, currentId = target.id, resumePositionMs = 0L, autoPlay = true)
+            }
+        }
+    }
+
+    private fun cyclePlayMode() {
+        val next = currentState.playMode.next()
+        playerLog.i { "[VM] chế độ phát → $next" }
+        setState { copy(playMode = next, failedIds = emptySet()) }
+        viewModelScope.launch { prefs.setPlayMode(next) }
+    }
+
+    private fun cycleVideoFit() {
+        val next = currentState.videoFit.next()
+        playerLog.i { "[VM] khung hình → $next" }
+        setState { copy(videoFit = next) }
+        viewModelScope.launch { prefs.setVideoFit(next) }
+    }
+
+    /** Mở bảng thông tin (VD-17): dòng từ Room hiện ngay, đường dẫn thư mục nạp thêm. Không gọi API nên dùng được khi offline. */
+    private fun showInfo() {
+        val item = currentState.current ?: return
+        infoJob?.cancel()
+        setState { copy(info = PlayerInfo(item)) }
+        infoJob = viewModelScope.launch {
+            try {
+                val path = drives.folderPathOf(item.id)
+                setState {
+                    val shown = info
+                    if (shown != null && shown.item.id == item.id) copy(info = shown.copy(folderPath = path)) else this
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Lỗi đọc Room: bảng chỉ thiếu dòng thư mục, không đáng làm sập app (viewModelScope không có handler).
+                playerLog.w { "[VM] không đọc được đường dẫn thư mục: ${e.javaClass.simpleName}" }
+            }
         }
     }
 
@@ -75,5 +161,10 @@ class PlayerViewModel(
         viewModelScope.launch {
             network.isOnline.collect { online -> setState { copy(isOnline = online) } }
         }
+    }
+
+    private fun observePreferences() {
+        viewModelScope.launch { prefs.playMode.collect { mode -> setState { copy(playMode = mode) } } }
+        viewModelScope.launch { prefs.videoFit.collect { fit -> setState { copy(videoFit = fit) } } }
     }
 }

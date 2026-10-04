@@ -26,6 +26,48 @@
     <string name="player_speed_normal">%1$s · Normal</string>
     <string name="player_close">Close</string> <!-- [mới] -->
 
+    <string name="player_info">File info</string>
+    <string name="player_lock">Lock controls</string>
+
+    <string name="player_mode_no_repeat">No repeat</string>
+    <string name="player_mode_auto_next">Autoplay next</string>
+    <string name="player_mode_repeat_one">Repeat one</string>
+    <string name="player_mode_repeat_list">Repeat list</string>
+    <string name="player_mode_description">Play mode: %1$s</string>
+    <string name="player_fit_fit">Fit</string>
+    <string name="player_fit_crop">Fill</string>
+    <string name="player_fit_stretch">Stretch</string>
+    <string name="player_fit_description">Aspect: %1$s</string>
+    <string name="player_rotate">Rotate screen</string>
+
+    <string name="player_brightness_description">Brightness %1$d%%</string>
+    <string name="player_volume_description">Volume %1$d%%</string>
+    <string name="player_hud_percent">%1$d%%</string>
+
+    <string name="player_locked">Controls locked</string>
+    <string name="player_unlock_description">Hold to unlock controls</string>
+    <string name="player_unlock_hint">Hold to unlock</string>
+    <string name="player_unlock_sub_hint">All other touches are blocked</string>
+
+    <string name="player_zoom_reset">Reset zoom</string>
+    <string name="player_zoom_hint">Two fingers to zoom, one finger to pan</string> <!-- [mới] -->
+
+    <string name="player_next_up">Up next in %1$d seconds</string>
+    <string name="player_next_up_cancel">Cancel</string>
+
+    <string name="player_info_title">File info</string>
+    <string name="player_info_name">File name</string>
+    <string name="player_info_size">Size</string>
+    <string name="player_info_duration">Duration</string>
+    <string name="player_info_resolution">Resolution</string>
+    <string name="player_info_frame_rate">Frame rate</string>
+    <string name="player_info_fps">%1$s fps</string>
+    <string name="player_info_codec">Codec</string>
+    <string name="player_info_bitrate">Bitrate</string>
+    <string name="player_info_created">Created</string> <!-- [mới] -->
+    <string name="player_info_modified">Last modified</string>
+    <string name="player_info_folder">Folder</string>
+
     <string name="player_error_unsupported_title">This device can\'t play this format</string>
     <string name="player_error_unsupported_body">This device has no decoder for this file.</string>
     <string name="player_error_removed_title">This video is no longer on OneDrive</string> <!-- [mới] -->

@@ -37,6 +37,7 @@ internal fun tapZoneOf(x: Float, width: Float): TapZone {
  */
 @Composable
 internal fun Modifier.playerGestures(
+    enabled: Boolean,
     onTap: (zone: TapZone, position: Offset) -> Unit,
     onDoubleTap: (zone: TapZone, position: Offset) -> Unit,
     onBoostStart: () -> Unit,
@@ -46,6 +47,8 @@ internal fun Modifier.playerGestures(
     val doubleTap by rememberUpdatedState(onDoubleTap)
     val boostStart by rememberUpdatedState(onBoostStart)
     val boostEnd by rememberUpdatedState(onBoostEnd)
+    // Không thêm/bớt modifier theo `enabled` (đổi cấu trúc chuỗi modifier hủy cử chỉ đang chạy của các bộ nhận khác): kiểm tra ở đầu mỗi cử chỉ.
+    val active by rememberUpdatedState(enabled)
     return pointerInput(Unit) {
         // Thời điểm và vùng của lần chạm trước còn đang chờ ghép thành chạm đúp; -1 là không có.
         var lastTapUptime = -1L
@@ -53,6 +56,13 @@ internal fun Modifier.playerGestures(
         awaitEachGesture {
             // requireUnconsumed: nút điều khiển đã nhận chạm của nó thì khung không được coi là chạm nền.
             val down = awaitFirstDown(requireUnconsumed = true)
+            if (!active) {
+                // Tắt (đang khóa thao tác): nút "Giữ để mở khóa" nằm trên khung này và không nuốt lần chạm xuống, nên không được để
+                // nó bị coi là chạm/giữ lâu của khung (giữ lâu = phát nhanh 2x). Chờ nhả tay rồi bỏ.
+                lastTapUptime = -1L
+                waitForUpOrCancellation()
+                return@awaitEachGesture
+            }
             var up: PointerInputChange? = null
             val finishedBeforeLongPress = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                 up = waitForUpOrCancellation()

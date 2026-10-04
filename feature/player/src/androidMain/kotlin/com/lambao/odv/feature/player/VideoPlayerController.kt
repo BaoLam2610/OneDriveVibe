@@ -114,10 +114,15 @@ internal class VideoPlayerController(
     }
 
     /** Nút giữa: hết video thì phát lại từ đầu (VD-21), còn lại đổi qua lại phát/tạm dừng. */
+    /** Phát lại từ đầu (VD-21, Lặp một video VD-13): không hỏi "Xem tiếp từ mm:ss?". */
+    fun replay() {
+        player.seekTo(0L)
+        player.play()
+    }
+
     fun togglePlay(): Boolean = when {
         playbackState == Player.STATE_ENDED -> {
-            player.seekTo(0L)
-            player.play()
+            replay()
             true
         }
         player.playWhenReady -> {
