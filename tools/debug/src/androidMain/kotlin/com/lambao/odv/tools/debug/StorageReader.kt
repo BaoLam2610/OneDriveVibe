@@ -27,6 +27,9 @@ private val sensitiveKey = Regex("secret|token|pin|password|passwd|credential|ke
  * Đọc chỉ-đọc dữ liệu cục bộ của app cho tab "Lưu trữ" (ADR-0012): SharedPreferences, cơ sở dữ liệu SQLite (Room) và
  * tên các tệp trong kho bí mật. Không giải mã kho bí mật; giá trị prefs có khóa nghi là bí mật bị che.
  */
+/** Tên tệp DB của Room trong `:core:database` (`DATABASE_NAME`); `:tools:debug` không phụ thuộc module đó nên lặp lại hằng số. */
+private const val ROOM_DATABASE_PREFIX = "odv.db"
+
 internal object StorageReader {
 
     fun read(context: Context): StorageSnapshot {
@@ -54,6 +57,13 @@ internal object StorageReader {
 
     private fun dump(context: Context, name: String): DatabaseDump {
         val file = context.getDatabasePath(name)
+        // Không mở DB của Room (`odv.db`) bằng SQLite của hệ thống: Room dùng `BundledSQLiteDriver` (bản SQLite riêng trong app), mà
+        // hai bản SQLite cùng mở một tệp trong một tiến trình là lỗi hỏng DB đã biết (khóa tệp POSIX bị nhả khi bản kia đóng kết nối,
+        // https://sqlite.org/howtocorrupt.html mục 2.2). Mở tab này rồi quét/đồng bộ đã gây "file is not a database" và crash
+        // `libsqliteJni`. Chỉ báo dung lượng tệp.
+        if (name.startsWith(ROOM_DATABASE_PREFIX)) {
+            return DatabaseDump(name, file.length(), emptyList(), error = "đã tắt (mở bằng SQLite hệ thống làm hỏng DB của Room)")
+        }
         return try {
             SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
                 val tables = db.rawQuery(

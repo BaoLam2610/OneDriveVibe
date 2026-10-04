@@ -93,6 +93,9 @@ sealed interface PlayerIntent {
     /** Video [itemId] không phát được: tự phát tiếp sẽ bỏ qua nó (VD-15). */
     data class VideoFailed(val itemId: String) : PlayerIntent
 
+    /** Có video phát được: xóa danh sách video lỗi để lỗi tạm thời (5xx, mạng chập chờn) không bị bỏ qua mãi trong phiên. */
+    data object ClearFailed : PlayerIntent
+
     /**
      * Giao diện sắp bị gỡ: ghi lại vị trí và có đang phát không ([playing]) để dựng lại đúng chỗ và phát tiếp nếu đang phát.
      * Xuống nền thì player đã bị dừng trước đó nên [playing] là false: màn Khóa che lên rồi mở khóa vẫn nằm chờ tạm dừng.

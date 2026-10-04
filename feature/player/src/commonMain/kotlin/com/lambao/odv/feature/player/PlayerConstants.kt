@@ -99,6 +99,17 @@ internal object PlayerConstants {
     /** Gợn chạm đúp và bộ cộng dồn "+20 giây" sống thêm chừng này sau lần chạm cuối. */
     const val SEEK_FEEDBACK_MS = 700L
 
+    // --- Mở màn và lấy link ---
+
+    /**
+     * Chờ video được chạm xuất hiện trong danh sách phát (Room) chừng này khi mở màn. Lúc quét lần đầu chưa xong (TM-07) Room có thể
+     * chưa có thư mục hoặc mới có một phần; hết thời gian mà vẫn không có thì đóng màn thay vì phát nhầm video khác.
+     */
+    const val START_WAIT_MS = 15_000L
+
+    /** Lấy link phát tối đa chừng này: Graph bị throttle thì `HttpRequestRetry` có thể chờ tới 60 giây và giữ luồng tải của ExoPlayer. */
+    const val URL_FETCH_TIMEOUT_MS = 15_000L
+
     // --- Lát 6b ---
 
     /** Đếm ngược trước khi tự chuyển video (VD-13, `duration.autoplay-countdown`). */

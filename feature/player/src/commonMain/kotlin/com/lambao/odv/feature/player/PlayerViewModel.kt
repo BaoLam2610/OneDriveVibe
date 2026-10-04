@@ -10,6 +10,7 @@ import com.lambao.odv.core.domain.repository.NetworkMonitor
 import com.lambao.odv.core.domain.repository.PlayerPreferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -19,7 +20,7 @@ import kotlinx.coroutines.launch
  */
 class PlayerViewModel(
     private val context: ViewerContext,
-    startItemId: String,
+    private val startItemId: String,
     private val drives: DriveRepository,
     private val network: NetworkMonitor,
     private val prefs: PlayerPreferences,
@@ -28,8 +29,12 @@ class PlayerViewModel(
     private var closed = false
     private var infoJob: Job? = null
 
+    /** Video được chạm đã xuất hiện trong danh sách phát chưa. Trước đó không chọn video thay thế (xem [observeVideos]). */
+    private var startFound = false
+
     init {
         observeVideos()
+        closeIfStartNeverAppears()
         observeNetwork()
         observePreferences()
     }
@@ -40,6 +45,7 @@ class PlayerViewModel(
             PlayerIntent.Next -> step(1)
             PlayerIntent.Advance -> advance()
             is PlayerIntent.VideoFailed -> skipFailed(intent.itemId)
+            PlayerIntent.ClearFailed -> setState { if (failedIds.isEmpty()) this else copy(failedIds = emptySet()) }
             is PlayerIntent.SavePosition -> setState { copy(resumePositionMs = intent.positionMs, autoPlay = intent.playing) }
             is PlayerIntent.SetSpeed -> setState { copy(speed = intent.speed) }
             PlayerIntent.CyclePlayMode -> cyclePlayMode()
@@ -134,6 +140,13 @@ class PlayerViewModel(
         viewModelScope.launch {
             drives.observeViewerItems(context, MediaKind.Video).collect { videos ->
                 playerLog.d { "[VM] danh sách phát ${videos.size} video, ngữ cảnh=${context::class.simpleName}" }
+                if (!startFound) {
+                    // Chưa thấy video được chạm: quét lần đầu có thể chưa xong (TM-07, danh sách ở màn trước lấy từ API) nên Room chưa
+                    // có thư mục, hoặc mới có một phần. Không đóng màn và không phát video khác; chờ nó xuất hiện (xem
+                    // closeIfStartNeverAppears cho trường hợp không bao giờ có).
+                    if (videos.none { it.id == startItemId }) return@collect
+                    startFound = true
+                }
                 if (videos.isEmpty()) {
                     setState { copy(videos = emptyList(), isLoaded = true) }
                     if (!closed) {
@@ -153,6 +166,18 @@ class PlayerViewModel(
                         copy(videos = videos, isLoaded = true, currentId = replacement.id, resumePositionMs = 0L, autoPlay = true)
                     }
                 }
+            }
+        }
+    }
+
+    /** Hết [PlayerConstants.START_WAIT_MS] mà video được chạm vẫn không có trong Room (đã bị xóa, hoặc không thuộc ngữ cảnh): đóng màn. */
+    private fun closeIfStartNeverAppears() {
+        viewModelScope.launch {
+            delay(PlayerConstants.START_WAIT_MS)
+            if (!startFound && !closed) {
+                playerLog.w { "[VM] không thấy video id=${startItemId.shortId()} trong danh sách phát sau ${PlayerConstants.START_WAIT_MS}ms, đóng màn" }
+                closed = true
+                sendEffect(PlayerEffect.Close)
             }
         }
     }

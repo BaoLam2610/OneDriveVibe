@@ -83,6 +83,7 @@ import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.PlayMode
 import com.lambao.odv.core.domain.model.ThumbnailSize
+import com.lambao.odv.core.domain.model.ThumbnailSource
 import com.lambao.odv.core.domain.model.VideoFit
 import com.lambao.odv.core.domain.model.thumbnailSource
 import kotlinx.coroutines.CancellationException
@@ -173,7 +174,19 @@ internal fun ODVPlayerContent(
         val current = state.current
         val ready = controller
         when {
-            current == null -> if (!state.isLoaded) CenterSpinner()
+            current == null -> if (!state.isLoaded) {
+                // Đang chờ video được chạm xuất hiện trong Room (quét lần đầu chưa xong): chưa biết cTag nên dùng thumbnail theo id
+                // làm ảnh nền cho đỡ màn đen, kèm vòng quay.
+                state.currentId?.let { id ->
+                    AsyncImage(
+                        model = ThumbnailSource(id, cTag = null, size = ThumbnailSize.Viewer),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                CenterSpinner()
+            }
             creationFailed -> {
                 ODVViewerError(
                     title = stringResource(R.string.player_error_other_title),
@@ -295,6 +308,8 @@ private fun PlayerLayer(
             onIntent(PlayerIntent.VideoFailed(current.id))
         }
     }
+    // Có video phát được thì quên các video từng lỗi: lỗi tạm thời (5xx, mạng chập chờn) không bị bỏ qua mãi trong phiên.
+    LaunchedEffect(isPlaying) { if (isPlaying) onIntent(PlayerIntent.ClearFailed) }
     val queued = state.nextInQueue
     val showNextUp = ended && queued != null && !countdownCancelled && failure == null
 

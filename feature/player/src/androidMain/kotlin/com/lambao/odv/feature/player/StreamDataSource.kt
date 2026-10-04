@@ -13,6 +13,7 @@ import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.repository.VideoStreamRepository
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -59,7 +60,11 @@ internal class StreamUrlProvider(
         }
         playerLog.i { "[Url] lấy link id=$id refresh=$refresh" }
         val startedAt = now()
-        return when (val result = runBlocking { streams.streamUrl(itemId) }) {
+        // Có thời hạn: Graph bị throttle thì retry có thể chờ rất lâu và giữ luồng tải của ExoPlayer. Hết hạn thì coi như mất mạng
+        // (AppError.Timeout → PlayerFailure.Network, có nút Tiếp tục) thay vì treo.
+        val fetched = runBlocking { withTimeoutOrNull(PlayerConstants.URL_FETCH_TIMEOUT_MS) { streams.streamUrl(itemId) } }
+            ?: AppResult.Failure(AppError.Timeout)
+        return when (val result = fetched) {
             is AppResult.Success -> {
                 playerLog.i { "[Url] có link id=$id sau ${now() - startedAt}ms (độ dài ${result.value.length})" }
                 result.value.also { entries[itemId] = Entry(it, now()) }

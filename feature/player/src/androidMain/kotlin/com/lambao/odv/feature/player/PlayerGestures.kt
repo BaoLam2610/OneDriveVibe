@@ -71,6 +71,12 @@ internal fun Modifier.playerGestures(
 
             if (!finishedBeforeLongPress) {
                 lastTapUptime = -1L
+                // Ngón đã trượt quá ngưỡng (đang vuốt dọc chậm chỉnh độ sáng/âm lượng, hoặc zoom) thì không phải giữ lâu: không bật 2x.
+                val moved = currentEvent.changes.firstOrNull { it.id == down.id }
+                if (moved == null || (moved.position - down.position).getDistance() > viewConfiguration.touchSlop) {
+                    waitForUpOrCancellation()
+                    return@awaitEachGesture
+                }
                 boostStart()
                 // Chờ nhả tay (hoặc cử chỉ bị hủy) rồi trả tốc độ.
                 waitForUpOrCancellation()
