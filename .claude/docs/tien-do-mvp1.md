@@ -6,7 +6,7 @@ Ký hiệu: `[ ]` chưa làm · `[~]` đang làm · `[x]` xong, chờ kiểm tay
 
 ## Đang làm
 
-- **Lát:** 6, Xem video: 6a người dùng đã thử máy thấy ổn, 6b code xong chờ build và kiểm tay (2026-10-04); Lát 5 đã build và thử máy ổn, chờ kiểm tay (Lát 4 xong; Lát 0, 1, 2, 3, D code xong, còn chờ kiểm tay)
+- **Lát:** 6, Xem video: đã build, kiểm tay OK và review xong (2026-10-04), còn các mục review chưa sửa (H1, M1 đến M4) ghi ở Lát 6; kế tiếp là Lát 7 (PDF) hoặc sửa H1 trước; Lát 5 đã build và thử máy ổn, chờ kiểm tay (Lát 4 xong; Lát 0, 1, 2, 3, D code xong, còn chờ kiểm tay)
 - **Bước:** Lát 5 đã viết xong toàn bộ code (2026-10-04), chưa build màn xem. Lát 4 đã build, review hai đợt và được người dùng kiểm tay thành công. Lưu ý khi đổi schema Room: **phải tăng `version` ở `OdvDatabase`** (ADR-0015, thay quy tắc "giữ `version = 1`" cũ vốn sai: đổi cột mà không tăng version thì Room báo lỗi hash và crash)
 - **Ghi chú:** Lát 1 chia 1a (network, security, domain, data), 1b (màn Kết nối, Thiết lập bảo mật), 1c (tab Thư mục, điều hướng khởi động). Kết nối xong lưu config ngay (chế độ thiết bị) rồi hiện hộp thoại K6; màn Thiết lập bảo mật đã có luồng đặt PIN (Lát 2, bước 8). Chuỗi đánh dấu [mới] trong strings.xml cần duyệt.
 
@@ -118,8 +118,8 @@ Quyết định (2026-10-04, sau review docs): Media3 ExoPlayer + `SimpleCache` 
 - Giới hạn 6b đã biết: (a) bảng thông tin chỉ có một dòng "Ngày tạo" thay cho "Ngày tải lên" và "Ngày tạo gốc" vì Room chỉ lưu một ngày tạo (tách ra cần thêm cột và tăng version, ADR-0015); (b) Cắt đầy / Kéo giãn ở hướng dọc cho khung lấp cả màn (thiết kế ghi khung 16:9 cho Vừa khung, chưa đối chiếu được với mockup V13); (c) zoom bị cắt trong khung video (ở hướng dọc Vừa khung là khung 16:9); (d) bước tua 10 giây và nối Cài đặt (Lát 9) vẫn là hằng số; (e) VD-12 "Xem tiếp từ mm:ss?" là Lát 8
 - Việc thêm so với 6a để 6b đỡ phải đổi schema lần nữa: Room thêm 5 cột video (`videoWidth`, `videoHeight`, `videoFrameRate`, `videoBitRate`, `videoFourCc`) và `DriveItem.video`. Schema Room lên `version = 2` (ADR-0015): bản đã cài tự xóa DB cũ và quét lại, không cần xóa dữ liệu tay (nếu vẫn dính lỗi hash do đã chạy bản trước khi tăng version thì xóa dữ liệu app một lần)
 - Chưa làm, ghi lại: dọn cache video khi tệp bị xóa qua đồng bộ (DS-06), nối giới hạn cache (2 GB) với Cài đặt (Lát 9), nạp trước video kế tiếp, picture-in-picture. Thanh tua: thiết kế ghi vùng chạm 24 dp nhưng CLAUDE.md bắt buộc ≥ 48 dp; đang theo thiết kế (token `ODVSize.seekTouch`), chờ quyết định
-- [ ] Review
-- [ ] Kiểm tay
+- [x] Review Lát 6 (2026-10-04, đọc code): không CRITICAL, 1 HIGH, 5 MEDIUM, vài LOW; APPROVE kèm góp ý, **chưa sửa**. HIGH: (H1) mở video khi quét lần đầu chưa xong thì màn tự đóng (danh sách rỗng) hoặc phát nhầm video đầu danh sách nếu Room mới có một phần, `PlayerViewModel.observeVideos` chỉ nên chọn video thay thế khi video đang xem biến mất giữa chừng, còn lúc đầu thì chờ `startItemId` xuất hiện. MEDIUM: (M1) `PlayerLayer` ~330 dòng/`ODVPlayerContent.kt` ~700 dòng cần tách lớp cử chỉ và trạng thái giao diện; (M2) `failedIds` không hồi phục trong phiên (lỗi tạm loại `Other` bị bỏ qua mãi), nên xóa khi có video READY hoặc mạng trở lại; (M3) giữ lâu 2x có thể bật nhầm khi vuốt dọc chậm, cần kiểm tra chưa vượt `touchSlop`; (M4) `StreamUrlProvider` `runBlocking` không có thời hạn (retry Graph tới 60 giây giữ luồng tải), nên `withTimeout` ~15 giây; (M5) thanh tua 24 dp so với quy tắc ≥ 48 dp; (M6) bảng thông tin thiếu hai ngày tách riêng. LOW: số dp tự đặt trong `ODVPlayerContent`, đơn vị bitrate là chuỗi cứng, icon viên thuốc 14 dp so với thiết kế 18 dp, log lỗi dựng player ghi `e.message`, log API debug còn `Location` (ADR-0013)
+- [v] Kiểm tay (2026-10-04, người dùng xác nhận "tất cả kiểm thử đều OK" sau các vòng chỉnh 6a/6b)
 
 ## Lát 7: Xem PDF
 
