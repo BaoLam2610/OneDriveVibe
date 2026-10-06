@@ -4,13 +4,14 @@ import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
-import com.lambao.odv.core.domain.repository.ConfigRepository
-import com.lambao.odv.core.domain.repository.DriveRepository
+import com.lambao.odv.core.domain.model.SavedConnection
+import com.lambao.odv.core.domain.usecase.connection.CheckSavedConnectionUseCase
+import com.lambao.odv.core.domain.usecase.connection.ConnectUseCase
 import kotlinx.coroutines.launch
 
 class ConnectViewModel(
-    private val drives: DriveRepository,
-    private val configs: ConfigRepository,
+    private val connect: ConnectUseCase,
+    private val checkSavedConnection: CheckSavedConnectionUseCase,
 ) : BaseMviViewModel<ConnectState, ConnectIntent, ConnectEffect>(ConnectState()) {
 
     // Chỉ log kết quả, tuyệt đối không log giá trị các ô hay config (CH-06).
@@ -21,7 +22,7 @@ class ConnectViewModel(
         // nhưng State này thì không. Config đã lưu (KN-08) nên vào thẳng Danh sách. Phải giải mã được: Splash cũng đưa
         // người dùng về Kết nối khi config còn nhưng hỏng, lúc đó phải ở lại form để kết nối lại.
         viewModelScope.launch {
-            if (configs.hasConfig() && configs.load() is AppResult.Success) {
+            if (checkSavedConnection() == SavedConnection.Usable) {
                 sendEffect(ConnectEffect.NavigateToHome)
             }
         }
@@ -34,7 +35,7 @@ class ConnectViewModel(
                 copy(revealed = if (intent.field in revealed) revealed - intent.field else revealed + intent.field)
             }
             ConnectIntent.HideAll -> setState { copy(revealed = emptySet()) }
-            ConnectIntent.Connect -> connect()
+            ConnectIntent.Connect -> onConnect()
             ConnectIntent.DismissFailure -> setState { copy(failure = null) }
             ConnectIntent.EditSecret -> {
                 setState { copy(failure = null) }
@@ -60,18 +61,14 @@ class ConnectViewModel(
         }
     }
 
-    private fun connect() {
+    private fun onConnect() {
         val state = currentState
         if (!state.canConnect) return
         setState { copy(isConnecting = true, failure = null, revealed = emptySet()) }
         viewModelScope.launch {
             val config = state.toConfig()
-            // KN-08: kết nối thành công thì lưu config ngay (chế độ thiết bị) rồi mới hỏi thiết lập PIN (KN-13).
-            val result = when (val verified = drives.verifyConnection(config)) {
-                is AppResult.Success -> configs.save(config)
-                is AppResult.Failure -> verified
-            }
-            when (result) {
+            // KN-08: kết nối thành công thì ConnectUseCase đã lưu config ngay (chế độ thiết bị); rồi mới hỏi thiết lập PIN (KN-13).
+            when (val result = connect(config)) {
                 is AppResult.Success -> {
                     log.i { "Kết nối thành công, đã lưu config" }
                     setState { copy(isConnecting = false, showPinPrompt = true) }

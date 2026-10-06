@@ -28,9 +28,9 @@ internal class DeviceLevels(
         val override = activity?.window?.attributes?.screenBrightness ?: WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         if (override >= 0f) return override
         val system = try {
-            Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS) / MAX_SYSTEM_BRIGHTNESS
+            Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS) / PlayerConstants.MAX_SYSTEM_BRIGHTNESS
         } catch (e: Settings.SettingNotFoundException) {
-            DEFAULT_BRIGHTNESS
+            PlayerConstants.DEFAULT_BRIGHTNESS
         }
         return system.coerceIn(0f, 1f)
     }
@@ -39,7 +39,7 @@ internal class DeviceLevels(
         val window = activity?.window ?: return
         val attributes = window.attributes
         // Không cho về 0 tuyệt đối: một số máy tắt hẳn màn hình, người xem không biết đường vuốt lại.
-        attributes.screenBrightness = level.coerceIn(MIN_BRIGHTNESS, 1f)
+        attributes.screenBrightness = level.coerceIn(PlayerConstants.MIN_BRIGHTNESS, 1f)
         window.attributes = attributes
     }
 
@@ -59,12 +59,6 @@ internal class DeviceLevels(
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         // Cờ 0: không hiện thanh âm lượng của hệ thống vì app có HUD riêng.
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, (level.coerceIn(0f, 1f) * max).roundToInt(), 0)
-    }
-
-    private companion object {
-        const val MAX_SYSTEM_BRIGHTNESS = 255f
-        const val DEFAULT_BRIGHTNESS = 0.5f
-        const val MIN_BRIGHTNESS = 0.01f
     }
 }
 

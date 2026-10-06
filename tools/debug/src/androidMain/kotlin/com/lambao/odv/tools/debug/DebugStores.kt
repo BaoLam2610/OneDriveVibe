@@ -4,15 +4,16 @@ import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Logger
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.platformLogWriter
-import com.lambao.odv.core.network.HttpTrafficEntry
-import com.lambao.odv.core.network.HttpTrafficRecorder
+import com.lambao.odv.core.network.traffic.HttpTrafficEntry
+import com.lambao.odv.core.network.traffic.HttpTrafficRecorder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import org.koin.dsl.module
 
-private const val MAX_LOGS = 500
+// Log giữ qua lần khóa app (ADR-0017) nên cần đệm lớn hơn để không tràn giữa hai lần xem.
+private const val MAX_LOGS = 2000
 private const val MAX_REQUESTS = 200
 
 /** Một dòng log local (Kermit) đang giữ trong bộ đệm. */

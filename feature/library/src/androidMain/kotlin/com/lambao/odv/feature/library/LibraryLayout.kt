@@ -1,14 +1,13 @@
 package com.lambao.odv.feature.library
 
 import android.text.format.DateFormat
+import com.lambao.odv.core.domain.DomainConstants
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.dayNumberOf
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
-private const val MS_PER_DAY = 86_400_000L
 
 /**
  * Cách dàn lưới Thư viện, dựng hoàn toàn từ số mục theo ngày ([LibraryDay]) nên biết trước độ dài và vị trí mọi tiêu đề
@@ -77,7 +76,7 @@ internal class LibraryDateFormatter(locale: Locale) {
     fun day(epochMs: Long, utcOffsetMs: Long): String = day(dayNumberOf(epochMs, utcOffsetMs))
 
     // Giữa trưa để không lệch ngày dù có sai số giờ.
-    private fun noonOf(dayNumber: Long) = Date(dayNumber * MS_PER_DAY + MS_PER_DAY / 2)
+    private fun noonOf(dayNumber: Long) = Date(dayNumber * DomainConstants.MS_PER_DAY + DomainConstants.MS_PER_DAY / 2)
 
     private fun formatter(locale: Locale, skeleton: String) =
         SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale).apply {

@@ -88,6 +88,12 @@ sealed interface BiometricUnwrap {
 object PinPolicy {
     const val LENGTH = 6
 
+    /**
+     * Số lần sai liên tiếp thì xóa dữ liệu như ngắt kết nối khi người dùng bật "Xóa dữ liệu khi nhập sai quá nhiều" (CD-08,
+     * KH-06). Ngưỡng là luật cố định; thứ người dùng quyết định chỉ là bật hay tắt (`SecuritySettings`).
+     */
+    const val WIPE_AFTER_FAILURES = 10
+
     /** Đúng 6 chữ số. */
     fun isWellFormed(pin: CharArray): Boolean = pin.size == LENGTH && pin.all { it in '0'..'9' }
 
@@ -105,4 +111,26 @@ object PinPolicy {
         val repeatsThree = (3 until LENGTH).all { digits[it] == digits[it - 3] }
         return ascending || descending || repeatsTwo || repeatsThree
     }
+}
+
+/**
+ * Trạng thái màn Khóa tại một thời điểm (KH-01, KH-02, KH-06): thời gian còn bị khóa nhập, số lần sai nữa thì xóa dữ liệu
+ * (`null` nếu tùy chọn tắt), và sinh trắc học đã bật chưa.
+ */
+data class LockStatus(
+    val lockoutRemainingMs: Long,
+    val attemptsBeforeWipe: Int?,
+    val biometricEnabled: Boolean,
+)
+
+/** Kết quả bật bảo vệ bằng PIN (BM-02, BM-04). */
+enum class ProtectionSetupResult {
+    /** PIN đã bật và máy dùng được sinh trắc học: hỏi người dùng có bật không (B6). */
+    OfferBiometric,
+
+    /** PIN đã bật, không có gì để hỏi thêm. */
+    Done,
+
+    /** Không bật được; config giữ nguyên ở chế độ thiết bị (BM-04). */
+    Failed,
 }

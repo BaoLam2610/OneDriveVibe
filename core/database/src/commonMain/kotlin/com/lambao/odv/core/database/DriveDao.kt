@@ -9,9 +9,6 @@ import androidx.room3.Upsert
 import androidx.room3.paging.PagingSourceDaoReturnTypeConverter
 import kotlinx.coroutines.flow.Flow
 
-/** Số tham số `?` tối đa cho một câu `IN (...)`; dưới giới hạn của SQLite để an toàn với drive lớn. */
-private const val IN_CHUNK = 500
-
 /**
  * Truy cập dữ liệu đồng bộ. Lớp trừu tượng (không phải interface) vì Room KMP chỉ cho `@Transaction` trên hàm `open` của
  * lớp trừu tượng; mỗi trang delta phải ghi nguyên tử cùng mốc `pendingNextLink` (DB-04).
@@ -107,7 +104,7 @@ abstract class DriveDao {
         state: SyncStateEntity,
         purgeScanId: Long?,
     ) {
-        upserts.chunked(IN_CHUNK).forEach { upsertItems(it) }
+        upserts.chunked(DatabaseConstants.IN_CHUNK).forEach { upsertItems(it) }
         deleteSubtrees(deletedIds)
         if (purgeScanId != null) deleteNotInScan(purgeScanId)
         upsertSyncState(state)
@@ -127,11 +124,11 @@ abstract class DriveDao {
         var frontier: List<String> = rootIds.distinct()
         while (frontier.isNotEmpty()) {
             val next = mutableListOf<String>()
-            for (chunk in frontier.chunked(IN_CHUNK)) {
+            for (chunk in frontier.chunked(DatabaseConstants.IN_CHUNK)) {
                 for (id in childIds(chunk)) if (all.add(id)) next += id
             }
             frontier = next
         }
-        all.chunked(IN_CHUNK).forEach { deleteItems(it) }
+        all.chunked(DatabaseConstants.IN_CHUNK).forEach { deleteItems(it) }
     }
 }

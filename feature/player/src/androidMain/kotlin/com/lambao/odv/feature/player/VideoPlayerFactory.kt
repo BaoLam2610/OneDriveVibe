@@ -11,7 +11,7 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import com.lambao.odv.core.domain.repository.VideoStreamRepository
+import com.lambao.odv.core.domain.usecase.viewer.GetStreamUrlUseCase
 
 /**
  * Dựng một [VideoPlayerController] cho mỗi lần mở màn xem. Chuỗi nguồn dữ liệu của ExoPlayer, từ trên xuống:
@@ -21,7 +21,7 @@ import com.lambao.odv.core.domain.repository.VideoStreamRepository
 internal class VideoPlayerFactory(
     context: Context,
     private val videoCache: VideoCache,
-    private val streams: VideoStreamRepository,
+    private val getStreamUrl: GetStreamUrlUseCase,
 ) {
     private val appContext = context.applicationContext
 
@@ -32,7 +32,7 @@ internal class VideoPlayerFactory(
         val http = DefaultHttpDataSource.Factory()
             .setConnectTimeoutMs(PlayerConstants.HTTP_TIMEOUT_MS)
             .setReadTimeoutMs(PlayerConstants.HTTP_TIMEOUT_MS)
-        val upstream = StreamDataSourceFactory(http, StreamUrlProvider(streams))
+        val upstream = StreamDataSourceFactory(http, StreamUrlProvider(getStreamUrl))
         val cached = CacheDataSource.Factory()
             .setCache(cache)
             .setUpstreamDataSourceFactory(upstream)

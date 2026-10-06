@@ -8,8 +8,8 @@ import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.VideoMeta
 import com.lambao.odv.core.domain.model.libraryDateOf
 import com.lambao.odv.core.domain.model.mediaKindOf
-import com.lambao.odv.core.network.GraphCredentials
-import com.lambao.odv.core.network.dto.DriveItemDto
+import com.lambao.odv.core.network.auth.GraphCredentials
+import com.lambao.odv.core.network.graph.dto.DriveItemDto
 import kotlin.time.Instant
 
 internal fun ConnectionConfig.toCredentials() = GraphCredentials(tenantId, clientId, clientSecret, upn)

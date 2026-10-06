@@ -21,15 +21,15 @@ internal class AndroidPinEnvelopeCodec(
 
     private val random = SecureRandom()
 
-    override fun isEnvelope(bytes: ByteArray): Boolean = bytes.isNotEmpty() && bytes[0] == MAGIC
+    override fun isEnvelope(bytes: ByteArray): Boolean = bytes.isNotEmpty() && bytes[0] == EnvelopeFormat.MAGIC
 
     override suspend fun seal(pin: CharArray, plain: ByteArray, name: String): AppResult<SealedEnvelope> {
         var key: ByteArray? = null
         return try {
-            val salt = ByteArray(SALT_BYTES).also(random::nextBytes)
+            val salt = ByteArray(EnvelopeFormat.SALT_BYTES).also(random::nextBytes)
             val header = header(params, salt)
             val derived = deriver.derive(pin, salt, params).also { key = it }
-            val iv = ByteArray(IV_BYTES).also(random::nextBytes)
+            val iv = ByteArray(CryptoConstants.IV_BYTES).also(random::nextBytes)
             val cipher = cipher(Cipher.ENCRYPT_MODE, derived, iv, header, name)
             val encrypted = cipher.doFinal(plain)
             AppResult.Success(SealedEnvelope(header + iv + encrypted, derived))
@@ -61,10 +61,10 @@ internal class AndroidPinEnvelopeCodec(
 
     /** Giải mã bằng [key]; [key] được trả lại trong `Opened`, còn các nhánh lỗi thì xóa luôn. */
     private fun decrypt(key: ByteArray, envelope: ByteArray, name: String): EnvelopeOpen = try {
-        val header = envelope.copyOfRange(0, HEADER_BYTES)
-        val iv = envelope.copyOfRange(HEADER_BYTES, HEADER_BYTES + IV_BYTES)
+        val header = envelope.copyOfRange(0, EnvelopeFormat.HEADER_BYTES)
+        val iv = envelope.copyOfRange(EnvelopeFormat.HEADER_BYTES, EnvelopeFormat.HEADER_BYTES + CryptoConstants.IV_BYTES)
         val cipher = cipher(Cipher.DECRYPT_MODE, key, iv, header, name)
-        val plain = cipher.doFinal(envelope, HEADER_BYTES + IV_BYTES, envelope.size - HEADER_BYTES - IV_BYTES)
+        val plain = cipher.doFinal(envelope, EnvelopeFormat.HEADER_BYTES + CryptoConstants.IV_BYTES, envelope.size - EnvelopeFormat.HEADER_BYTES - CryptoConstants.IV_BYTES)
         EnvelopeOpen.Opened(plain, key)
     } catch (e: AEADBadTagException) {
         key.fill(0)
@@ -75,18 +75,18 @@ internal class AndroidPinEnvelopeCodec(
     }
 
     private fun cipher(mode: Int, key: ByteArray, iv: ByteArray, header: ByteArray, name: String): Cipher =
-        Cipher.getInstance(TRANSFORMATION).apply {
-            init(mode, SecretKeySpec(key, "AES"), GCMParameterSpec(TAG_BITS, iv))
+        Cipher.getInstance(CryptoConstants.TRANSFORMATION).apply {
+            init(mode, SecretKeySpec(key, "AES"), GCMParameterSpec(CryptoConstants.TAG_BITS, iv))
             // AAD gồm cả header lẫn tên bí mật: sửa tham số Argon2 hay đổi tên tệp đều làm thẻ GCM sai.
             updateAAD(header)
             updateAAD(name.toByteArray(Charsets.UTF_8))
         }
 
     private fun header(params: KdfParams, salt: ByteArray): ByteArray =
-        ByteBuffer.allocate(HEADER_BYTES)
-            .put(MAGIC)
-            .put(VERSION)
-            .put(KDF_ARGON2ID)
+        ByteBuffer.allocate(EnvelopeFormat.HEADER_BYTES)
+            .put(EnvelopeFormat.MAGIC)
+            .put(EnvelopeFormat.VERSION)
+            .put(EnvelopeFormat.KDF_ARGON2ID)
             .putInt(params.memoryKib)
             .put(params.iterations.toByte())
             .put(params.parallelism.toByte())
@@ -97,31 +97,16 @@ internal class AndroidPinEnvelopeCodec(
 
     /** Đọc header; null nếu không hợp lệ. Giới hạn tham số để một tệp hỏng không bắt máy cấp hàng GB RAM. */
     private fun parse(envelope: ByteArray): Parsed? {
-        if (envelope.size < HEADER_BYTES + IV_BYTES + TAG_BITS / 8) return null
+        if (envelope.size < EnvelopeFormat.HEADER_BYTES + CryptoConstants.IV_BYTES + CryptoConstants.TAG_BITS / 8) return null
         val buffer = ByteBuffer.wrap(envelope)
-        if (buffer.get() != MAGIC || buffer.get() != VERSION || buffer.get() != KDF_ARGON2ID) return null
+        if (buffer.get() != EnvelopeFormat.MAGIC || buffer.get() != EnvelopeFormat.VERSION || buffer.get() != EnvelopeFormat.KDF_ARGON2ID) return null
         val memoryKib = buffer.getInt()
         val iterations = buffer.get().toInt() and 0xFF
         val parallelism = buffer.get().toInt() and 0xFF
-        if (memoryKib !in MIN_MEMORY_KIB..MAX_MEMORY_KIB || iterations !in 1..MAX_ITERATIONS || parallelism !in 1..MAX_PARALLELISM) {
+        if (memoryKib !in EnvelopeFormat.MIN_MEMORY_KIB..EnvelopeFormat.MAX_MEMORY_KIB || iterations !in 1..EnvelopeFormat.MAX_ITERATIONS || parallelism !in 1..EnvelopeFormat.MAX_PARALLELISM) {
             return null
         }
-        val salt = ByteArray(SALT_BYTES).also(buffer::get)
+        val salt = ByteArray(EnvelopeFormat.SALT_BYTES).also(buffer::get)
         return Parsed(KdfParams(memoryKib, iterations, parallelism), salt)
-    }
-
-    private companion object {
-        const val MAGIC: Byte = 0xA1.toByte()
-        const val VERSION: Byte = 1
-        const val KDF_ARGON2ID: Byte = 1
-        const val SALT_BYTES = 16
-        const val IV_BYTES = 12
-        const val TAG_BITS = 128
-        const val HEADER_BYTES = 1 + 1 + 1 + 4 + 1 + 1 + SALT_BYTES
-        const val MIN_MEMORY_KIB = 8
-        const val MAX_MEMORY_KIB = 64 * 1024
-        const val MAX_ITERATIONS = 10
-        const val MAX_PARALLELISM = 4
-        const val TRANSFORMATION = "AES/GCM/NoPadding"
     }
 }

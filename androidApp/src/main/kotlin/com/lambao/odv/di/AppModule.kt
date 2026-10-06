@@ -2,9 +2,9 @@ package com.lambao.odv.di
 
 import com.lambao.odv.core.common.dispatcher.DefaultDispatcherProvider
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
-import com.lambao.odv.core.domain.repository.BiometricAuthenticator
-import com.lambao.odv.core.domain.repository.NetworkMonitor
-import com.lambao.odv.core.domain.repository.UtcOffsetProvider
+import com.lambao.odv.core.domain.platform.BiometricAuthenticator
+import com.lambao.odv.core.domain.platform.NetworkMonitor
+import com.lambao.odv.core.domain.platform.UtcOffsetProvider
 import com.lambao.odv.time.AndroidUtcOffsetProvider
 import com.lambao.odv.network.AndroidNetworkMonitor
 import com.lambao.odv.security.AndroidBiometricAuthenticator

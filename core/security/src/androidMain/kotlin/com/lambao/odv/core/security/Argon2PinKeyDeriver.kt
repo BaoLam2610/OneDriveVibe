@@ -28,14 +28,10 @@ internal class Argon2PinKeyDeriver(
                     tCostInIterations = params.iterations,
                     mCostInKibibyte = params.memoryKib,
                     parallelism = params.parallelism,
-                    hashLengthInBytes = KEY_BYTES,
+                    hashLengthInBytes = Argon2Constants.KEY_BYTES,
                 ).rawHashAsByteArray()
             } finally {
                 password.fill(0)
             }
         }
-
-    private companion object {
-        const val KEY_BYTES = 32
-    }
 }

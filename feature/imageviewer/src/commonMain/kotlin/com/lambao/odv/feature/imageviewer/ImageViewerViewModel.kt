@@ -6,10 +6,12 @@ import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.ViewerContext
-import com.lambao.odv.core.domain.repository.DriveRepository
-import com.lambao.odv.core.domain.repository.OriginalImageRef
-import com.lambao.odv.core.domain.repository.OriginalImageRepository
-import com.lambao.odv.core.domain.repository.OriginalImageState
+import com.lambao.odv.core.domain.model.OriginalImageRef
+import com.lambao.odv.core.domain.model.OriginalImageState
+import com.lambao.odv.core.domain.usecase.folder.GetFolderPathUseCase
+import com.lambao.odv.core.domain.usecase.viewer.GetImageInfoUseCase
+import com.lambao.odv.core.domain.usecase.viewer.ObserveViewerItemsUseCase
+import com.lambao.odv.core.domain.usecase.viewer.OpenOriginalImageUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -25,8 +27,10 @@ import kotlinx.coroutines.launch
 class ImageViewerViewModel(
     private val context: ViewerContext,
     private val startItemId: String,
-    private val drives: DriveRepository,
-    private val originals: OriginalImageRepository,
+    private val observeViewerItems: ObserveViewerItemsUseCase,
+    private val getImageInfo: GetImageInfoUseCase,
+    private val getFolderPath: GetFolderPathUseCase,
+    private val openOriginalImage: OpenOriginalImageUseCase,
 ) : BaseMviViewModel<ImageViewerState, ImageViewerIntent, ImageViewerEffect>(ImageViewerState(currentId = startItemId)) {
 
     private var infoJob: Job? = null
@@ -40,7 +44,7 @@ class ImageViewerViewModel(
      * Ảnh gốc của [item] (AN-01). Không phải Intent vì là luồng dữ liệu của từng trang chứ không phải hành động của người
      * dùng; tải gắn với vòng đời của trang nên hủy khi vuốt đi hoặc app xuống nền (phần đã tải được giữ, BN-03).
      */
-    fun originalOf(item: DriveItem): Flow<OriginalImageState> = originals.open(OriginalImageRef(item.id, item.cTag))
+    fun originalOf(item: DriveItem): Flow<OriginalImageState> = openOriginalImage(OriginalImageRef(item.id, item.cTag))
 
     override fun onIntent(intent: ImageViewerIntent) {
         when (intent) {
@@ -56,7 +60,7 @@ class ImageViewerViewModel(
 
     private fun observeImages() {
         viewModelScope.launch {
-            drives.observeViewerItems(context, MediaKind.Image).collect { images ->
+            observeViewerItems(context, MediaKind.Image).collect { images ->
                 if (images.isEmpty()) {
                     setState { copy(images = emptyList(), isLoaded = true) }
                     if (!closed) {
@@ -84,8 +88,8 @@ class ImageViewerViewModel(
         infoJob = viewModelScope.launch {
             try {
                 coroutineScope {
-                    val path = async { drives.folderPathOf(item.id) }
-                    val details = async { drives.getImageInfo(item.id) }
+                    val path = async { getFolderPath(item.id) }
+                    val details = async { getImageInfo(item.id) }
                     // await là hàm suspend nên lấy kết quả ra trước, không gọi trong lambda của updateInfo.
                     val folderPath = path.await()
                     updateInfo(item.id) { it.copy(folderPath = folderPath) }

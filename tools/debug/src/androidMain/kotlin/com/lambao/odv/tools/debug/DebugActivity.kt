@@ -34,9 +34,11 @@ class DebugActivity : ComponentActivity() {
         // Chỉ để đóng màn Debug khi app khóa (ADR-0013, ADR-0014). Xóa trong onDestroy nên không giữ Activity.
         private var current: DebugActivity? = null
 
-        /** App vừa khóa (CH-03): log API chứa token và Client Secret đầy đủ nên xóa và đóng màn Debug nếu đang mở. */
+        /**
+         * App vừa khóa (CH-03): chỉ đóng màn Debug nếu đang mở. Log API và log local được giữ nguyên (ADR-0017, thay phần "xóa log
+         * API khi khóa" của ADR-0013/0014) để còn xem lại sau khi mở khóa.
+         */
         fun onAppLocked() {
-            ApiTrafficStore.clear()
             current?.finish()
         }
     }

@@ -2,10 +2,12 @@ package com.lambao.odv.core.data.config
 
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.common.result.getOrElse
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.security.PinEnvelopeCodec
 import com.lambao.odv.core.security.SecretStore
+import com.lambao.odv.core.data.StorageNames
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,13 +92,13 @@ internal class ConfigVault(
      */
     fun copySessionKey(): ByteArray? = sessionKey?.copyOf()
 
-    suspend fun exists(): Boolean = secrets.exists(NAME)
+    suspend fun exists(): Boolean = secrets.exists(StorageNames.CONFIG)
 
     /** Đọc tệp config đã qua lớp Keystore: `Success(null)` nếu chưa có. Không đụng tới bộ nhớ hay trạng thái khóa. */
-    suspend fun readRaw(): AppResult<ByteArray?> = mutex.withLock { secrets.read(NAME) }
+    suspend fun readRaw(): AppResult<ByteArray?> = mutex.withLock { secrets.read(StorageNames.CONFIG) }
 
     /** Ghi nguyên tử (tệp tạm rồi thay). Không đụng tới bộ nhớ hay trạng thái khóa. */
-    suspend fun writeRaw(bytes: ByteArray): AppResult<Unit> = mutex.withLock { secrets.write(NAME, bytes) }
+    suspend fun writeRaw(bytes: ByteArray): AppResult<Unit> = mutex.withLock { secrets.write(StorageNames.CONFIG, bytes) }
 
     /**
      * Đọc chế độ từ tệp rồi đặt [lockState]. Đọc thành công thì chốt và các lần sau bỏ qua. Đọc lỗi (khóa Keystore mất,
@@ -129,10 +131,8 @@ internal class ConfigVault(
 
     suspend fun load(): AppResult<ConnectionConfig> {
         cache?.let { return AppResult.Success(it) }
-        val bytes = when (val result = readRaw()) {
-            is AppResult.Failure -> return result
-            is AppResult.Success -> result.value ?: return AppResult.Failure(AppError.SecureStorage)
-        }
+        val bytes = readRaw().getOrElse { return AppResult.Failure(it) }
+            ?: return AppResult.Failure(AppError.SecureStorage)
         // Phong bì PIN mà chưa có khóa phiên: đang khóa. Không thử giải mã (không có PIN).
         if (codec.isEnvelope(bytes)) return AppResult.Failure(AppError.AppLocked)
         val config = decode(bytes) ?: return AppResult.Failure(AppError.SecureStorage)
@@ -218,9 +218,4 @@ internal class ConfigVault(
     private fun ConnectionConfig.toStored() = StoredConfig(tenantId, clientId, clientSecret, upn)
 
     private fun StoredConfig.toDomain() = ConnectionConfig(tenantId, clientId, clientSecret, upn)
-
-    companion object {
-        /** Tên bí mật của config; cũng là AAD của phong bì PIN. */
-        const val NAME = "connection_config"
-    }
 }

@@ -34,6 +34,7 @@ dependencies {
 
 // Room 3: extension của plugin androidx.room3 tên là `room3`, không còn là `room`.
 room3 {
-    // Schema giữ version = 1 đến khi phát hành (ADR-0007); file JSON để so khi đổi cột lúc dev.
+    // Mỗi lần đổi schema phải tăng `version` ở OdvDatabase (ADR-0015, thay "giữ version = 1" của ADR-0007); file JSON để so
+    // khi đổi cột.
     schemaDirectory("$projectDir/schemas")
 }

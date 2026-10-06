@@ -5,9 +5,10 @@ import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.PlayMode
 import com.lambao.odv.core.domain.model.ViewerContext
-import com.lambao.odv.core.domain.repository.DriveRepository
-import com.lambao.odv.core.domain.repository.NetworkMonitor
-import com.lambao.odv.core.domain.repository.PlayerPreferences
+import com.lambao.odv.core.domain.platform.NetworkMonitor
+import com.lambao.odv.core.domain.settings.PlayerPreferences
+import com.lambao.odv.core.domain.usecase.folder.GetFolderPathUseCase
+import com.lambao.odv.core.domain.usecase.viewer.ObserveViewerItemsUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +22,8 @@ import kotlinx.coroutines.launch
 class PlayerViewModel(
     private val context: ViewerContext,
     private val startItemId: String,
-    private val drives: DriveRepository,
+    private val observeViewerItems: ObserveViewerItemsUseCase,
+    private val getFolderPath: GetFolderPathUseCase,
     private val network: NetworkMonitor,
     private val prefs: PlayerPreferences,
 ) : BaseMviViewModel<PlayerState, PlayerIntent, PlayerEffect>(PlayerState(currentId = startItemId)) {
@@ -122,7 +124,7 @@ class PlayerViewModel(
         setState { copy(info = PlayerInfo(item)) }
         infoJob = viewModelScope.launch {
             try {
-                val path = drives.folderPathOf(item.id)
+                val path = getFolderPath(item.id)
                 setState {
                     val shown = info
                     if (shown != null && shown.item.id == item.id) copy(info = shown.copy(folderPath = path)) else this
@@ -138,7 +140,7 @@ class PlayerViewModel(
 
     private fun observeVideos() {
         viewModelScope.launch {
-            drives.observeViewerItems(context, MediaKind.Video).collect { videos ->
+            observeViewerItems(context, MediaKind.Video).collect { videos ->
                 playerLog.d { "[VM] danh sách phát ${videos.size} video, ngữ cảnh=${context::class.simpleName}" }
                 if (!startFound) {
                     // Chưa thấy video được chạm: quét lần đầu có thể chưa xong (TM-07, danh sách ở màn trước lấy từ API) nên Room chưa

@@ -28,3 +28,25 @@ inline fun <T> AppResult<T>.onFailure(action: (AppError) -> Unit): AppResult<T> 
 }
 
 fun <T> AppResult<T>.getOrNull(): T? = (this as? AppResult.Success)?.value
+
+/** Nối thêm một bước có thể thất bại: lỗi của bước trước đi thẳng ra, không gọi [transform]. */
+inline fun <T, R> AppResult<T>.flatMap(transform: (T) -> AppResult<R>): AppResult<R> = when (this) {
+    is AppResult.Success -> transform(value)
+    is AppResult.Failure -> this
+}
+
+/** Đổi cả hai nhánh về cùng một kiểu [R]. */
+inline fun <T, R> AppResult<T>.fold(onSuccess: (T) -> R, onFailure: (AppError) -> R): R = when (this) {
+    is AppResult.Success -> onSuccess(value)
+    is AppResult.Failure -> onFailure(error)
+}
+
+/**
+ * Giá trị khi thành công, không thì [onFailure] quyết định. Dùng để thoát sớm gọn thay cho `when` bốn dòng:
+ * `val config = vault.load().getOrElse { return AppResult.Failure(it) }` (inline nên `return` và `return@label` đều dùng được).
+ * Không bắt ngoại lệ nào: hủy coroutine vẫn truyền ra ngoài.
+ */
+inline fun <T> AppResult<T>.getOrElse(onFailure: (AppError) -> T): T = when (this) {
+    is AppResult.Success -> value
+    is AppResult.Failure -> onFailure(error)
+}

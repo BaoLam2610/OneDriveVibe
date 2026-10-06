@@ -1,8 +1,8 @@
 package com.lambao.odv.tools.debug
 
 import android.content.Context
-import com.lambao.odv.core.network.HttpTrafficEntry
-import com.lambao.odv.core.network.masked
+import com.lambao.odv.core.network.traffic.HttpTrafficEntry
+import com.lambao.odv.core.network.traffic.masked
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

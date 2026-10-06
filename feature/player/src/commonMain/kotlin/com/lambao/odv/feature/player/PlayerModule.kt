@@ -12,7 +12,8 @@ val playerModule = module {
         PlayerViewModel(
             context = params.get(),
             startItemId = params.get(),
-            drives = get(),
+            observeViewerItems = get(),
+            getFolderPath = get(),
             network = get(),
             prefs = get(),
         )

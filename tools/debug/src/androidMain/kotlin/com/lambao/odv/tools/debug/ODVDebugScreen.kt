@@ -1,5 +1,6 @@
 package com.lambao.odv.tools.debug
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,7 +52,8 @@ import com.lambao.odv.core.designsystem.component.ODVTab
 import com.lambao.odv.core.designsystem.component.ODVTabs
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVTheme
-import com.lambao.odv.core.network.maskedUrl
+import com.lambao.odv.core.network.traffic.maskedUrl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -69,7 +72,7 @@ private const val TAB_STORAGE = 2
 
 /**
  * Màn Debug: Tabs rồi nội dung từng tab; bấm một request ở tab API mở màn chi tiết. Chuỗi để trực tiếp vì chỉ dùng khi
- * phát triển (ADR-0012). Tìm kiếm có ở tab API và Log; Lưu trữ và Khác để sau.
+ * phát triển (ADR-0012). Tìm kiếm có ở tab API và Log; bảng DB ở tab Lưu trữ có màn chi tiết riêng (ODVTableDetailScreen).
  */
 @Composable
 internal fun ODVDebugScreen(onBack: () -> Unit) {
@@ -79,6 +82,11 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var storageRefresh by remember { mutableIntStateOf(0) }
     var confirmClear by rememberSaveable { mutableStateOf(false) }
+    // Bảng đang xem chi tiết và bảng đang chờ xác nhận xóa, tách thành hai chuỗi vì rememberSaveable không lưu được Pair.
+    var openDb by rememberSaveable { mutableStateOf<String?>(null) }
+    var openTable by rememberSaveable { mutableStateOf<String?>(null) }
+    var deleteDb by rememberSaveable { mutableStateOf<String?>(null) }
+    var deleteTable by rememberSaveable { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val maskTraffic by DebugSettings.maskTraffic.collectAsState()
     val requests by ApiTrafficStore.requests.collectAsState()
@@ -87,6 +95,30 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
     if (selected != null) {
         BackHandler { selectedId = null }
         ODVApiDetailScreen(request = selected, maskTraffic = maskTraffic, onBack = { selectedId = null })
+        return
+    }
+
+    val detailDb = openDb
+    val detailTable = openTable
+    val askDeleteDb = deleteDb
+    val askDeleteTable = deleteTable
+    if (askDeleteDb != null && askDeleteTable != null) {
+        DeleteTableDialog(askDeleteDb, askDeleteTable, onDismiss = { deleteDb = null; deleteTable = null }) {
+            deleteDb = null
+            deleteTable = null
+            storageRefresh++
+        }
+    }
+    if (detailDb != null && detailTable != null) {
+        BackHandler { openDb = null; openTable = null }
+        ODVTableDetailScreen(
+            dbName = detailDb,
+            table = detailTable,
+            maskTraffic = maskTraffic,
+            reload = storageRefresh,
+            onDelete = { deleteDb = detailDb; deleteTable = detailTable },
+            onBack = { openDb = null; openTable = null },
+        )
         return
     }
 
@@ -164,7 +196,12 @@ internal fun ODVDebugScreen(onBack: () -> Unit) {
             when (tab) {
                 TAB_API -> ApiTab(padding, requests, activeQuery, maskTraffic) { selectedId = it }
                 TAB_LOG -> LogTab(padding, activeQuery)
-                TAB_STORAGE -> StorageTab(padding, storageRefresh)
+                TAB_STORAGE -> StorageTab(
+                    padding,
+                    storageRefresh,
+                    onOpenTable = { db, table -> openDb = db; openTable = table },
+                    onDeleteTable = { db, table -> deleteDb = db; deleteTable = table },
+                )
                 else -> OthersTab(padding)
             }
         }
@@ -363,7 +400,12 @@ private fun LogRow(line: DebugLogLine) {
 // ---------- Tab Lưu trữ ----------
 
 @Composable
-private fun StorageTab(padding: PaddingValues, refresh: Int) {
+private fun StorageTab(
+    padding: PaddingValues,
+    refresh: Int,
+    onOpenTable: (db: String, table: String) -> Unit,
+    onDeleteTable: (db: String, table: String) -> Unit,
+) {
     val context = LocalContext.current
     val snapshot by produceState<StorageSnapshot?>(null, refresh) {
         value = withContext(Dispatchers.IO) { StorageReader.read(context) }
@@ -390,27 +432,40 @@ private fun StorageTab(padding: PaddingValues, refresh: Int) {
             }
         }
         item { SectionTitle("DataStore") }
-        item { Note(if (data.dataStoreFiles.isEmpty()) "Chưa có tệp DataStore." else data.dataStoreFiles.joinToString("\n")) }
-        item { SectionTitle("Cơ sở dữ liệu (Room / SQLite, chỉ đọc, 50 dòng đầu)") }
-        if (data.databases.isEmpty()) item { Note("Chưa có cơ sở dữ liệu (Room vào ở Lát 3).") }
+        if (data.dataStore.isEmpty()) item { Note("Chưa có kho DataStore.") }
+        items(data.dataStore, key = { "ds:${it.name}" }) { store ->
+            Collapsible(title = "${store.name}  (${store.entries.size})") {
+                SelectionContainer {
+                    Text(
+                        store.entries.joinToString("\n") { "${it.first} = ${it.second}" }.ifEmpty { "(trống)" },
+                        style = type.code,
+                        color = colors.ink,
+                    )
+                }
+            }
+        }
+        item { SectionTitle("Cơ sở dữ liệu (chạm một bảng để xem chi tiết)") }
+        if (data.databases.isEmpty()) item { Note("Chưa có cơ sở dữ liệu.") }
         items(data.databases, key = { "db:${it.name}" }) { db ->
             Collapsible(title = "${db.name}  (${db.sizeBytes / 1024} KB)") {
                 if (db.error != null) {
                     Note("Không mở được: ${db.error}")
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column {
                         db.tables.forEach { table ->
-                            Collapsible(title = "${table.name}  (${table.rowCount} dòng)") {
-                                SelectionContainer {
-                                    Box(Modifier.horizontalScroll(rememberScrollState())) {
-                                        Text(
-                                            (listOf(table.columns.joinToString(" | ")) + table.rows.map { it.joinToString(" | ") })
-                                                .joinToString("\n"),
-                                            style = type.code,
-                                            color = colors.ink,
-                                        )
-                                    }
-                                }
+                            Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "${table.name}  (${table.rowCount} dòng)",
+                                    modifier = Modifier.weight(1f).clickable { onOpenTable(db.name, table.name) }.padding(vertical = 10.dp),
+                                    style = type.bodySmStrong,
+                                    color = colors.ink,
+                                )
+                                DebugIconButton(
+                                    R.drawable.ic_debug_delete,
+                                    "Xóa toàn bộ bảng ${table.name}",
+                                    { onDeleteTable(db.name, table.name) },
+                                    tint = colors.danger,
+                                )
                             }
                         }
                     }
@@ -419,6 +474,58 @@ private fun StorageTab(padding: PaddingValues, refresh: Int) {
         }
         item { SectionTitle("Kho bí mật (chỉ tên tệp, không giải mã)") }
         item { Note(if (data.secretFiles.isEmpty()) "Chưa có." else data.secretFiles.joinToString("\n")) }
+    }
+}
+
+/**
+ * Xác nhận xóa toàn bộ dòng của một bảng (chỉ xóa dữ liệu, giữ cấu trúc). Lời cảnh báo theo loại DB: `odv.db` là bản sao của OneDrive
+ * nên xóa được nhưng cần biết `sync_state`; DB của Media3 là chỉ mục cache video, xóa lệch với tệp trên đĩa.
+ */
+@Composable
+private fun DeleteTableDialog(db: String, table: String, onDismiss: () -> Unit, onDeleted: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    val consequence = when {
+        db == ROOM_DATABASE_NAME && table == "drive_item" ->
+            "Danh sách tệp biến mất khỏi app. Bảng sync_state vẫn còn nên app coi như đã đồng bộ xong và không tự tải lại; " +
+                "muốn đồng bộ lại hãy xóa cả bảng sync_state, hoặc dùng \"Xóa dữ liệu local\"."
+        db == ROOM_DATABASE_NAME && table == "sync_state" ->
+            "App sẽ quên mốc đồng bộ và đồng bộ lại từ đầu ở lần mở sau; danh sách tệp (drive_item) được giữ."
+        db == ROOM_DATABASE_NAME -> "Dữ liệu của bảng mất ngay trong app."
+        else ->
+            "Đây là DB nội bộ của thư viện (Media3). Xóa có thể làm chỉ mục cache video lệch với tệp đã lưu trên đĩa, gây lỗi " +
+                "phát hoặc cache rác; nếu gặp lỗi hãy dùng \"Xóa dữ liệu local\"."
+    }
+    ODVDialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        title = "Xóa toàn bộ bảng $table?",
+        icon = ODVIcon.Alert,
+        tone = ODVDialogTone.Danger,
+        body = "Xóa mọi dòng của bảng $table trong $db. Không hoàn tác được. $consequence",
+        alert = true,
+    ) {
+        ODVButton("Hủy", onDismiss, style = ODVButtonStyle.Ghost, enabled = !busy)
+        ODVButton(
+            "Xóa bảng",
+            {
+                busy = true
+                scope.launch {
+                    val message = try {
+                        DatabaseBrowser(sqlSourceFor(context, db)).clear(table)
+                        "Đã xóa dữ liệu bảng $table"
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        "Không xóa được: ${e::class.simpleName}"
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    onDeleted()
+                }
+            },
+            style = ODVButtonStyle.DangerSolid,
+            loading = busy,
+        )
     }
 }
 

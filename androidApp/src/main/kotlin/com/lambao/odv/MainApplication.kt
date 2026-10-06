@@ -5,12 +5,9 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
-import com.lambao.odv.core.data.androidDataModule
-import com.lambao.odv.core.data.dataModule
-import com.lambao.odv.core.database.databaseModule
-import com.lambao.odv.core.domain.repository.SecurityRepository
-import com.lambao.odv.core.network.networkModule
-import com.lambao.odv.core.security.securityModule
+import com.lambao.odv.core.data.coreModules
+import com.lambao.odv.core.domain.usecase.security.LockAppUseCase
+import com.lambao.odv.core.domain.usecase.security.ObserveLockStateUseCase
 import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.di.appModule
 import com.lambao.odv.feature.auth.authModule
@@ -44,9 +41,9 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
             androidLogger(Level.ERROR)
             androidContext(this@MainApplication)
             modules(
-                listOf(
-                    appModule, securityModule, networkModule, databaseModule, dataModule, androidDataModule, authModule,
-                    browserModule, libraryModule, imageViewerModule, playerModule, androidPlayerModule,
+                // Debug đứng cuối để ghi đè binding của bản phát hành (vd. ThumbnailQuality).
+                listOf(appModule) + coreModules + listOf(
+                    authModule, browserModule, libraryModule, imageViewerModule, playerModule, androidPlayerModule,
                 ) + DebugTools.koinModules,
             )
         }
@@ -56,9 +53,11 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
         registerActivityLifecycleCallbacks(activityHolder)
     }
 
-    private val security: SecurityRepository by inject()
+    private val observeLockState: ObserveLockStateUseCase by inject()
+
+    private val lockApp: LockAppUseCase by inject()
 
     private val activityHolder: CurrentActivityHolder by inject()
 
-    private val lockController by lazy { AppLockController(security) { DebugTools.onAppLocked() } }
+    private val lockController by lazy { AppLockController(observeLockState, lockApp) { DebugTools.onAppLocked() } }
 }

@@ -12,8 +12,10 @@ val imageViewerModule = module {
         ImageViewerViewModel(
             context = params.get(),
             startItemId = params.get(),
-            drives = get(),
-            originals = get(),
+            observeViewerItems = get(),
+            getImageInfo = get(),
+            getFolderPath = get(),
+            openOriginalImage = get(),
         )
     }
 }

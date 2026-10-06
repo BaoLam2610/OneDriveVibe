@@ -96,11 +96,11 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 
 ### Lát 7: Xem PDF
 
-- PD-01 → PD-08 (tải có tiến trình và tải tiếp phần dở, cuộn dọc hoặc lật ngang, nhớ trang).
+- PD-01 → PD-08 (tải có tiến trình và tải tiếp phần dở, cuộn dọc hoặc lật ngang, nhớ trang). **PD-05 làm ở lát này** (đổi 2026-10-07, trước đó ghi ở cả Lát 7 và Lát 8): bảng `reading_progress`. Chia 7a, 7b, 7c; chi tiết ở `tien-do-mvp1.md`.
 
 ### Lát 8: Xem tiếp / Đọc tiếp
 
-- DS-02, VD-12, PD-05.
+- DS-02, VD-12 (PD-05 đã chuyển sang Lát 7).
 - Đăng ký `ConnectionResetter` xóa lịch sử xem khi ngắt kết nối.
 
 ### Lát 9: Cài đặt đầy đủ

@@ -41,7 +41,7 @@ import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVDuration
 import com.lambao.odv.core.designsystem.theme.ODVMediaColors
 import com.lambao.odv.core.domain.model.DriveItem
-import com.lambao.odv.core.domain.repository.OriginalImageState
+import com.lambao.odv.core.domain.model.OriginalImageState
 import kotlinx.coroutines.flow.Flow
 
 /**

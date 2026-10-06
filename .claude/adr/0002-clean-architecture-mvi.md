@@ -1,7 +1,7 @@
 # ADR-0002: Clean Architecture + MVI (State/Intent/Effect)
 
 **Ngày**: 2026-10-02
-**Trạng thái**: accepted
+**Trạng thái**: accepted (phần "chỉ tạo UseCase khi có logic thật" được ADR-0016 thay thế)
 **Người quyết định**: LamBao
 
 ## Bối cảnh

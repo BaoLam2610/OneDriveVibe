@@ -11,29 +11,17 @@ import coil3.key.Keyer
 import coil3.request.Options
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
-import com.lambao.odv.core.data.drive.toCredentials
 import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.ThumbnailSource
-import com.lambao.odv.core.domain.repository.ConfigRepository
-import com.lambao.odv.core.domain.repository.ThumbnailQuality
-import com.lambao.odv.core.network.GraphApi
+import com.lambao.odv.core.domain.hook.ThumbnailQuality
+import com.lambao.odv.core.network.graph.GraphApi
+import com.lambao.odv.core.data.ThumbnailConstants
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import okio.Buffer
 
-/** Số thumbnail tải song song tối đa: lưới Thư viện bật hàng chục ô cùng lúc, không nên mở hàng chục kết nối. */
-private const val MAX_PARALLEL_DOWNLOADS = 6
-
-/** Cỡ thumbnail Graph có sẵn, dùng khi cỡ tùy chỉnh bị từ chối (HTTP 400). */
-private const val FALLBACK_SIZE = "medium"
-
-// Chất lượng trung bình có chủ ý: đủ rõ trên lưới mà nhẹ và nhanh (người dùng không cần cao). Ô Thư viện rộng khoảng
-// 90dp (~250px ở xxhdpi) nên 240 hơi mềm nhưng chấp nhận được; thẻ Thư mục 2 cột rộng khoảng 160dp.
-private const val MIN_SIDE = 60
-private const val MAX_SIDE = 1600
-
-private fun scaled(base: Int, scalePercent: Int): Int = (base * scalePercent / 100).coerceIn(MIN_SIDE, MAX_SIDE)
+private fun scaled(base: Int, scalePercent: Int): Int = (base * scalePercent / 100).coerceIn(ThumbnailConstants.MIN_SIDE, ThumbnailConstants.MAX_SIDE)
 
 /** Cỡ tùy chỉnh của Graph (`c{rộng}x{cao}_crop`) sau khi nhân [scalePercent] với cỡ mặc định của từng loại ô. */
 internal fun ThumbnailSize.graphSize(scalePercent: Int): String = when (this) {
@@ -81,14 +69,13 @@ internal class ThumbnailUnavailableException(error: AppError) : Exception("Thumb
 
 internal class GraphThumbnailFetcherFactory(
     private val api: GraphApi,
-    private val configs: ConfigRepository,
     private val quality: ThumbnailQuality,
 ) : Fetcher.Factory<ThumbnailSource> {
 
-    private val gate = Semaphore(MAX_PARALLEL_DOWNLOADS)
+    private val gate = Semaphore(ThumbnailConstants.MAX_PARALLEL_DOWNLOADS)
 
     override fun create(data: ThumbnailSource, options: Options, imageLoader: ImageLoader): Fetcher =
-        GraphThumbnailFetcher(data, quality.scalePercent(), api, configs, imageLoader.diskCache, options, gate)
+        GraphThumbnailFetcher(data, quality.scalePercent(), api, imageLoader.diskCache, options, gate)
 }
 
 /**
@@ -100,7 +87,6 @@ internal class GraphThumbnailFetcher(
     private val source: ThumbnailSource,
     private val scalePercent: Int,
     private val api: GraphApi,
-    private val configs: ConfigRepository,
     private val diskCache: DiskCache?,
     private val options: Options,
     private val gate: Semaphore,
@@ -126,14 +112,11 @@ internal class GraphThumbnailFetcher(
     }
 
     private suspend fun download(): ByteArray {
-        val credentials = when (val loaded = configs.load()) {
-            is AppResult.Success -> loaded.value.toCredentials()
-            is AppResult.Failure -> throw ThumbnailUnavailableException(loaded.error)
-        }
-        var result = api.fetchThumbnail(credentials, source.itemId, source.size.graphSize(scalePercent))
+        // Lỗi đọc config (kể cả AppLocked khi app khóa) đến từ chính kết quả của GraphApi và thành ThumbnailUnavailableException ở dưới.
+        var result = api.fetchThumbnail(source.itemId, source.size.graphSize(scalePercent))
         val error = (result as? AppResult.Failure)?.error
         if (error is AppError.Http && error.status == 400) {
-            result = api.fetchThumbnail(credentials, source.itemId, FALLBACK_SIZE)
+            result = api.fetchThumbnail(source.itemId, ThumbnailConstants.FALLBACK_SIZE)
         }
         return when (result) {
             is AppResult.Success -> result.value

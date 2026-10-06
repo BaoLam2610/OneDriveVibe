@@ -75,9 +75,9 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 :build-logic                  convention plugin
 
 :core:common                  [KMP] AppResult/AppError, DispatcherProvider, BaseMviViewModel, Kermit (api)
-:core:domain                  [KMP] entity, interface repository, use case. Kotlin thuần
+:core:domain                  [KMP] Kotlin thuần: `model` (entity, luật), `repository` (Config, Security, Sync, VideoStream, OriginalImage, Connection, Folder, Library, Viewer), `platform` (interface nền tảng do app cài: BiometricAuthenticator, NetworkMonitor, UtcOffsetProvider), `hook` (ConnectionResetter, ThumbnailCache, ThumbnailQuality), `settings` (BrowserPreferences, PlayerPreferences, SecuritySettings), `usecase`
 :core:data                    [KMP] repository impl, mapper, DataStore
-:core:network                 [KMP] Ktor client (HttpRequestRetry), ApiService (lớp cơ sở: token, 401, ghi lưu lượng) và GraphApi, DTO Graph, HttpTrafficRecorder
+:core:network                 [KMP] Ktor client (HttpRequestRetry); package `http` (ApiService: lớp cơ sở nhận `BearerTokenSource`, xử lý 401, ghi lưu lượng), `traffic` (HttpTrafficRecorder), `auth` (TokenProvider, BearerTokenSource, GraphCredentials), `graph` (GraphApi, DTO); hằng số ở NetworkConstants.kt
 :core:database                [KMP] Room database, DAO, schema
 :core:security                [KMP] expect/actual: SecretStore (Keystore | Keychain), dẫn xuất khóa từ PIN
 :core:designsystem            [KMP, Compose] token, theme, icon, component dùng chung
@@ -95,7 +95,7 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 
 - Module core dùng `kotlin("multiplatform")` nhưng **chỉ target Android** ở MVP1 (ADR-0001). MVP2 chỉ cần thêm `iosArm64()` + `iosSimulatorArm64()` (`iosX64` đã lỗi thời) và viết `actual`.
 - Module `:feature:*` tạo khi bắt đầu lát dùng tới nó (ADR-0010).
-- **Convention plugin:** hiện chỉ có `odv.kmp.library` (module core). Dự kiến thêm `odv.kmp.feature` ở Lát 1 (Compose, designsystem, lifecycle-viewmodel-compose, Koin compose). Plugin `quality` (ktlint + detekt) chưa làm.
+- **Convention plugin:** `odv.kmp.library` (module core) và `odv.kmp.feature` (module feature, R1 2026-10-06: `androidResources`, `:core:common/domain/designsystem`, Compose, lifecycle-viewmodel, Koin). `odv.kmp.feature` không áp dụng hai plugin Compose: mỗi feature tự khai báo alias `composeMultiplatform` và `composeCompiler`. Plugin `quality` (ktlint + detekt) chưa làm.
 
 ### Quy tắc phụ thuộc
 - `domain` chỉ phụ thuộc `common`; không có `android.*`, `java.*`, Ktor, Room.
@@ -149,7 +149,7 @@ abstract class BaseMviViewModel<S : Any, I : Any, E : Any>(initialState: S) : Vi
 - Channel là `UNLIMITED` + `trySend` (giữ thứ tự, không treo). Không đổi capacity khác mà giữ `trySend`: kênh đầy thì effect bị bỏ mà không báo.
 - Chỉ thu `effects` ở **một** nơi (`XxxScreen`), trong `repeatOnLifecycle(STARTED)` trên `Dispatchers.Main.immediate`.
 - Reducer thuần, dễ đọc và gỡ lỗi.
-- UseCase chỉ tạo khi có logic thật; không tạo UseCase chỉ gọi lại repository.
+- **UseCase bắt buộc giữa feature và data** (ADR-0016, thay quy tắc cũ "chỉ khi có logic thật"): ViewModel chỉ phụ thuộc UseCase và interface nền tảng của domain, không gọi thẳng repository. UseCase theo tên nghiệp vụ, `operator fun invoke`, khai báo trong `domainModule`.
 - Mỗi màn: `XxxContract.kt` (State, Intent, Effect), `XxxViewModel.kt`, `XxxScreen.kt` (nối ViewModel), `XxxContent.kt` (stateless, preview được).
 - Module feature tự thêm `lifecycle-viewmodel-compose`, vì `:core:common` không lộ lifecycle (§3).
 
@@ -246,13 +246,13 @@ Tiến độ theo lát xem `tien-do-mvp1.md`; mục này chỉ theo dõi phần 
 - [x] Chốt OneDrive for Business, Client Credentials, 4 trường (§5.1)
 - [ ] Tạo app registration trên Entra: quyền Application `Files.Read.All` + Grant admin consent, client secret (người dùng tự làm)
 - [x] `build-logic` với `odv.kmp.library`
-- [ ] Convention plugin `odv.kmp.feature` (Lát 1)
+- [x] Convention plugin `odv.kmp.feature` (R1, chờ kiểm tay)
 - [ ] Plugin `quality` (ktlint qua Spotless + detekt + compose-rules): chưa có lát nào nhận; người dùng tự chạy, Claude không chạy (CLAUDE.local.md)
 - [x] `libs.versions.toml` pin phiên bản các thư viện Lát 0 khai báo (§1)
 - [x] Skeleton module theo §3
 - [x] Ktor client + token + retry (`HttpRequestRetry`) + Kermit + log API đã làm sạch (Lát 1, Lát D)
 - [x] Room KMP `BundledSQLiteDriver`, export schema (Lát 3a, chờ build và kiểm tay)
-- [ ] `SecretStore` (Keystore) (Lát 1) + dẫn xuất khóa từ PIN Argon2id (Lát 2)
+- [x] `SecretStore` (Keystore) (Lát 1) + dẫn xuất khóa từ PIN Argon2id (Lát 2); chờ kiểm tay
 - [ ] CI (nếu dùng): build, ktlint, detekt, không có bước test
 - [ ] Baseline Profile cho danh sách tệp và player (trước khi phát hành)
 
@@ -264,7 +264,7 @@ Bản tech stack đầu định nghĩa foundation 8 hạng mục. Kế hoạch M
 
 | # | Hạng mục | Trạng thái |
 |---|---|---|
-| 1 | Khởi tạo, `libs.versions.toml`, `build-logic` | Xong (`odv.kmp.library`); `odv.kmp.feature` ở Lát 1; `quality` chưa làm |
+| 1 | Khởi tạo, `libs.versions.toml`, `build-logic` | Xong (`odv.kmp.library`, `odv.kmp.feature`); `quality` chưa làm |
 | 2 | Skeleton module | Xong |
 | 3 | `:core:common`: `AppResult` / `AppError`, dispatcher, Kermit | Xong (Kermit ở Lát D) |
 | 4 | `:core:network`: Ktor, token Client Credentials (gộp lấy token, TK-03), retry bằng `HttpRequestRetry`, không log `Authorization` | Xong ở Lát 1 + Lát D |
@@ -281,7 +281,7 @@ Bản tech stack đầu định nghĩa foundation 8 hạng mục. Kế hoạch M
 | `drive_item` | Tệp/thư mục: id, parentId, name, `nameKey` (chữ thường, bỏ dấu), size, `mediaKind`, childCount, durationMs, `modifiedAt`, cTag, `takenAt`, `createdAt`, `scanId`. Ngày lưu epoch mili giây |
 | `sync_state` | Một dòng: `rootId`, `deltaLink`, `pendingNextLink` (trang đang quét dở, DB-04), `scanId`, `scannedCount`, `initialSyncDone`, `lastSyncedAt` |
 
-Quy ước đồng bộ (Lát 3a): mỗi trang delta ghi nguyên tử cùng `pendingNextLink`; quét đầy đủ mới (chưa có `deltaLink`) tăng `scanId`, trang cuối dọn mục có `scanId` khác trong cùng transaction với `deltaLink` mới (DB-03, DS-06). Tìm kiếm dùng `instr(nameKey, :key)`, không dùng `LIKE` (quét toàn bảng, ổn tới khoảng 100k mục; lớn hơn thì cân nhắc FTS). Delta lấy 1000 mục mỗi trang (`DELTA_PAGE_SIZE`; đo thực tế 4 trang thay vì 16, các trang nối đuôi nhau nên số trang quyết định thời gian quét). Delta dùng `$select` đúng các trường đang lưu (`DELTA_SELECT` trong `GraphApi`), chỉ gắn ở request đầu vì `nextLink`/`deltaLink` mang sẵn. Lỗi tạm thời (mạng, `429`, `5xx`) sau khi `HttpRequestRetry` đã thử: `SyncEngine` chờ `Retry-After` hoặc 2→32 giây rồi chạy tiếp từ trang dở, tối đa 5 lần liên tiếp không tiến triển. `observeChildren` có `conflate` + `distinctUntilChanged` để mỗi trang delta không làm thư mục đang mở sắp xếp và vẽ lại vô ích. Schema đổi lúc dev: `fallbackToDestructiveMigration` ở bản Android.
+Quy ước đồng bộ (Lát 3a): mỗi trang delta ghi nguyên tử cùng `pendingNextLink`; quét đầy đủ mới (chưa có `deltaLink`) tăng `scanId`, trang cuối dọn mục có `scanId` khác trong cùng transaction với `deltaLink` mới (DB-03, DS-06). Tìm kiếm dùng `instr(nameKey, :key)`, không dùng `LIKE` (quét toàn bảng, ổn tới khoảng 100k mục; lớn hơn thì cân nhắc FTS). Delta lấy 500 mục mỗi trang (`DELTA_PAGE_SIZE`; đã đo 1000 mục ra 4 trang thay vì 16 nhưng gây crash `libsqliteJni` trên thiết bị thật nên chốt 500, xem KDoc của hằng số trong `GraphApi`; các trang nối đuôi nhau nên số trang quyết định thời gian quét). Delta dùng `$select` đúng các trường đang lưu (`DELTA_SELECT` trong `GraphApi`), chỉ gắn ở request đầu vì `nextLink`/`deltaLink` mang sẵn. Lỗi tạm thời (mạng, `429`, `5xx`) sau khi `HttpRequestRetry` đã thử: `SyncEngine` chờ `Retry-After` hoặc 2→32 giây rồi chạy tiếp từ trang dở, tối đa 5 lần liên tiếp không tiến triển. `observeChildren` có `conflate` + `distinctUntilChanged` để mỗi trang delta không làm thư mục đang mở sắp xếp và vẽ lại vô ích. Schema đổi lúc dev: `fallbackToDestructiveMigration` ở bản Android.
 
 Thêm theo feature: `playback_progress`, `reading_progress`, `cache_entry`. Mỗi lần đổi schema phải tăng `version` của `OdvDatabase` (ADR-0015, thay quy tắc "giữ `version = 1`" cũ); trước phát hành DB cũ bị xóa và quét lại nhờ `fallbackToDestructiveMigration`, từ bản phát hành đầu phải viết Migration.
 
@@ -296,7 +296,7 @@ Tổng hợp từ rà soát skill `android-clean-architecture` và `compose-mult
 |---|---|
 | Navigation Compose 2.8 (`NavHost`, `composable<Route>`) | **Navigation 3**, back stack do app sở hữu; dùng lambda, không truyền nav controller |
 | Repository gọi remote trước rồi ghi local | **Offline-first**: `observe*()` đọc Room, `sync()` là luồng riêng (DB-05). Ngoại lệ: TM-07 |
-| Mỗi thao tác một UseCase | Chỉ khi có logic thật (sắp xếp/lọc theo loại tệp, nhóm ngày TV-02, danh sách phát VD-10, khóa PIN) |
+| Mỗi thao tác một UseCase | Giữ: feature chỉ đi qua UseCase (ADR-0016, thay "chỉ khi có logic thật" của ADR-0002); UseCase mỏng ủy quyền cho repository vẫn được phép, tên theo nghiệp vụ chứ không theo thao tác kỹ thuật |
 | Convention plugin khai báo sẵn iOS + `commonTest` | MVP1 chỉ target Android, không test |
 | SQLDelight, Hilt | Room KMP, Koin |
 | `onEvent`, lỗi lưu `state.error: String?` | `onIntent()` + kênh Effect; lỗi trong state là `UiError` có cấu trúc, **không lưu `e.message`** |
@@ -317,7 +317,15 @@ Tổng hợp từ rà soát skill `android-clean-architecture` và `compose-mult
 - **Màu:** không dynamic color; màu chỉ từ `ODVTheme.colors`, không viết hex trong màn hình. Theme XML `Theme.OneDriveVibe` (AppCompat) không đặt màu.
 - **Tên:** code UI có tiền tố `ODV` (`ODVSplashScreen`, `ODVNavDisplay`); code không phải UI thì không (`AppRoute`, `MainApplication`). `OneDriveVibe` chỉ là tên app.
 - **Log:** dùng `Logger.withTag("Tên")` của Kermit (log local; không bao giờ đưa bí mật vào Kermit, kể cả khi log API đầy đủ ở màn Debug); Koin mức `ERROR`; không bao giờ log Client Secret, access token, PIN, config đã giải mã, giá trị ô nhập (CH-06). Chỉ log kết quả và mã lỗi. Bản release không có writer nào (ADR-0012).
-- **Dispatcher:** tiêm `DispatcherProvider`, không gọi `Dispatchers.IO` trong code dùng chung.
+- **Dispatcher:** tiêm `DispatcherProvider`, không gọi `Dispatchers.IO` trong code dùng chung. Ngoại lệ có chủ ý (code Android, không phải `commonMain`): `AppLockController` dùng `Dispatchers.Main.immediate` vì `DispatcherProvider.main` không có `.immediate`; `ImagePage` (composable) đọc kích thước ảnh trên `Dispatchers.IO`.
+- **Koin:** dùng `singleOf(::X) bind Y::class` khi mọi tham số constructor đều inject được (Koin phân giải theo kiểu nên không cần liệt kê `get()` theo vị trí). Chỉ dùng lambda khi cần `getAll()`, qualifier hoặc giá trị không inject được (dùng tham số có tên). Binding của `:core:network` cần một interface do tầng khác cài (vd. `GraphCredentialsSource`) là phụ thuộc runtime qua Koin, ghi rõ trong comment.
+- **Giá trị lưu trên máy:** tên tệp, khóa Keystore, tên khóa DataStore, byte định dạng phong bì nằm trong file Constants với ghi chú "không được đổi giá trị"; refactor chỉ được chuyển chỗ, kiểm bằng cách so với `git HEAD`.
+- **Hằng số bố cục giao diện** (số cột, khoảng cách, độ cao, độ trễ ẩn thanh cuộn, khóa item của lưới) ở lại cạnh composable dùng nó vì chỉ có nghĩa ở đó; token dùng chung ở `ODVDimens`/`ODVMotion`. **Kiểm quy tắc UseCase (ADR-0016):** `grep -rn "^import com.lambao.odv.core.domain.repository" feature androidApp/src` không được trả kết quả nào.
+- **Hằng số:** mỗi module có một file `XxxConstants.kt` chứa `internal object` chia nhóm theo mục đích (vd. `GraphConstants`, `HttpConstants`, `AuthConstants` ở `:core:network`; mẫu là `PlayerConstants`). Không rải `const val` theo từng class dùng nó. Giữ KDoc giải thích lý do chọn giá trị. Không đưa vào đây: luật nghiệp vụ (đặt ở `domain`, vd. `PinPolicy`, chính sách khóa nhập KH-02) và token giao diện (`ODVDimens`, `ODVMotion`).
+- **Thời gian:** không dùng `() -> Long` để tiêm đồng hồ (không rõ đơn vị, không rõ giờ thực hay đơn điệu, Koin không phân biệt theo kiểu). Giờ thực: tiêm `kotlin.time.Clock`; đo khoảng: `TimeSource`; đồng hồ cần biết lần khởi động máy: `BootAwareClock`. **Ngoại lệ có chủ ý (Android):** thứ phải chạy qua lúc máy ngủ (link video sống khoảng 1 giờ, `StreamDataSource`) dùng `SystemClock.elapsedRealtime`, vì `TimeSource.Monotonic` trên Android dựa vào `nanoTime` không đếm lúc máy ngủ sâu nên hạn bị lệch. Trong `commonMain` hạn của thứ chạy dài (vd. token) nên tính bằng `Clock` giờ thực, không dùng `TimeSource.Monotonic`.
+- **Thoát sớm với `AppResult`:** dùng `getOrElse { return AppResult.Failure(it) }` (hoặc `return@withLock`) thay cho `when (val r = ...) { Failure -> return ...; Success -> r.value }`; ghép bước thất bại được bằng `flatMap`, đổi hai nhánh bằng `fold` (`:core:common`, R2).
+- **Cài đặt đọc lúc chạy:** không tiêm lambda (`() -> Int?`) cho giá trị người dùng sẽ đổi; tạo interface domain (vd. `SecuritySettings`) và để Cài đặt (Lát 9) cài đặt nó.
+- **Nguồn xác thực của API:** `ApiService` (lớp cơ sở) không biết credentials của dịch vụ cụ thể; nó chỉ nhận một nguồn bearer token. Credentials thuộc về lớp con (`GraphApi`) và được cấp qua interface do tầng data cài.
 - **Bỏ hoặc đổi so với template/ADR:** ghi comment trong code nêu lý do và ADR liên quan.
 
 ---
@@ -329,7 +337,7 @@ ADR nằm ở **`.claude/adr/`** (có `README.md` làm mục lục và `template
 | ADR | Quyết định | Trạng thái |
 |---|---|---|
 | 0001 | Android trước, sẵn sàng KMP: module dùng chung chỉ target Android ở MVP1 | accepted |
-| 0002 | Clean Architecture + MVI (State/Intent/Effect); chỉ tạo UseCase khi có logic thật | accepted |
+| 0002 | Clean Architecture + MVI (State/Intent/Effect); phần UseCase bị ADR-0016 thay thế | accepted |
 | 0003 | Navigation 3 thay cho Navigation Compose 2.x | accepted |
 | 0004 | Koin thay cho Hilt | accepted |
 | 0005 | Xác thực Client Credentials, chỉ OneDrive for Business, nhập 4 trường | accepted |
@@ -342,3 +350,6 @@ ADR nằm ở **`.claude/adr/`** (có `README.md` làm mục lục và `template
 | 0012 | Công cụ debug trong app (`:tools:debug`, chỉ bản debug), log bằng Kermit, retry bằng `HttpRequestRetry` | accepted |
 | 0013 | Log API bản debug hiển thị đầy đủ (không che), che là tùy chọn | accepted |
 | 0014 | Phong bì PIN hai lớp, bộ đếm sai bền, sinh trắc học bọc khóa dẫn xuất, tự khóa (bổ sung ADR-0008) | accepted |
+| 0015 | Tăng version Room mỗi lần đổi schema (thay phần "giữ `version = 1`" của ADR-0007) | accepted |
+| 0016 | UseCase bắt buộc giữa feature và data (thay phần UseCase của ADR-0002) | accepted |
+| 0017 | Giữ log debug khi app khóa (thay phần xóa log của ADR-0013/0014) | accepted |

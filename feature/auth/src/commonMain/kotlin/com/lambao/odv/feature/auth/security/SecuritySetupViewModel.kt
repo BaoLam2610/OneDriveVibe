@@ -2,10 +2,11 @@ package com.lambao.odv.feature.auth.security
 
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
-import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.model.BiometricOutcome
 import com.lambao.odv.core.domain.model.PinPolicy
-import com.lambao.odv.core.domain.repository.SecurityRepository
+import com.lambao.odv.core.domain.model.ProtectionSetupResult
+import com.lambao.odv.core.domain.usecase.security.EnableBiometricUseCase
+import com.lambao.odv.core.domain.usecase.security.EnableProtectionUseCase
 import kotlinx.coroutines.launch
 
 /**
@@ -15,7 +16,8 @@ import kotlinx.coroutines.launch
  * PIN không bao giờ vào log. Kết thúc đi qua `State.isDone` (không phải Effect) để không kẹt khi xoay màn hình.
  */
 class SecuritySetupViewModel(
-    private val security: SecurityRepository,
+    private val enableProtection: EnableProtectionUseCase,
+    private val enableBiometric: EnableBiometricUseCase,
 ) : BaseMviViewModel<SetupUiState, SetupIntent, SetupEffect>(SetupUiState()) {
 
     private val current = CharArray(PinPolicy.LENGTH)
@@ -30,7 +32,7 @@ class SecuritySetupViewModel(
             SetupIntent.Backspace -> onBackspace()
             SetupIntent.BackToCreate -> backToCreate()
             SetupIntent.DismissSaveFailure -> setState { copy(saveFailed = false) }
-            SetupIntent.EnableBiometric -> enableBiometric()
+            SetupIntent.EnableBiometric -> startBiometricEnrollment()
             SetupIntent.SkipBiometric -> if (!currentState.isEnrollingBiometric) setState { copy(isDone = true) }
         }
     }
@@ -38,12 +40,12 @@ class SecuritySetupViewModel(
     /** Chỉ nhập PIN ở hai bước đầu; đang hoàn tất, đang hỏi sinh trắc học hoặc đã xong thì bỏ qua phím. */
     private fun canEdit(): Boolean = currentState.let { !it.isDone && (it.step == SetupStep.Create || it.step == SetupStep.Confirm) }
 
-    private fun enableBiometric() {
+    private fun startBiometricEnrollment() {
         if (currentState.isEnrollingBiometric || currentState.step != SetupStep.OfferBiometric) return
         setState { copy(isEnrollingBiometric = true) }
         viewModelScope.launch {
             val outcome = try {
-                security.enableBiometric()
+                enableBiometric()
             } finally {
                 // Kể cả khi bị hủy: không bỏ cờ này thì hai nút ở B6 bị khóa mãi.
                 setState { copy(isEnrollingBiometric = false) }
@@ -107,17 +109,17 @@ class SecuritySetupViewModel(
         setState { copy(step = SetupStep.Finishing, entered = PinPolicy.LENGTH, error = null) }
         viewModelScope.launch {
             val result = try {
-                security.enableProtection(pin)
+                enableProtection(pin)
             } finally {
                 pin.fill('\u0000')
                 first.fill('\u0000')
             }
             when (result) {
                 // BM-02: PIN đã bật. Nếu máy hỗ trợ sinh trắc học thì hỏi (B6), không thì xong luôn.
-                is AppResult.Success ->
-                    if (security.isBiometricAvailable()) setState { copy(step = SetupStep.OfferBiometric) } else setState { copy(isDone = true) }
+                ProtectionSetupResult.OfferBiometric -> setState { copy(step = SetupStep.OfferBiometric) }
+                ProtectionSetupResult.Done -> setState { copy(isDone = true) }
                 // BM-04: lỗi thì config giữ nguyên ở chế độ thiết bị; quay về bước đặt PIN để thử lại.
-                is AppResult.Failure -> setState { copy(step = SetupStep.Create, entered = 0, saveFailed = true) }
+                ProtectionSetupResult.Failed -> setState { copy(step = SetupStep.Create, entered = 0, saveFailed = true) }
             }
         }
     }

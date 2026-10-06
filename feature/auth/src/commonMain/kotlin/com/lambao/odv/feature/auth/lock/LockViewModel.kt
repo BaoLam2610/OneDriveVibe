@@ -3,16 +3,19 @@ package com.lambao.odv.feature.auth.lock
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.domain.model.LockState
+import com.lambao.odv.core.domain.model.LockStatus
 import com.lambao.odv.core.domain.model.PinPolicy
 import com.lambao.odv.core.domain.model.UnlockResult
-import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
+import com.lambao.odv.core.domain.usecase.security.GetLockStatusUseCase
+import com.lambao.odv.core.domain.usecase.security.GetLockoutRemainingUseCase
+import com.lambao.odv.core.domain.usecase.security.ObserveLockStateUseCase
+import com.lambao.odv.core.domain.usecase.security.UnlockWithBiometricUseCase
+import com.lambao.odv.core.domain.usecase.security.UnlockWithPinUseCase
+import com.lambao.odv.feature.auth.LockConstants
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-/** KH-06: cảnh báo số lần còn lại từ lần sai thứ 8 trở đi, tức khi còn ≤ 2 lần trong tổng 10. */
-private const val WARN_WHEN_ATTEMPTS_LEFT = 2
 
 /**
  * Màn Khóa (KH-01 → KH-06, CH-03). Mở khóa bằng PIN 6 số hoặc sinh trắc học (nếu đã bật), chờ khi sai nhiều lần, Quên mã PIN.
@@ -21,7 +24,11 @@ private const val WARN_WHEN_ATTEMPTS_LEFT = 2
  * (CH-02). Kết thúc màn đi qua `State.completion` (không phải Effect) để không kẹt ở màn Khóa nếu UI đang xoay màn hình.
  */
 class LockViewModel(
-    private val security: SecurityRepository,
+    private val observeLockState: ObserveLockStateUseCase,
+    private val getLockStatus: GetLockStatusUseCase,
+    private val getLockoutRemaining: GetLockoutRemainingUseCase,
+    private val unlockWithPin: UnlockWithPinUseCase,
+    private val unlockWithBiometric: UnlockWithBiometricUseCase,
     private val disconnect: DisconnectUseCase,
 ) : BaseMviViewModel<LockUiState, LockIntent, LockEffect>(LockUiState()) {
 
@@ -33,7 +40,7 @@ class LockViewModel(
         // Đã mở khóa nhưng app bị khóa lại trước khi UI kịp bỏ màn Khóa (bấm Home ngay sau khi nhập PIN): hủy kết quả
         // "đã mở khóa" để màn Khóa cho nhập lại, thay vì bỏ màn Khóa khi app đang khóa.
         viewModelScope.launch {
-            security.lockState.collect { lock ->
+            observeLockState().collect { lock ->
                 if (lock == LockState.Locked && currentState.completion == LockCompletion.Unlocked) {
                     setState { copy(completion = null) }
                 }
@@ -41,10 +48,10 @@ class LockViewModel(
         }
         viewModelScope.launch {
             // Mở lại màn Khóa giữa lúc đang bị phạt (tắt rồi mở app, KH-02): hiện đồng hồ ngay.
-            val remaining = security.lockoutRemainingMs()
+            val status = getLockStatus()
+            val remaining = status.lockoutRemainingMs
             if (remaining > 0) startCooldown(remaining)
-            refreshWarning()
-            refreshBiometric()
+            applyStatus(status)
             // KH-01: đã bật sinh trắc học thì tự hiện hộp thoại ngay khi mở màn Khóa; không hiện khi đang bị khóa tạm (KH-02).
             if (remaining <= 0) useBiometric()
         }
@@ -83,18 +90,13 @@ class LockViewModel(
         setState { copy(isBusy = true, error = null) }
         viewModelScope.launch {
             try {
-                handle(security.unlockWithBiometric())
+                handle(unlockWithBiometric())
             } finally {
                 // Hủy coroutine hoặc hộp thoại không hiện được (Activity bị hủy khi xoay màn hình, ViewModel vẫn sống) mà không
                 // bỏ cờ này thì bàn phím và nút Quên PIN bị khóa mãi.
                 setState { copy(isBusy = false) }
             }
         }
-    }
-
-    private suspend fun refreshBiometric() {
-        val enabled = security.isBiometricEnabled()
-        setState { copy(biometricEnabled = enabled) }
     }
 
     private fun submit() {
@@ -105,7 +107,7 @@ class LockViewModel(
         setState { copy(isBusy = true) }
         viewModelScope.launch {
             val result = try {
-                security.unlockWithPin(attempt)
+                unlockWithPin(attempt)
             } finally {
                 attempt.fill('\u0000')
             }
@@ -125,19 +127,16 @@ class LockViewModel(
                 sendEffect(LockEffect.Shake)
                 startCooldown(result.remainingMs)
             }
-            // KH-06: security đã xóa config và khóa; chạy tiếp phần dữ liệu còn lại của app (Room, cache, cài đặt).
-            UnlockResult.Wiped -> {
-                disconnect()
+            // KH-06: UnlockWithPinUseCase đã xóa config, khóa và phần dữ liệu còn lại của app (Room, cache, cài đặt) trước khi trả về.
+            UnlockResult.Wiped ->
                 setState { copy(isBusy = false, entered = 0, error = null, completion = LockCompletion.Disconnected) }
-            }
             UnlockResult.Failed -> setState { copy(isBusy = false, entered = 0, error = LockError.StorageFailed) }
             // App bị khóa lại giữa lúc giải mã: không phải lỗi, chỉ cho nhập lại.
             UnlockResult.Interrupted -> setState { copy(isBusy = false, entered = 0, error = null) }
             // Hủy hộp thoại sinh trắc học, hoặc nó không còn dùng được (đổi vân tay): về nhập PIN, không phải lỗi.
             UnlockResult.Cancelled -> setState { copy(isBusy = false, entered = 0, error = null) }
         }
-        refreshWarning()
-        refreshBiometric()
+        applyStatus(getLockStatus())
     }
 
     private fun startCooldown(initialMs: Long) {
@@ -146,17 +145,17 @@ class LockViewModel(
         cooldownJob = viewModelScope.launch {
             var remaining = initialMs
             while (remaining > 0) {
-                delay(TICK_MS)
+                delay(LockConstants.COOLDOWN_TICK_MS)
                 // Hỏi lại repository thay vì tự trừ: chính xác khi app bị tạm dừng hay máy ngủ.
-                remaining = security.lockoutRemainingMs()
+                remaining = getLockoutRemaining()
                 setState { copy(cooldownRemainingMs = remaining) }
             }
         }
     }
 
-    private suspend fun refreshWarning() {
-        val left = security.attemptsBeforeWipe()?.takeIf { it <= WARN_WHEN_ATTEMPTS_LEFT }
-        setState { copy(attemptsBeforeWipe = left) }
+    private fun applyStatus(status: LockStatus) {
+        val left = status.attemptsBeforeWipe?.takeIf { it <= LockConstants.WARN_WHEN_ATTEMPTS_LEFT }
+        setState { copy(attemptsBeforeWipe = left, biometricEnabled = status.biometricEnabled) }
     }
 
     private fun forgetPinAndDisconnect() {
@@ -170,9 +169,5 @@ class LockViewModel(
     override fun onCleared() {
         pin.fill('\u0000')
         super.onCleared()
-    }
-
-    private companion object {
-        const val TICK_MS = 1_000L
     }
 }

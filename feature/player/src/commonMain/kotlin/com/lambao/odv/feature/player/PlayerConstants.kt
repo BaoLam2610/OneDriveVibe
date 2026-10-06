@@ -145,6 +145,17 @@ internal object PlayerConstants {
 
     /** Id Graph dài và khó đọc; log chỉ ghi chừng này ký tự đầu. */
     const val LOG_ID_LENGTH = 8
+
+    // --- Độ sáng màn hình (DeviceLevels, VD-04) ---
+
+    /** Giá trị tối đa của độ sáng hệ thống (`Settings.System.SCREEN_BRIGHTNESS`, 0..255). */
+    const val MAX_SYSTEM_BRIGHTNESS = 255f
+
+    /** Độ sáng ban đầu khi không đọc được độ sáng hệ thống. */
+    const val DEFAULT_BRIGHTNESS = 0.5f
+
+    /** Không đặt 0: `screenBrightness = 0` làm tắt hẳn màn hình ở nhiều máy. */
+    const val MIN_BRIGHTNESS = 0.01f
 }
 
 /** Logger duy nhất của module, gắn [PlayerConstants.TAG]. */

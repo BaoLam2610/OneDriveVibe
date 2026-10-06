@@ -25,7 +25,8 @@ import androidx.navigation3.ui.NavDisplay
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.model.MediaKind
-import com.lambao.odv.core.domain.repository.SecurityRepository
+import com.lambao.odv.core.domain.usecase.security.InitializeSecurityUseCase
+import com.lambao.odv.core.domain.usecase.security.ObserveLockStateUseCase
 import com.lambao.odv.feature.auth.connect.ODVConnectScreen
 import com.lambao.odv.feature.auth.lock.ODVLockScreen
 import com.lambao.odv.feature.auth.security.ODVSecuritySetupScreen
@@ -42,14 +43,17 @@ import org.koin.compose.koinInject
 @Composable
 fun ODVNavDisplay(modifier: Modifier = Modifier) {
     val backStack = rememberNavBackStack(AppRoute.Splash)
-    val security = koinInject<SecurityRepository>()
+    val observeLockState = koinInject<ObserveLockStateUseCase>()
+    val initializeSecurity = koinInject<InitializeSecurityUseCase>()
+    // Cùng một StateFlow của repository (không bọc lại): .value đọc đồng bộ ở onUnlocked bên dưới.
+    val lockStateFlow = observeLockState()
     // collectAsState, không phải collectAsStateWithLifecycle: khi app ở nền mà bị khóa (ON_STOP), lifecycle-aware collector
     // dừng nên composition giữ lockState cũ (Unlocked); lúc quay lại vài khung hình đầu vẽ nội dung cũ rồi mới trượt Lock vào.
     // StateFlow nằm trong bộ nhớ nên thu liên tục không tốn gì (code review e8027e03, M1).
-    val lockState by security.lockState.collectAsState()
+    val lockState by lockStateFlow.collectAsState()
 
     // Đọc chế độ bảo mật từ tệp config: chạy ngoài NavDisplay để không phụ thuộc vào màn nào đang hiện (ADR-0014).
-    LaunchedEffect(security) { security.initialize() }
+    LaunchedEffect(initializeSecurity) { initializeSecurity() }
 
     // Cổng khóa: chế độ PIN thì màn Khóa luôn nằm trên cùng khi lockState là Locked (khởi động nguội, khôi phục sau
     // process death, hoặc vừa rời app). Mở khóa xong, chính màn Khóa tự bỏ chính nó (onUnlocked). Khóa theo cả đỉnh
@@ -120,7 +124,7 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                         // Nhập đúng PIN: bỏ màn Khóa để thấy lại màn đang xem.
                         // Chỉ khi thật sự đang mở khóa: nếu app bị khóa lại giữa chừng (xuống nền) thì giữ màn Khóa.
                         onUnlocked = {
-                            if (security.lockState.value == LockState.Unlocked && backStack.lastOrNull() == AppRoute.Lock) {
+                            if (lockStateFlow.value == LockState.Unlocked && backStack.lastOrNull() == AppRoute.Lock) {
                                 backStack.removeLastOrNull()
                             }
                         },

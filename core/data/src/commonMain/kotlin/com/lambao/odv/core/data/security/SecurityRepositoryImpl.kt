@@ -2,6 +2,7 @@ package com.lambao.odv.core.data.security
 
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.common.result.getOrElse
 import com.lambao.odv.core.data.config.ConfigVault
 import com.lambao.odv.core.domain.model.BiometricOutcome
 import com.lambao.odv.core.domain.model.BiometricUnwrap
@@ -9,12 +10,15 @@ import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.model.SecurityMode
 import com.lambao.odv.core.domain.model.UnlockResult
-import com.lambao.odv.core.domain.repository.BiometricAuthenticator
+import com.lambao.odv.core.domain.platform.BiometricAuthenticator
 import com.lambao.odv.core.domain.repository.SecurityRepository
-import com.lambao.odv.core.network.TokenProvider
+import com.lambao.odv.core.network.auth.TokenProvider
 import com.lambao.odv.core.security.EnvelopeOpen
 import com.lambao.odv.core.security.PinEnvelopeCodec
 import com.lambao.odv.core.security.SecretStore
+import com.lambao.odv.core.data.StorageNames
+import com.lambao.odv.core.domain.model.PinPolicy
+import com.lambao.odv.core.domain.settings.SecuritySettings
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
@@ -29,8 +33,8 @@ import kotlinx.coroutines.withContext
  * [lock] thì không qua [mutex] (gọi ngay lúc app xuống nền, không được chờ Argon2id); thay vào đó mỗi thao tác đọc
  * `epoch` của [ConfigVault] trước và `adopt` kiểm tra lại, nên khóa xen giữa luôn thắng.
  *
- * @param wipeAfterFailures ngưỡng sai liên tiếp để xóa dữ liệu theo CD-08 (10), `null` nếu tùy chọn đang tắt. Lát 2
- *   chưa có cài đặt nên mặc định tắt; Lát 9 nối với `SettingsRepository`.
+ * @param settings tùy chọn "xóa dữ liệu khi nhập sai quá nhiều" (CD-08): bật thì đạt [PinPolicy.WIPE_AFTER_FAILURES] lần sai
+ *   liên tiếp là xóa như ngắt kết nối (KH-06). Lát 2 chưa có cài đặt nên bản tạm luôn tắt; Lát 9 nối với cài đặt thật.
  */
 internal class SecurityRepositoryImpl(
     private val vault: ConfigVault,
@@ -39,7 +43,7 @@ internal class SecurityRepositoryImpl(
     private val secrets: SecretStore,
     private val tokens: TokenProvider,
     private val biometric: BiometricAuthenticator,
-    private val wipeAfterFailures: () -> Int? = { null },
+    private val settings: SecuritySettings,
 ) : SecurityRepository {
 
     private val mutex = Mutex()
@@ -59,20 +63,14 @@ internal class SecurityRepositoryImpl(
         vault.initialize()
         if (vault.pinMode) return@withLock AppResult.Failure(AppError.SecureStorage)
         val epoch = vault.currentEpoch()
-        val config = when (val loaded = vault.load()) {
-            is AppResult.Success -> loaded.value
-            is AppResult.Failure -> return@withLock loaded
-        }
+        val config = vault.load().getOrElse { return@withLock AppResult.Failure(it) }
         val plain = vault.encode(config)
         val envelope = try {
-            codec.seal(pin, plain, ConfigVault.NAME)
+            codec.seal(pin, plain, StorageNames.CONFIG)
         } finally {
             plain.fill(0)
         }
-        val sealed = when (envelope) {
-            is AppResult.Success -> envelope.value
-            is AppResult.Failure -> return@withLock envelope
-        }
+        val sealed = envelope.getOrElse { return@withLock AppResult.Failure(it) }
         // Ghi nguyên tử qua tệp tạm: lỗi giữa chừng thì tệp cũ (chế độ thiết bị) còn nguyên (BM-04).
         val written = vault.writeRaw(sealed.bytes)
         if (written is AppResult.Failure) {
@@ -149,7 +147,7 @@ internal class SecurityRepositoryImpl(
         if (remaining > 0) return UnlockResult.Cooldown(remaining)
         val envelope = (vault.readRaw() as? AppResult.Success)?.value
         if (envelope == null || !codec.isEnvelope(envelope)) return UnlockResult.Failed
-        return when (val opened = codec.openWithKey(key, envelope, ConfigVault.NAME)) {
+        return when (val opened = codec.openWithKey(key, envelope, StorageNames.CONFIG)) {
             is EnvelopeOpen.Opened -> {
                 val config = vault.decode(opened.plain)
                 opened.plain.fill(0)
@@ -175,8 +173,8 @@ internal class SecurityRepositoryImpl(
     override suspend fun lockoutRemainingMs(): Long = lockout.remainingMs()
 
     override suspend fun attemptsBeforeWipe(): Int? {
-        val threshold = wipeAfterFailures() ?: return null
-        return (threshold - lockout.failures()).coerceAtLeast(0)
+        if (!settings.isWipeOnTooManyFailuresEnabled()) return null
+        return (PinPolicy.WIPE_AFTER_FAILURES - lockout.failures()).coerceAtLeast(0)
     }
 
     override fun lock() {
@@ -206,7 +204,7 @@ internal class SecurityRepositoryImpl(
                 attempt.key.fill(0)
                 val config = vault.decode(attempt.plain)
                 val envelope = try {
-                    if (config == null) null else codec.seal(newPin, attempt.plain, ConfigVault.NAME)
+                    if (config == null) null else codec.seal(newPin, attempt.plain, StorageNames.CONFIG)
                 } finally {
                     attempt.plain.fill(0)
                 }
@@ -288,7 +286,7 @@ internal class SecurityRepositoryImpl(
         if (envelope == null || !codec.isEnvelope(envelope)) return Attempt.Rejected(UnlockResult.Failed)
 
         val (previous, current) = lockout.recordAttempt() ?: return Attempt.Rejected(UnlockResult.Failed)
-        return when (val opened = codec.open(pin, envelope, ConfigVault.NAME)) {
+        return when (val opened = codec.open(pin, envelope, StorageNames.CONFIG)) {
             is EnvelopeOpen.Opened -> {
                 try {
                     lockout.clear()
@@ -309,7 +307,7 @@ internal class SecurityRepositoryImpl(
     }
 
     private suspend fun onWrongPin(failures: Int): UnlockResult {
-        val threshold = wipeAfterFailures()
+        val threshold = PinPolicy.WIPE_AFTER_FAILURES.takeIf { settings.isWipeOnTooManyFailuresEnabled() }
         if (threshold != null && failures >= threshold) {
             // KH-06: như ngắt kết nối. Chỉ xóa phần bảo mật và config ở đây; phần dữ liệu khác của app do nơi gọi chạy
             // tiếp `DisconnectUseCase` (idempotent) khi nhận [UnlockResult.Wiped]. Nếu process chết trước đó thì dữ

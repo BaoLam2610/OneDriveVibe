@@ -18,6 +18,8 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:common"))
             implementation(project(":core:network"))
+            // Trình duyệt bảng DB đọc odv.db qua kết nối của chính Room (không mở bằng SQLite hệ thống, xem StorageReader).
+            implementation(project(":core:database"))
             implementation(project(":core:designsystem"))
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)

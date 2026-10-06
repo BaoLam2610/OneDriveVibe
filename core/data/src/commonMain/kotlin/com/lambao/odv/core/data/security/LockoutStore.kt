@@ -3,12 +3,13 @@ package com.lambao.odv.core.data.security
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.security.BootAwareClock
 import com.lambao.odv.core.security.SecretStore
+import com.lambao.odv.core.data.StorageNames
+import com.lambao.odv.core.domain.model.LockoutPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlin.math.min
 
 /**
  * Bộ đếm sai bền (KH-02, ADR-0014). [failures] là số lần sai liên tiếp; [lastAttemptMs] là mốc lần thử cuối theo
@@ -45,11 +46,11 @@ internal class LockoutStore(
     /** Hoàn tác [recordAttempt] khi lần thử không phải PIN sai (tệp hỏng): không phạt oan. */
     suspend fun rollback(previous: LockoutRecord) {
         mutex.withLock {
-            if (previous.failures == 0) secrets.delete(NAME) else save(previous)
+            if (previous.failures == 0) secrets.delete(StorageNames.LOCKOUT) else save(previous)
         }
     }
 
-    suspend fun clear() = mutex.withLock { secrets.delete(NAME) }
+    suspend fun clear() = mutex.withLock { secrets.delete(StorageNames.LOCKOUT) }
 
     /** Số lần sai liên tiếp hiện tại (KH-06). */
     suspend fun failures(): Int = mutex.withLock { load().failures }
@@ -60,7 +61,7 @@ internal class LockoutStore(
      */
     suspend fun remainingMs(): Long = mutex.withLock {
         val record = load()
-        val penalty = penaltyMs(record.failures)
+        val penalty = LockoutPolicy.penaltyMs(record.failures)
         if (penalty == 0L) return@withLock 0L
         val now = clock.elapsedRealtimeMs()
         val boot = clock.bootCount()
@@ -73,7 +74,7 @@ internal class LockoutStore(
     }
 
     private suspend fun load(): LockoutRecord {
-        val bytes = (secrets.read(NAME) as? AppResult.Success)?.value ?: return LockoutRecord()
+        val bytes = (secrets.read(StorageNames.LOCKOUT) as? AppResult.Success)?.value ?: return LockoutRecord()
         return try {
             json.decodeFromString(LockoutRecord.serializer(), bytes.decodeToString())
         } catch (e: CancellationException) {
@@ -84,20 +85,5 @@ internal class LockoutStore(
     }
 
     private suspend fun save(record: LockoutRecord): Boolean =
-        secrets.write(NAME, json.encodeToString(LockoutRecord.serializer(), record).encodeToByteArray()) is AppResult.Success
-
-    companion object {
-        const val NAME = "lock_state"
-        private const val FREE_ATTEMPTS = 5
-        private const val BASE_PENALTY_MS = 30_000L
-        private const val MAX_PENALTY_MS = 60 * 60 * 1000L
-
-        /** KH-02: từ lần sai thứ 5 chờ 30 giây, mỗi lần sai tiếp theo gấp đôi, trần 1 giờ. */
-        fun penaltyMs(failures: Int): Long {
-            if (failures < FREE_ATTEMPTS) return 0
-            // Chặn số mũ để không tràn: 30 giây × 2^7 đã vượt trần 1 giờ.
-            val doublings = min(failures - FREE_ATTEMPTS, 7)
-            return min(BASE_PENALTY_MS shl doublings, MAX_PENALTY_MS)
-        }
-    }
+        secrets.write(StorageNames.LOCKOUT, json.encodeToString(LockoutRecord.serializer(), record).encodeToByteArray()) is AppResult.Success
 }

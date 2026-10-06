@@ -49,8 +49,8 @@ import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSearchBar
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVTheme
-import com.lambao.odv.core.network.HttpTrafficEntry
-import com.lambao.odv.core.network.masked
+import com.lambao.odv.core.network.traffic.HttpTrafficEntry
+import com.lambao.odv.core.network.traffic.masked
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -377,7 +377,7 @@ private fun JsonRowView(row: JsonRow, query: String, onToggle: (String) -> Unit,
 }
 
 /** Thêm [text] vào builder, tô nền các đoạn khớp [query] (không phân biệt hoa thường). */
-private fun AnnotatedString.Builder.appendMatches(text: String, query: String, base: SpanStyle, highlight: SpanStyle) {
+internal fun AnnotatedString.Builder.appendMatches(text: String, query: String, base: SpanStyle, highlight: SpanStyle) {
     if (query.isEmpty()) {
         withStyle(base) { append(text) }
         return

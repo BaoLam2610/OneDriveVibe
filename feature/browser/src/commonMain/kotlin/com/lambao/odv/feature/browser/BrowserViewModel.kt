@@ -2,20 +2,18 @@ package com.lambao.odv.feature.browser
 
 import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
-import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
-import com.lambao.odv.core.common.result.AppResult
-import com.lambao.odv.core.domain.model.DriveItem
-import com.lambao.odv.core.domain.model.MediaKind
+import com.lambao.odv.core.domain.model.FolderContent
 import com.lambao.odv.core.domain.model.SortOrder
-import com.lambao.odv.core.domain.model.SyncPhase
 import com.lambao.odv.core.domain.model.ViewMode
 import com.lambao.odv.core.domain.model.ViewerContext
-import com.lambao.odv.core.domain.model.sortedFor
-import com.lambao.odv.core.domain.repository.BrowserPreferences
-import com.lambao.odv.core.domain.repository.DriveRepository
-import com.lambao.odv.core.domain.repository.NetworkMonitor
-import com.lambao.odv.core.domain.repository.SyncRepository
+import com.lambao.odv.core.domain.settings.BrowserPreferences
+import com.lambao.odv.core.domain.usecase.folder.ObserveFolderContentUseCase
+import com.lambao.odv.core.domain.usecase.folder.SearchDriveUseCase
+import com.lambao.odv.core.domain.usecase.sync.ObserveOnlineAndSyncUseCase
+import com.lambao.odv.core.domain.usecase.sync.ObserveSyncStatusUseCase
+import com.lambao.odv.core.domain.usecase.sync.RefreshSyncUseCase
+import com.lambao.odv.core.domain.usecase.sync.SyncIfStaleUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -24,30 +22,26 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val SEARCH_DEBOUNCE_MS = 250L
-
-/** Loại tệp được bật (TM-03, DS-03). Lát 1 coi cả ba loại đều bật; bật/tắt từng loại là Lát 9 (CD-01). */
-private val EnabledKinds: Set<MediaKind> = MediaKind.entries.toSet()
-
 /**
  * Tab Thư mục (TM-01 → TM-07, DS-03 → DS-06). Nguồn dữ liệu theo ADR-0007:
- * - Quét lần đầu xong ([BrowserSync.initialSyncDone]): đọc Room, tự cập nhật khi đồng bộ làm đổi dữ liệu (DB-05).
+ * - Quét lần đầu xong ([SyncStatus.initialSyncDone]): đọc Room, tự cập nhật khi đồng bộ làm đổi dữ liệu (DB-05).
  * - Chưa xong: gọi thẳng API liệt kê thư mục (TM-07), sắp xếp tại chỗ.
  *
  * Mở màn thì yêu cầu đồng bộ nếu quá hạn (DS-04); đồng bộ chạy trong scope riêng của app nên rời màn không làm dừng nó.
  */
 class BrowserViewModel(
-    private val drives: DriveRepository,
-    private val sync: SyncRepository,
+    private val observeFolderContent: ObserveFolderContentUseCase,
+    private val searchDrive: SearchDriveUseCase,
+    private val observeSyncStatus: ObserveSyncStatusUseCase,
+    private val observeOnlineAndSync: ObserveOnlineAndSyncUseCase,
+    private val syncIfStale: SyncIfStaleUseCase,
+    private val refreshSync: RefreshSyncUseCase,
     private val preferences: BrowserPreferences,
-    private val network: NetworkMonitor,
 ) : BaseMviViewModel<BrowserState, BrowserIntent, BrowserEffect>(BrowserState()) {
 
     private val log = Logger.withTag("Browser")
@@ -56,19 +50,13 @@ class BrowserViewModel(
     private val retryTick = MutableStateFlow(0)
     private val queryInput = MutableStateFlow("")
 
-    private sealed interface Content {
-        data object Loading : Content
-        data class Loaded(val items: List<DriveItem>) : Content
-        data class Failed(val error: AppError) : Content
-    }
-
     init {
         observePreferences()
         observeSync()
         observeNetwork()
         observeContent()
         observeSearch()
-        sync.syncIfStale()
+        syncIfStale()
     }
 
     override fun onIntent(intent: BrowserIntent) {
@@ -85,9 +73,9 @@ class BrowserViewModel(
             BrowserIntent.Retry -> {
                 setState { copy(isLoading = true, error = null) }
                 retryTick.update { it + 1 }
-                sync.syncIfStale()
+                syncIfStale()
             }
-            BrowserIntent.Refresh -> sync.refresh()
+            BrowserIntent.Refresh -> refreshSync()
             BrowserIntent.OpenSortSheet -> setState { copy(isSortSheetOpen = true) }
             BrowserIntent.DismissSortSheet -> setState { copy(isSortSheetOpen = false) }
             is BrowserIntent.SelectSort -> selectSort(intent.order)
@@ -147,29 +135,15 @@ class BrowserViewModel(
 
     private fun observeSync() {
         viewModelScope.launch {
-            sync.observeState().collect { s ->
-                setState {
-                    copy(
-                        sync = BrowserSync(
-                            isSyncing = s.phase == SyncPhase.Syncing,
-                            scannedCount = s.scannedCount,
-                            initialSyncDone = s.initialSyncDone,
-                            // AppLocked là app vừa khóa, không phải lỗi đồng bộ: màn Khóa sẽ che (CH-03).
-                            failed = s.error != null && s.error != AppError.AppLocked,
-                        ),
-                    )
-                }
-            }
+            // AppLocked là app vừa khóa, không phải lỗi đồng bộ: ObserveSyncStatusUseCase đã loại (CH-03).
+            observeSyncStatus().collect { status -> setState { copy(sync = status) } }
         }
     }
 
     private fun observeNetwork() {
         viewModelScope.launch {
-            network.isOnline.collect { online ->
-                setState { copy(isOffline = !online) }
-                // Có mạng trở lại: bù lần đồng bộ đã lỡ khi offline nếu đã quá hạn (DS-04).
-                if (online) sync.syncIfStale()
-            }
+            // Có mạng trở lại: use case bù lần đồng bộ đã lỡ khi offline nếu đã quá hạn (DS-04).
+            observeOnlineAndSync().collect { online -> setState { copy(isOffline = !online) } }
         }
     }
 
@@ -179,39 +153,21 @@ class BrowserViewModel(
         val synced = state.map { it.sync.initialSyncDone }.distinctUntilChanged()
         viewModelScope.launch {
             combine(folderId, synced, retryTick) { folder, done, _ -> folder to done }
-                .flatMapLatest { (folder, done) -> if (done) roomContent(folder) else apiContent(folder) }
+                .flatMapLatest { (folder, done) -> observeFolderContent(folder, done, sortOrders, BrowserConstants.ENABLED_KINDS) }
                 .collect(::applyContent)
         }
     }
 
     private val sortOrders: Flow<SortOrder> get() = state.map { it.sort }.distinctUntilChanged()
 
-    /** Đọc Room (DB-05): đổi cách sắp xếp thì truy vấn lại, đồng bộ làm đổi dữ liệu thì tự phát lại. */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun roomContent(folderId: String?): Flow<Content> =
-        sortOrders.flatMapLatest { sort -> drives.observeChildren(folderId, sort).map { Content.Loaded(it) } }
-
-    /**
-     * TM-07: quét lần đầu chưa xong nên gọi thẳng API. Chỉ gọi mạng một lần cho mỗi thư mục; đổi cách sắp xếp chỉ sắp xếp
-     * lại danh sách đã có, không gọi lại.
-     */
-    private fun apiContent(folderId: String?): Flow<Content> = flow {
-        emit(Content.Loading)
-        when (val result = drives.listChildren(folderId)) {
-            is AppResult.Success -> emitAll(sortOrders.map { Content.Loaded(result.value.sortedFor(it)) })
-            is AppResult.Failure -> emit(Content.Failed(result.error))
-        }
-    }
-
-    private fun applyContent(content: Content) {
+    private fun applyContent(content: FolderContent) {
         when (content) {
-            Content.Loading -> setState { copy(isLoading = true, error = null) }
-            is Content.Loaded -> {
-                val visible = content.items.toVisibleItems()
-                log.d { "Thư mục: ${content.items.size} mục, hiển thị ${visible.size}" }
-                setState { copy(items = visible, isLoading = false, error = null) }
+            FolderContent.Loading -> setState { copy(isLoading = true, error = null) }
+            is FolderContent.Loaded -> {
+                log.d { "Thư mục: hiển thị ${content.items.size} mục" }
+                setState { copy(items = content.items, isLoading = false, error = null) }
             }
-            is Content.Failed -> {
+            is FolderContent.Failed -> {
                 val error = content.error.toBrowserError()
                 log.w { "Tải thư mục thất bại: ${error.kind} code=${error.code}" }
                 setState { copy(isLoading = false, error = error) }
@@ -222,20 +178,16 @@ class BrowserViewModel(
     @OptIn(FlowPreview::class)
     private fun observeSearch() {
         viewModelScope.launch {
-            queryInput.debounce(SEARCH_DEBOUNCE_MS).distinctUntilChanged().collectLatest { query ->
+            queryInput.debounce(BrowserConstants.SEARCH_DEBOUNCE_MS).distinctUntilChanged().collectLatest { query ->
                 if (query.isBlank()) {
                     setState { copy(search = search?.copy(results = emptyList(), isSearching = false)) }
                     return@collectLatest
                 }
                 setState { copy(search = search?.copy(isSearching = true)) }
                 // Chỉ đọc Room, không gọi API: dùng được khi offline (DS-03).
-                val results = drives.search(query, EnabledKinds)
+                val results = searchDrive(query, BrowserConstants.ENABLED_KINDS)
                 setState { copy(search = search?.copy(results = results, isSearching = false)) }
             }
         }
     }
-
-    /** TM-03: chỉ giữ thư mục và tệp thuộc loại được bật. Thứ tự (TM-02, TM-05) đã do nguồn dữ liệu sắp xếp. */
-    private fun List<DriveItem>.toVisibleItems(): List<DriveItem> =
-        filter { it.isFolder || it.mediaKind in EnabledKinds }
 }

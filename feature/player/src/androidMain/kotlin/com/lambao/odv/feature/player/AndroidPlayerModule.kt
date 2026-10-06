@@ -1,7 +1,7 @@
 package com.lambao.odv.feature.player
 
 import android.content.Context
-import com.lambao.odv.core.domain.repository.ConnectionResetter
+import com.lambao.odv.core.domain.hook.ConnectionResetter
 import org.koin.dsl.binds
 import org.koin.dsl.module
 

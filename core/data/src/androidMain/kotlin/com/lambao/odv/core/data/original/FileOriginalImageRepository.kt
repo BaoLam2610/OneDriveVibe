@@ -4,13 +4,12 @@ import co.touchlab.kermit.Logger
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
-import com.lambao.odv.core.data.drive.toCredentials
-import com.lambao.odv.core.domain.repository.ConfigRepository
-import com.lambao.odv.core.domain.repository.ConnectionResetter
-import com.lambao.odv.core.domain.repository.OriginalImageRef
+import com.lambao.odv.core.domain.hook.ConnectionResetter
+import com.lambao.odv.core.domain.model.OriginalImageRef
 import com.lambao.odv.core.domain.repository.OriginalImageRepository
-import com.lambao.odv.core.domain.repository.OriginalImageState
-import com.lambao.odv.core.network.GraphApi
+import com.lambao.odv.core.domain.model.OriginalImageState
+import com.lambao.odv.core.network.graph.GraphApi
+import com.lambao.odv.core.data.OriginalImageConstants
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -20,16 +19,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-
-/** Phát tiến trình tối đa mỗi chừng này byte để UI không bị ngập (ảnh gốc vài chục MB tải theo khúc 64 KB). */
-private const val PROGRESS_STEP_BYTES = 256L * 1024
-
-private const val PART_SUFFIX = ".part"
-
-/** Số khóa chia theo băm của khóa tệp: một ảnh chỉ có một luồng ghi, không cần giữ Mutex riêng cho từng ảnh đã xem. */
-private const val LOCK_STRIPES = 16
-
-private val NON_ALPHANUMERIC = Regex("[^A-Za-z0-9]")
 
 /**
  * Kho ảnh gốc dựa trên tệp ở [directory] (nằm ở `cacheDir`: không sao lưu, CH-04; hệ thống có thể dọn khi thiếu chỗ,
@@ -42,14 +31,13 @@ private val NON_ALPHANUMERIC = Regex("[^A-Za-z0-9]")
  */
 internal class FileOriginalImageRepository(
     private val api: GraphApi,
-    private val configs: ConfigRepository,
     private val dispatchers: DispatcherProvider,
     private val directory: File,
     private val maxBytes: Long,
 ) : OriginalImageRepository, ConnectionResetter {
 
     private val log = Logger.withTag("OriginalImage")
-    private val locks = Array(LOCK_STRIPES) { Mutex() }
+    private val locks = Array(OriginalImageConstants.LOCK_STRIPES) { Mutex() }
 
     /** Tăng mỗi lần xóa sạch: tải đang bay thấy giá trị đổi thì bỏ ghi, không để ảnh của tài khoản cũ nằm lại (CD-05). */
     @Volatile
@@ -62,7 +50,7 @@ internal class FileOriginalImageRepository(
             emit(OriginalImageState.Ready(it))
             return@flow
         }
-        locks[(key.hashCode() and Int.MAX_VALUE) % LOCK_STRIPES].withLock {
+        locks[(key.hashCode() and Int.MAX_VALUE) % OriginalImageConstants.LOCK_STRIPES].withLock {
             // Một người xem khác (trang kế tiếp tải trước) có thể vừa tải xong cùng ảnh trong lúc chờ khóa.
             readyPath(final)?.let {
                 emit(OriginalImageState.Ready(it))
@@ -78,13 +66,9 @@ internal class FileOriginalImageRepository(
         final: File,
         emit: suspend (OriginalImageState) -> Unit,
     ) {
-        val credentials = when (val loaded = configs.load()) {
-            is AppResult.Success -> loaded.value.toCredentials()
-            is AppResult.Failure -> return emit(OriginalImageState.Failed(loaded.error))
-        }
         val startGeneration = generation
         if (!directory.isDirectory && !directory.mkdirs()) return emit(OriginalImageState.Failed(AppError.Unknown()))
-        val part = File(directory, key + PART_SUFFIX)
+        val part = File(directory, key + OriginalImageConstants.PART_SUFFIX)
 
         // Thử tải tiếp từ phần dở; nếu máy chủ từ chối Range (416: phần dở dài hơn tệp, tệp đổi) thì xóa và tải lại từ đầu một lần.
         var restarted = false
@@ -95,7 +79,6 @@ internal class FileOriginalImageRepository(
             var lastEmitted = received
             val result = try {
                 api.downloadContent(
-                    credentials = credentials,
                     itemId = ref.itemId,
                     offset = received,
                     onStart = { resumed, totalBytes ->
@@ -108,7 +91,7 @@ internal class FileOriginalImageRepository(
                     onBytes = { buffer, length ->
                         stream?.write(buffer, 0, length)
                         received += length
-                        if (received - lastEmitted >= PROGRESS_STEP_BYTES) {
+                        if (received - lastEmitted >= OriginalImageConstants.PROGRESS_STEP_BYTES) {
                             lastEmitted = received
                             emit(OriginalImageState.Downloading(received, total))
                         }
@@ -164,7 +147,7 @@ internal class FileOriginalImageRepository(
     private fun pruneAfterWrite(ref: OriginalImageRef, keepKey: String) {
         runCatching {
             val prefix = itemPrefix(ref.itemId)
-            fun isKept(file: File) = file.name == keepKey || file.name == keepKey + PART_SUFFIX
+            fun isKept(file: File) = file.name == keepKey || file.name == keepKey + OriginalImageConstants.PART_SUFFIX
             directory.listFiles().orEmpty()
                 .filter { it.name.startsWith(prefix) && !isKept(it) }
                 .forEach { it.delete() }
@@ -196,5 +179,5 @@ internal class FileOriginalImageRepository(
     private fun fileKey(ref: OriginalImageRef): String =
         itemPrefix(ref.itemId) + (ref.cTag?.hashCode()?.toUInt()?.toString(16) ?: "0")
 
-    private fun itemPrefix(itemId: String): String = NON_ALPHANUMERIC.replace(itemId, "_") + "_"
+    private fun itemPrefix(itemId: String): String = OriginalImageConstants.NON_ALPHANUMERIC.replace(itemId, "_") + "_"
 }

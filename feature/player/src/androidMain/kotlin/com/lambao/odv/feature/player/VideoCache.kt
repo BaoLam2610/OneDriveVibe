@@ -9,7 +9,7 @@ import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
-import com.lambao.odv.core.domain.repository.ConnectionResetter
+import com.lambao.odv.core.domain.hook.ConnectionResetter
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext

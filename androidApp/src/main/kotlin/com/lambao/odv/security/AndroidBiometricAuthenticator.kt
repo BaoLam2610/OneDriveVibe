@@ -15,7 +15,7 @@ import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.domain.model.BiometricOutcome
 import com.lambao.odv.core.domain.model.BiometricUnwrap
-import com.lambao.odv.core.domain.repository.BiometricAuthenticator
+import com.lambao.odv.core.domain.platform.BiometricAuthenticator
 import com.lambao.odv.core.security.SecretStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable

@@ -2,16 +2,17 @@ package com.lambao.odv.core.data.sync
 
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
-import com.lambao.odv.core.data.drive.toCredentials
+import com.lambao.odv.core.common.result.getOrElse
 import com.lambao.odv.core.data.drive.toEntity
 import com.lambao.odv.core.database.DriveDao
 import com.lambao.odv.core.database.DriveItemEntity
 import com.lambao.odv.core.database.SyncStateEntity
-import com.lambao.odv.core.domain.repository.ConfigRepository
-import com.lambao.odv.core.network.GraphApi
+import com.lambao.odv.core.network.graph.GraphApi
+import com.lambao.odv.core.data.SyncConstants
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlin.time.Clock
 
 /**
  * Một lần đồng bộ delta (DB-01 → DB-05). Không giữ trạng thái giữa các lần chạy: mọi thứ cần để tiếp tục nằm trong
@@ -22,14 +23,13 @@ import kotlinx.coroutines.ensureActive
  * - `410`: bỏ mốc rồi quét đầy đủ lại ở nền, danh sách cũ vẫn dùng được trong lúc quét (DB-03); mục không còn trên
  *   OneDrive được dọn ở trang cuối, cùng transaction với mốc mới.
  *
- * Config đọc lại ở từng trang để khi app khóa (CH-03) lần đồng bộ dừng ngay với `AppLocked`, không giữ bí mật trong
- * một coroutine chạy dài.
+ * Credentials do `GraphApi` lấy lại ở từng trang (qua `GraphCredentialsSource`) để khi app khóa (CH-03) lần đồng bộ dừng
+ * ngay với `AppLocked`, không giữ bí mật trong một coroutine chạy dài.
  */
 internal class SyncEngine(
     private val api: GraphApi,
-    private val configs: ConfigRepository,
     private val dao: DriveDao,
-    private val clock: () -> Long,
+    private val clock: Clock,
 ) {
 
     /**
@@ -57,7 +57,7 @@ internal class SyncEngine(
                 }
                 error.isTransient() -> {
                     if (progressed) transientFailures = 0
-                    if (++transientFailures > MAX_TRANSIENT_RETRIES) return result
+                    if (++transientFailures > SyncConstants.MAX_TRANSIENT_RETRIES) return result
                     delay(backoffMs(error, transientFailures))
                 }
                 else -> return result
@@ -76,14 +76,7 @@ internal class SyncEngine(
 
         while (true) {
             currentCoroutineContext().ensureActive()
-            val config = when (val loaded = configs.load()) {
-                is AppResult.Success -> loaded.value
-                is AppResult.Failure -> return loaded
-            }
-            val page = when (val fetched = api.deltaPage(config.toCredentials(), link)) {
-                is AppResult.Success -> fetched.value
-                is AppResult.Failure -> return fetched
-            }
+            val page = api.deltaPage(link).getOrElse { return AppResult.Failure(it) }
 
             var rootId = state.rootId
             val upserts = ArrayList<DriveItemEntity>(page.value.size)
@@ -116,7 +109,7 @@ internal class SyncEngine(
                 deltaLink = delta,
                 pendingNextLink = null,
                 initialSyncDone = true,
-                lastSyncedAt = clock(),
+                lastSyncedAt = clock.now().toEpochMilliseconds(),
             )
             dao.applyPage(upserts, deleted, state, purgeScanId = if (fullScan) scanId else null)
             onProgress(scanned)
@@ -142,13 +135,7 @@ internal class SyncEngine(
     /** `Retry-After` nếu máy chủ gửi (TK-06), không thì 2, 4, 8, 16, 32 giây (TK-05). */
     private fun backoffMs(error: AppError, attempt: Int): Long {
         val retryAfter = (error as? AppError.Http)?.retryAfterSeconds
-        if (retryAfter != null) return retryAfter.coerceIn(1, MAX_RETRY_AFTER_SECONDS) * 1000
-        return (1000L shl attempt).coerceAtMost(MAX_BACKOFF_MS)
-    }
-
-    private companion object {
-        const val MAX_TRANSIENT_RETRIES = 5
-        const val MAX_RETRY_AFTER_SECONDS = 300L
-        const val MAX_BACKOFF_MS = 60_000L
+        if (retryAfter != null) return retryAfter.coerceIn(1, SyncConstants.MAX_RETRY_AFTER_SECONDS) * 1000
+        return (1000L shl attempt).coerceAtMost(SyncConstants.MAX_BACKOFF_MS)
     }
 }

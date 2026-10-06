@@ -15,4 +15,8 @@ object DebugHooks {
     /** Xóa cache thumbnail (đĩa và bộ nhớ) mà không đụng tới kết nối hay dữ liệu khác. Ảnh sẽ tải lại khi cuộn tới. */
     @Volatile
     var clearThumbnailCache: (suspend () -> Unit)? = null
+
+    /** Đọc các kho DataStore (tên kho → khóa → giá trị) để tab Lưu trữ hiển thị. Chỉ đọc, qua đúng instance app đang dùng. */
+    @Volatile
+    var dumpPreferences: (suspend () -> Map<String, Map<String, String>>)? = null
 }

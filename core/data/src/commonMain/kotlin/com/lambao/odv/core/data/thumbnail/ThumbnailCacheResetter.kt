@@ -3,8 +3,8 @@ package com.lambao.odv.core.data.thumbnail
 import co.touchlab.kermit.Logger
 import coil3.ImageLoader
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
-import com.lambao.odv.core.domain.repository.ConnectionResetter
-import com.lambao.odv.core.domain.repository.ThumbnailCache
+import com.lambao.odv.core.domain.hook.ConnectionResetter
+import com.lambao.odv.core.domain.hook.ThumbnailCache
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 

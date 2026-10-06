@@ -17,11 +17,9 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
-    // Chỉ để ghép module Koin ở MainApplication (networkModule, securityModule). Code app không gọi thẳng các module này.
-    implementation(project(":core:network"))
+    // AndroidBiometricAuthenticator dùng SecretStore để lưu phần bọc khóa sinh trắc học (ADR-0014). Module Koin của network,
+    // security và database nay ghép qua `coreModules` của :core:data nên app không còn cần :core:network và :core:database.
     implementation(project(":core:security"))
-    // Chỉ để ghép databaseModule ở MainApplication (Room, ADR-0007).
-    implementation(project(":core:database"))
     implementation(project(":core:designsystem"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:browser"))

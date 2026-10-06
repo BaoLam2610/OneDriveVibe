@@ -3,18 +3,8 @@ package com.lambao.odv.feature.library
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
+import com.lambao.odv.core.domain.model.SyncStatus
 import com.lambao.odv.core.domain.model.ViewerContext
-
-/** Phần của trạng thái đồng bộ mà tab Thư viện cần để hiện banner (TV-06, DS-05). */
-data class LibrarySync(
-    val isSyncing: Boolean = false,
-    /** Số mục đã quét khi quét lần đầu ("đã quét N mục"). */
-    val scannedCount: Int = 0,
-    /** Đã quét xong drive ít nhất một lần. */
-    val initialSyncDone: Boolean = false,
-    /** Lần đồng bộ gần nhất lỗi (không tính app đang khóa). */
-    val failed: Boolean = false,
-)
 
 /**
  * Trạng thái tab Thư viện (TV-01 → TV-06). Danh sách ảnh/video không nằm ở đây mà ở luồng phân trang
@@ -28,7 +18,7 @@ data class LibraryState(
     val daysLoaded: Boolean = false,
     /** Độ lệch múi giờ dùng để nhóm ngày; giao diện dùng đúng giá trị này để định dạng tiêu đề. */
     val utcOffsetMs: Long = 0L,
-    val sync: LibrarySync = LibrarySync(),
+    val sync: SyncStatus = SyncStatus(),
     /** Máy không có mạng (DS-05). */
     val isOffline: Boolean = false,
 )

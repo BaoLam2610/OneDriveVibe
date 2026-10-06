@@ -16,7 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import com.lambao.odv.core.designsystem.component.LocalODVTopOverlay
 import com.lambao.odv.core.designsystem.component.ODVSecureWindow
 import com.lambao.odv.core.designsystem.theme.ODVTheme
-import com.lambao.odv.core.domain.repository.SecurityRepository
+import com.lambao.odv.core.domain.usecase.security.ObserveProtectionUseCase
 import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.navigation.ODVNavDisplay
 import kotlinx.coroutines.launch
@@ -26,7 +26,7 @@ import org.koin.compose.koinInject
 // AppCompatActivity thay ComponentActivity của template: AppCompatDelegate.setApplicationLocales() chỉ áp dụng ngay
 // (không cần khởi động lại app) với AppCompatActivity trên Android 12 trở xuống (ADR-0011, CD-10).
 class MainActivity : AppCompatActivity() {
-    private val security: SecurityRepository by inject()
+    private val observeProtection: ObserveProtectionUseCase by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         // riêng chỉ ẩn ảnh này mà vẫn cho chụp màn hình trong app; bản thấp hơn dùng FLAG_SECURE toàn cửa sổ (xem ODVApp).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             lifecycleScope.launch {
-                security.isProtected.collect { enabled -> setRecentsScreenshotEnabled(!enabled) }
+                observeProtection().collect { enabled -> setRecentsScreenshotEnabled(!enabled) }
             }
         }
 
@@ -50,8 +50,8 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun ODVApp() {
     ODVTheme {
-        val security = koinInject<SecurityRepository>()
-        val isProtected by security.isProtected.collectAsState()
+        val observeProtection = koinInject<ObserveProtectionUseCase>()
+        val isProtected by observeProtection().collectAsState()
         // Android 12 trở xuống không có API ẩn riêng ảnh ở danh sách app gần đây nên dùng FLAG_SECURE toàn cửa sổ khi bảo mật
         // BẬT (đánh đổi: mất chụp màn hình trong app, chấp nhận theo ADR-0014). Android 13+ xử lý ở MainActivity.onCreate.
         ODVSecureWindow(enabled = isProtected && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU)

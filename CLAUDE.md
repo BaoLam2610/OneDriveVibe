@@ -12,13 +12,14 @@ App Android chỉ đọc OneDrive for Business qua Microsoft Graph: xem video, �
 | `.claude/docs/onedrive-graph-responses.md` | Mẫu response thật (giá trị đã thay bằng mẫu) |
 | `.claude/adr/` | 13 quyết định kiến trúc. Muốn đổi thì viết ADR mới, không sửa ADR cũ |
 | `.claude/docs/ke-hoach-mvp1.md` | Kế hoạch triển khai MVP1 theo lát cắt dọc, thư viện đã chọn |
+| `.claude/docs/ke-hoach-refactor-kien-truc.md` | Đang refactor nền móng (R0 đến R6, 2026-10-06): làm đúng phase, không làm trước |
 | `.claude/docs/tien-do-mvp1.md` | Đang ở lát nào, bước nào. Đọc đầu mỗi phiên, cập nhật khi bắt đầu hoặc xong một bước |
 
 Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệu UI quyết định hình thức. Không tự chế màu, cỡ chữ, khoảng cách hay câu chữ chưa có trong thiết kế; hỏi lại.
 
 ## Kiến trúc đã chốt
 
-- **Clean Architecture + MVI** (ADR-0002): mỗi màn có `State`, `Intent` (`onIntent()`), `Effect` cho thao tác một lần. Chỉ tạo UseCase khi có logic thật.
+- **Clean Architecture + MVI** (ADR-0002): mỗi màn có `State`, `Intent` (`onIntent()`), `Effect` cho thao tác một lần. **UseCase bắt buộc giữa feature và data** (ADR-0016, thay quy tắc "chỉ khi có logic thật"): ViewModel không gọi thẳng repository.
 - **Navigation 3** (ADR-0003): back stack do app sở hữu, `NavDisplay` + `entryProvider`. Không truyền nav controller xuống composable, dùng lambda.
 - **Koin 4.x** (ADR-0004), không dùng Hilt.
 - **Xác thực Client Credentials** (ADR-0005): 4 trường Tenant ID, Client ID, Client Secret, UPN; gọi qua `/users/{UPN}/drive`. Không MSAL, không OneDrive cá nhân.

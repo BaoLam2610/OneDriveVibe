@@ -4,8 +4,9 @@ import android.app.Application
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import com.lambao.odv.MainActivity
-import com.lambao.odv.core.domain.repository.ThumbnailCache
-import com.lambao.odv.core.domain.repository.ThumbnailQuality
+import com.lambao.odv.core.domain.hook.PreferencesInspector
+import com.lambao.odv.core.domain.hook.ThumbnailCache
+import com.lambao.odv.core.domain.hook.ThumbnailQuality
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
 import com.lambao.odv.gallery.FoundationsGalleryActivity
 import com.lambao.odv.tools.debug.DebugAction
@@ -55,6 +56,8 @@ object DebugTools {
         }
         // Tab Khác, nhóm Thumbnail: xóa cache ảnh thu nhỏ. Koin chỉ có sau startKoin nên lấy lúc bấm.
         DebugHooks.clearThumbnailCache = { KoinPlatform.getKoin().get<ThumbnailCache>().clear() }
+        // Tab Lưu trữ, mục DataStore: xem khóa và giá trị (chỉ đọc).
+        DebugHooks.dumpPreferences = { KoinPlatform.getKoin().get<PreferencesInspector>().dump() }
         DebugActions.register(
             DebugAction(
                 title = "Foundations gallery",
@@ -75,8 +78,7 @@ object DebugTools {
     val topOverlay: (@Composable (asWindow: Boolean) -> Unit)? = { asWindow -> ODVDebugBugButton(asWindow = asWindow) }
 
     /**
-     * App vừa khóa (ADR-0014, bổ sung ADR-0013): xóa log API (chứa token và Client Secret đầy đủ) và đóng màn Debug nếu
-     * đang mở. Bản release là hàm rỗng.
+     * App vừa khóa (ADR-0014): đóng màn Debug nếu đang mở. Log API và log local được giữ (ADR-0017). Bản release là hàm rỗng.
      */
     fun onAppLocked() = DebugActivity.onAppLocked()
 }

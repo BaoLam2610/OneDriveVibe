@@ -4,6 +4,7 @@ import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.SearchResult
 import com.lambao.odv.core.domain.model.SortOrder
+import com.lambao.odv.core.domain.model.SyncStatus
 import com.lambao.odv.core.domain.model.ViewMode
 import com.lambao.odv.core.domain.model.ViewerContext
 
@@ -22,17 +23,6 @@ data class SearchState(
     val isSearching: Boolean = false,
 )
 
-/** Phần của trạng thái đồng bộ mà màn Thư mục cần để hiện banner và kéo làm mới (DS-04, TV-06). */
-data class BrowserSync(
-    val isSyncing: Boolean = false,
-    /** Số mục đã quét khi quét lần đầu ("đã quét N mục"). */
-    val scannedCount: Int = 0,
-    /** Đã quét xong drive ít nhất một lần: từ đó danh sách đọc từ Room, trước đó gọi thẳng API (TM-07). */
-    val initialSyncDone: Boolean = false,
-    /** Lần đồng bộ gần nhất lỗi (không tính app đang khóa). */
-    val failed: Boolean = false,
-)
-
 data class BrowserState(
     /** Rỗng = đang ở thư mục gốc (TM-01). */
     val path: List<Crumb> = emptyList(),
@@ -45,7 +35,7 @@ data class BrowserState(
     val viewMode: ViewMode = ViewMode.List,
     val isSortSheetOpen: Boolean = false,
     val search: SearchState? = null,
-    val sync: BrowserSync = BrowserSync(),
+    val sync: SyncStatus = SyncStatus(),
     /** Máy không có mạng (DS-05). */
     val isOffline: Boolean = false,
 )

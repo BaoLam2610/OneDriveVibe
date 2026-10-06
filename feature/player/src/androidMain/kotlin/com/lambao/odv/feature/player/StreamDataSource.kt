@@ -11,7 +11,7 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.TransferListener
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
-import com.lambao.odv.core.domain.repository.VideoStreamRepository
+import com.lambao.odv.core.domain.usecase.viewer.GetStreamUrlUseCase
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.FileNotFoundException
@@ -39,7 +39,7 @@ internal class StreamUrlException(val error: AppError) : IOException("stream url
  * theo màn xem (không sống tiếp khi app bị khóa PIN, CH-03) và không bao giờ ghi ra đĩa. Không ghi link vào log.
  */
 internal class StreamUrlProvider(
-    private val streams: VideoStreamRepository,
+    private val getStreamUrl: GetStreamUrlUseCase,
     private val now: () -> Long = SystemClock::elapsedRealtime,
 ) {
     private class Entry(val url: String, val fetchedAt: Long)
@@ -62,7 +62,7 @@ internal class StreamUrlProvider(
         val startedAt = now()
         // Có thời hạn: Graph bị throttle thì retry có thể chờ rất lâu và giữ luồng tải của ExoPlayer. Hết hạn thì coi như mất mạng
         // (AppError.Timeout → PlayerFailure.Network, có nút Tiếp tục) thay vì treo.
-        val fetched = runBlocking { withTimeoutOrNull(PlayerConstants.URL_FETCH_TIMEOUT_MS) { streams.streamUrl(itemId) } }
+        val fetched = runBlocking { withTimeoutOrNull(PlayerConstants.URL_FETCH_TIMEOUT_MS) { getStreamUrl(itemId) } }
             ?: AppResult.Failure(AppError.Timeout)
         return when (val result = fetched) {
             is AppResult.Success -> {

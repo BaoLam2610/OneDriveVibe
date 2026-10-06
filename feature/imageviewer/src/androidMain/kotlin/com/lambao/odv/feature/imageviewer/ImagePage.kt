@@ -46,7 +46,7 @@ import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.thumbnailSource
-import com.lambao.odv.core.domain.repository.OriginalImageState
+import com.lambao.odv.core.domain.model.OriginalImageState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -58,15 +58,6 @@ import me.saket.telephoto.zoomable.rememberZoomableState
 import me.saket.telephoto.zoomable.zoomable
 import java.io.File
 import kotlin.math.roundToInt
-
-/**
- * Zoom tối đa (AN-02), bội số của cỡ vừa khung. Telephoto tính `zoomFraction` (0..1) từ mức này nên phần trăm hiện ở viên
- * thuốc cũng quy theo nó.
- */
-private const val MAX_ZOOM = 4f
-
-/** Dưới ngưỡng này coi như chưa zoom (sai số làm tròn của cử chỉ), để không hiện viên thuốc phần trăm vô nghĩa. */
-private const val ZOOMED_THRESHOLD = 0.02f
 
 /** Kết quả đọc thử đầu tệp ảnh gốc: có giải mã được kích thước hay không (AN-07) và có phải GIF (AN-06). */
 private sealed interface ImageProbe {
@@ -101,7 +92,7 @@ internal fun ImagePage(
     }
     var originalShown by remember(item.id, item.cTag) { mutableStateOf(false) }
     var zoomFraction by remember(item.id, item.cTag) { mutableFloatStateOf(0f) }
-    val zoomed = zoomFraction > ZOOMED_THRESHOLD
+    val zoomed = zoomFraction > ImageViewerConstants.ZOOMED_THRESHOLD
     LaunchedEffect(zoomed) { onZoomedChange(zoomed) }
 
     val currentProbe = probe
@@ -137,7 +128,7 @@ internal fun ImagePage(
         }
 
         if (zoomed) {
-            val percent = ((1f + zoomFraction * (MAX_ZOOM - 1f)) * 100f).roundToInt()
+            val percent = ((1f + zoomFraction * (ImageViewerConstants.MAX_ZOOM - 1f)) * 100f).roundToInt()
             ODVViewerPill(
                 text = stringResource(R.string.image_viewer_zoom_percent, percent),
                 mono = true,
@@ -200,7 +191,7 @@ private fun ZoomableLayer(
     onShown: () -> Unit,
     onZoomFraction: (Float) -> Unit,
 ) {
-    val state = rememberZoomableImageState(rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = MAX_ZOOM)))
+    val state = rememberZoomableImageState(rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = ImageViewerConstants.MAX_ZOOM)))
     ZoomableAsyncImage(
         model = request,
         contentDescription = name,
@@ -226,7 +217,7 @@ private fun GifLayer(
     onShown: () -> Unit,
     onZoomFraction: (Float) -> Unit,
 ) {
-    val zoomable = rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = MAX_ZOOM))
+    val zoomable = rememberZoomableState(zoomSpec = ZoomSpec(maxZoomFactor = ImageViewerConstants.MAX_ZOOM))
     AsyncImage(
         model = request,
         contentDescription = name,

@@ -1,6 +1,6 @@
 package com.lambao.odv.core.domain.usecase
 
-import com.lambao.odv.core.domain.repository.ConnectionResetter
+import com.lambao.odv.core.domain.hook.ConnectionResetter
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable

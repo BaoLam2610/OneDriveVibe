@@ -30,13 +30,13 @@ internal class KeystoreSecretStore(
     private val dispatchers: DispatcherProvider,
 ) : SecretStore {
 
-    private val directory = File(context.applicationContext.filesDir, DIRECTORY)
+    private val directory = File(context.applicationContext.filesDir, KeystoreConstants.DIRECTORY)
     private val mutex = Mutex()
 
     override suspend fun write(name: String, plain: ByteArray): AppResult<Unit> = guarded {
         val target = fileFor(name)
         directory.mkdirs()
-        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val cipher = Cipher.getInstance(CryptoConstants.TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, checkNotNull(key(createIfMissing = true)))
         cipher.updateAAD(name.toByteArray(Charsets.UTF_8))
         val iv = cipher.iv
@@ -59,11 +59,11 @@ internal class KeystoreSecretStore(
         if (!file.exists()) return@guarded null
         val bytes = file.readBytes()
         val ivLength = bytes[0].toInt()
-        val cipher = Cipher.getInstance(TRANSFORMATION)
+        val cipher = Cipher.getInstance(CryptoConstants.TRANSFORMATION)
         // Khóa mất (đặt lại màn hình khóa, khôi phục máy): không tạo khóa mới ngầm, để đọc thất bại rõ ràng thay vì sai thẻ GCM.
         val secretKey = checkNotNull(key(createIfMissing = false))
-        require(ivLength == IV_BYTES)
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(TAG_BITS, bytes, 1, ivLength))
+        require(ivLength == CryptoConstants.IV_BYTES)
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(CryptoConstants.TAG_BITS, bytes, 1, ivLength))
         cipher.updateAAD(name.toByteArray(Charsets.UTF_8))
         cipher.doFinal(bytes, 1 + ivLength, bytes.size - 1 - ivLength)
     }
@@ -81,10 +81,10 @@ internal class KeystoreSecretStore(
             mutex.withLock {
                 // Tệp trước, khóa sau (xem SecretStore.wipeAll). Lỗi xóa khóa bị bỏ qua: không còn tệp thì khóa vô dụng.
                 // `lock_state` xóa sau cùng: nếu bị dừng giữa chừng thì config còn mà bộ đếm sai không bị về 0 trước (KH-06).
-                directory.listFiles()?.sortedBy { it.name == LAST_WIPED_FILE }?.forEach { it.delete() }
+                directory.listFiles()?.sortedBy { it.name == KeystoreConstants.LAST_WIPED_FILE }?.forEach { it.delete() }
                 try {
-                    val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-                    for (alias in listOf(KEY_ALIAS, BIO_KEY_ALIAS)) {
+                    val keyStore = KeyStore.getInstance(KeystoreConstants.ANDROID_KEYSTORE).apply { load(null) }
+                    for (alias in listOf(KeystoreConstants.KEY_ALIAS, KeystoreConstants.BIO_KEY_ALIAS)) {
                         if (keyStore.containsAlias(alias)) keyStore.deleteEntry(alias)
                     }
                 } catch (e: Exception) {
@@ -108,36 +108,22 @@ internal class KeystoreSecretStore(
     }
 
     private fun fileFor(name: String): File {
-        require(NAME_PATTERN.matches(name)) { "Tên bí mật không hợp lệ" }
+        require(KeystoreConstants.NAME_PATTERN.matches(name)) { "Tên bí mật không hợp lệ" }
         return File(directory, "$name.bin")
     }
 
     private fun key(createIfMissing: Boolean): SecretKey? {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        (keyStore.getKey(KEY_ALIAS, null) as? SecretKey)?.let { return it }
+        val keyStore = KeyStore.getInstance(KeystoreConstants.ANDROID_KEYSTORE).apply { load(null) }
+        (keyStore.getKey(KeystoreConstants.KEY_ALIAS, null) as? SecretKey)?.let { return it }
         if (!createIfMissing) return null
-        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+        val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KeystoreConstants.ANDROID_KEYSTORE)
         generator.init(
-            KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+            KeyGenParameterSpec.Builder(KeystoreConstants.KEY_ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                 .setKeySize(256)
                 .build(),
         )
         return generator.generateKey()
-    }
-
-    private companion object {
-        const val DIRECTORY = "secrets"
-        const val ANDROID_KEYSTORE = "AndroidKeyStore"
-        const val KEY_ALIAS = "odv_config_key"
-
-        // Khóa bọc khóa dẫn xuất cho sinh trắc học (tạo ở bước sinh trắc, ADR-0014); xóa cùng lúc khi ngắt kết nối.
-        const val BIO_KEY_ALIAS = "odv_bio_key"
-        const val LAST_WIPED_FILE = "lock_state.bin"
-        const val TRANSFORMATION = "AES/GCM/NoPadding"
-        const val TAG_BITS = 128
-        const val IV_BYTES = 12
-        val NAME_PATTERN = Regex("^[a-z0-9_-]{1,64}$")
     }
 }
