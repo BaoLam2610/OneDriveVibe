@@ -74,7 +74,8 @@ internal class VideoDecoders(private val context: Context) {
             val infos = MediaCodecUtil.getDecoderInfos(mime, false, false)
             val names = infos.joinToString(", ") { info ->
                 val kind = if (info.hardwareAccelerated) "phần cứng" else "phần mềm"
-                val supported = format?.let { info.isFormatSupported(it) }
+                // Media3 1.10+ nhận thêm Context (kiểm tra theo màn hình/thiết bị); bản 1.8 chỉ có tham số Format.
+                val supported = format?.let { info.isFormatSupported(context, it) }
                 val flag = if (info.name in blocked.get()) " ĐÃ CHẶN" else ""
                 "${info.name}($kind, hỗ trợ định dạng=$supported, profile=${profilesOf(info)}$flag)"
             }
@@ -100,6 +101,15 @@ internal class VideoDecoders(private val context: Context) {
                 else -> "profile$profile"
             }
         }.ifEmpty { "không có" }
+    }
+
+    /** Giống điều kiện Media3 dùng để quyết định có tìm decoder Dolby Vision hay lùi về HEVC (`MediaCodecVideoRenderer.getDecoderInfos`). */
+    fun displaySupportsDolbyVision(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
+        val manager = context.getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager
+        val display = manager?.getDisplay(Display.DEFAULT_DISPLAY) ?: return false
+        if (!display.isHdr) return false
+        return display.hdrCapabilities?.supportedHdrTypes?.contains(Display.HdrCapabilities.HDR_TYPE_DOLBY_VISION) == true
     }
 
     private fun displayHdrTypes(): String {

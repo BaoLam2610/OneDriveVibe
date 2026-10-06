@@ -97,6 +97,11 @@ internal class VideoPlayerController(
             ) {
                 playerLog.i { "[Decoder] video dùng bộ giải mã $decoderName (khởi tạo ${initializationDurationMs}ms)" }
             }
+
+            // Đo độ giật: số khung rớt trong từng khoảng, để so decoder FFmpeg giữa các bản Media3/NextLib (ADR-0018).
+            override fun onDroppedVideoFrames(eventTime: AnalyticsListener.EventTime, droppedFrames: Int, elapsedMs: Long) {
+                playerLog.w { "[Decoder] rớt $droppedFrames khung trong ${elapsedMs}ms vị trí=${player.currentPosition}ms" }
+            }
         })
     }
 

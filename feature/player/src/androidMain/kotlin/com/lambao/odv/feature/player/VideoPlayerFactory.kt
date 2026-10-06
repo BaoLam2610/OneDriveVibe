@@ -59,7 +59,10 @@ internal class VideoPlayerFactory(
             .setMediaCodecSelector(decoders.selector)
             .setEnableDecoderFallback(true)
         val player = ExoPlayer.Builder(appContext, renderers)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(cached))
+            // Video Dolby Vision profile 8 được coi là HEVC Main10 khi màn hình không có Dolby Vision, để renderer FFmpeg nhận được (DolbyVisionAsHevc).
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(cached, DolbyVisionAsHevcExtractorsFactory(decoders.displaySupportsDolbyVision())),
+            )
             .setLoadControl(DefaultLoadControl.Builder().setBackBuffer(PlayerConstants.BACK_BUFFER_MS, true).build())
             // Nhường tiếng cho cuộc gọi/ứng dụng khác và tự dừng khi rút tai nghe (cải tiến Lát 6).
             .setAudioAttributes(

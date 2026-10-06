@@ -25,7 +25,7 @@ Mỗi ADR ghi **một quyết định kiến trúc**: bối cảnh, quyết đ�
 | [0015](0015-phien-ban-schema-room.md) | Tăng version Room mỗi lần đổi schema; thay phần "giữ `version = 1`" của ADR-0007 | accepted | 2026-10-04 |
 | [0016](0016-usecase-bat-buoc-giua-feature-va-data.md) | UseCase bắt buộc giữa feature và data; thay phần "chỉ tạo UseCase khi có logic thật" của ADR-0002 | accepted | 2026-10-06 |
 | [0017](0017-giu-log-debug-khi-khoa-app.md) | Giữ log debug khi app khóa; thay phần "xóa log API khi khóa" của ADR-0013/0014 | accepted | 2026-10-07 |
-| [0018](0018-decoder-ffmpeg-du-phong-cho-video-10-bit.md) | Decoder FFmpeg (NextLib, GPL-3.0) làm renderer dự phòng cho video máy không giải mã được, vd HEVC 10-bit | proposed | 2026-10-07 |
+| [0018](0018-decoder-ffmpeg-du-phong-cho-video-10-bit.md) | Decoder FFmpeg (NextLib, GPL-3.0) làm renderer dự phòng cho video máy không giải mã được, vd HEVC 10-bit | accepted | 2026-10-07 |
 
 ## Quy ước
 - Đánh số tăng dần, không dùng lại số. Tên file: `NNNN-tieu-de-khong-dau.md`.

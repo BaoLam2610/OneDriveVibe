@@ -23,10 +23,10 @@ androidx-sqlite = "2.7.1"
 coil = "3.6.3"
 # Telephoto (Lát 5): zoom/pan + subsampling ảnh lớn. Bản 0.19.0 dùng với Coil 3; kiểm tra khớp Coil/Compose khi build.
 telephoto = "0.19.0"
-# Media3 (Lát 6): phát video stream + SimpleCache. Chưa tra bản mới nhất; kiểm tra khi build (media3-ui-compose cần từ 1.6 trở lên).
-androidx-media3 = "1.8.0"
+# Media3 (Lát 6): phát video stream + SimpleCache. Nâng 1.8.0 → 1.11.1 ngày 2026-10-07 cùng NextLib (ADR-0018); phải đi cùng bản `nextlib` bên dưới.
+androidx-media3 = "1.11.1"
 # NextLib (ADR-0018): decoder phần mềm FFmpeg cho Media3. Số trước dấu gạch là bản Media3 nó dựng trên (phải khớp androidx-media3), số sau là bản NextLib. GPL-3.0.
-nextlib = "1.8.0-0.9.0"
+nextlib = "1.11.1-0.16.0"
 composeMultiplatform = "1.12.1"
 koin = "4.2.2"
 kermit = "2.2.0"

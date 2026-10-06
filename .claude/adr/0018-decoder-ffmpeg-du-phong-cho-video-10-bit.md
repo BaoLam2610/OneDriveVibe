@@ -1,7 +1,7 @@
 # ADR-0018: Decoder FFmpeg dự phòng cho video máy không giải mã được (HEVC 10-bit)
 
 **Ngày**: 2026-10-07
-**Trạng thái**: proposed (chờ build và thử trên Xiaomi; đổi thành accepted sau khi video phát được)
+**Trạng thái**: accepted (2026-10-07: video HEVC 10-bit đã phát được trên Xiaomi bằng FFmpeg, giật được chấp nhận, xem "Giới hạn đã chấp nhận")
 **Người quyết định**: LamBao
 
 ## Bối cảnh
@@ -9,6 +9,9 @@ Video HEVC Main10 (10-bit, gồm video HDR quay bằng iPhone) không phát đư
 
 ## Quyết định
 Thêm thư viện NextLib (`io.github.anilbeesetti:nextlib-media3ext`, FFmpeg cho Media3) và dựng ExoPlayer bằng `NextRenderersFactory` ở chế độ extension `ON` (không phải `PREFER`). Ở chế độ `ON`, renderer FFmpeg đứng **sau** renderer của máy: ExoPlayer chọn renderer báo hỗ trợ tốt nhất cho định dạng, nên FFmpeg chỉ chạy khi decoder của máy không nhận định dạng (`EXCEEDS_CAPABILITIES`). Máy có decoder nhận được thì dùng phần cứng như cũ, không phải kiểm tra theo tên máy hay dòng chip.
+
+## Giới hạn đã chấp nhận (2026-10-07, người dùng chọn)
+Trên Redmi Note 13 Pro 4G, với Media3 1.11.1 và NextLib `1.11.1-0.16.0`, video 1080x1920 HEVC 10-bit phát đúng hình, màu và hướng nhưng rớt khung nhiều (log `[Decoder] rớt 50 khung` mỗi 0,9 đến 1,9 giây). Đây là đường dự phòng cho máy yếu: **phát được nhưng giảm tốc độ khung**, người dùng chấp nhận. Mã NextLib: số luồng giải mã mặc định `availableProcessors()`, đổi YUV sang RGBA bằng một luồng `sws_scale` trên CPU rồi vẽ qua `ANativeWindow`; nghi đây là nút cổ chai (chưa đo). Màu cũng bị nhạt với video HLG (BT.2020) trên màn hình SDR (người dùng xác nhận): đoạn đổi màu `sws_scale` của NextLib không thấy dùng ma trận BT.2020 hay ánh xạ tông màu HLG sang SDR. Sửa đúng cách phải đụng phần native (fork NextLib) hoặc thêm bước GPU, nên người dùng chọn **không sửa** ở thời điểm này (trade-off lớn so với lợi ích). Cách xấp xỉ rẻ nếu cần sau này: tăng độ bão hòa bằng bộ lọc màu trên khung video, chỉ khi dùng đường FFmpeg và video HDR; chưa kiểm chứng API và phải chỉnh bằng mắt. Các hướng đã loại ở thời điểm này nhưng còn mở nếu cần: tự dựng `FfmpegVideoRenderer` với số luồng khác, đổi màu bằng GPU (`VideoDecoderGLSurfaceView`, phải làm lại zoom), fork NextLib để giảm độ phân giải đầu ra, hoặc libVLC.
 
 ## Phương án đã cân nhắc
 ### Phương án 1: Chỉ báo lỗi rõ ràng, không thêm decoder
@@ -41,7 +44,7 @@ Thêm thư viện NextLib (`io.github.anilbeesetti:nextlib-media3ext`, FFmpeg ch
 - Video `video/dolby-vision` (profile 8) không được FFmpeg nhận vì mime lạ; nếu thiếu decoder 10-bit thì vẫn báo lỗi. Cần ánh xạ mime Dolby Vision sang HEVC nếu muốn xử lý.
 
 ### Rủi ro
-- Bản `1.8.0-0.9.0` là bản cũ (mới nhất là `1.11.1-0.16.0` dựng trên Media3 1.11.1); các bản sau sửa "màu sai trên surface" và áp dụng dữ liệu xoay video. Video dọc (1080x1920) có thể bị sai màu hoặc sai hướng; nếu gặp thì nâng Media3 lên cùng bản với NextLib.
+- Bản `1.8.0-0.9.0` đầu tiên bị giật khi phát HEVC 10-bit trên Helio G99 (người dùng báo 2026-10-07). Đã nâng Media3 lên 1.11.1 và NextLib lên `1.11.1-0.16.0` (0.15.0: sửa màu surface và "avoid copied output frames"; 0.16.0: áp dụng xoay video) để thử giảm giật; chưa đo. Đường FFmpeg vẫn đổi YUV sang RGBA bằng CPU (`sws_scale`), nên có thể vẫn giật; phương án tiếp là đổi bằng GPU (`VideoDecoderGLSurfaceView`, phải làm lại zoom) hoặc chấp nhận.
 - API NextLib (`NextRenderersFactory`) chưa kiểm chứng với Media3 1.8.0 qua build.
 - FFmpeg trong cùng tiến trình: lỗi native (crash) làm sập app thay vì ném ngoại lệ; theo dõi khi thử máy.
 - Nếu app phát hành công khai, thay bằng thư viện giấy phép LGPL hoặc cho người dùng tự bật tùy chọn.
