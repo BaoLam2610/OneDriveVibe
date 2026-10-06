@@ -1,4 +1,4 @@
-@file:OptIn(UnstableApi::class)
+@file:androidx.annotation.OptIn(UnstableApi::class)
 
 package com.lambao.odv.feature.player
 
@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -251,7 +252,8 @@ private fun PlayerLayer(
     val haptics = LocalHapticFeedback.current
 
     val playState = controller.playState
-    val failure = controller.failure
+    // Chỉ nhận lỗi của đúng video đang xem: ngay sau khi chuyển video, lỗi của video trước còn nằm trong controller tới khi load chạy.
+    val failure = controller.failure.takeIf { controller.failedItemId == current.id }
     val info = state.info
     val infoOpen = info != null
     val modeLabels = PlayMode.entries.associateWith { it.label() }
@@ -301,13 +303,12 @@ private fun PlayerLayer(
     LaunchedEffect(ended, state.playMode, current.id) {
         if (ended && state.playMode == PlayMode.RepeatOne) controller.replay()
     }
-    // VD-15: ở Tự phát tiếp và Lặp danh sách, video lỗi (không phải mất mạng) bị bỏ qua. ViewModel chặn lặp vô hạn.
-    LaunchedEffect(failure, state.playMode, current.id) {
-        val skippable = failure != null && failure != PlayerFailure.Network
-        if (skippable && (state.playMode == PlayMode.AutoNext || state.playMode == PlayMode.RepeatList)) {
-            onIntent(PlayerIntent.VideoFailed(current.id))
-        }
-    }
+    // VD-15: ở Tự phát tiếp và Lặp danh sách, video lỗi (không phải mất mạng) bị bỏ qua sau 5 giây đếm ngược để người xem kịp đọc
+    // thẻ lỗi (bấm Hủy thì ở lại). ViewModel chặn lặp vô hạn; không còn video chưa lỗi thì không có thẻ đếm ngược.
+    var skipCancelled by remember(current.id) { mutableStateOf(false) }
+    val skippable = failure != null && failure != PlayerFailure.Network &&
+        (state.playMode == PlayMode.AutoNext || state.playMode == PlayMode.RepeatList)
+    val skipTarget = if (skippable && !skipCancelled) state.nextPlayable(state.failedIds + current.id) else null
     // Có video phát được thì quên các video từng lỗi: lỗi tạm thời (5xx, mạng chập chờn) không bị bỏ qua mãi trong phiên.
     LaunchedEffect(isPlaying) { if (isPlaying) onIntent(PlayerIntent.ClearFailed) }
     val queued = state.nextInQueue
@@ -590,6 +591,21 @@ private fun PlayerLayer(
 
         failure?.let { FailureOverlay(it, current, state.isOnline, controller, onBack) }
 
+        // VD-15: đếm ngược trước khi bỏ qua video lỗi. key theo id để vòng đếm của video lỗi kế tiếp bắt đầu lại từ đầu.
+        if (skipTarget != null) {
+            key(current.id) {
+                NextUpCard(
+                    nextTitle = skipTarget.name,
+                    onFinished = { onIntent(PlayerIntent.VideoFailed(current.id)) },
+                    onCancel = { skipCancelled = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(start = 16.dp, end = 16.dp, bottom = if (landscape) 88.dp else 112.dp),
+                )
+            }
+        }
+
         // VD-08: khóa thao tác chặn mọi chạm; chỉ giữ nút mở khóa. Đặt cuối để nằm trên cùng.
         if (locked) {
             LockedLayer(
@@ -640,7 +656,7 @@ private fun VideoFrame(
     showMiniProgress: Boolean,
     modifier: Modifier,
 ) {
-    val failure = controller.failure
+    val failure = controller.failure.takeIf { controller.failedItemId == item.id }
     Box(modifier.clipToBounds().onSizeChanged { zoom.frameSize = it }, contentAlignment = Alignment.Center) {
         val aspect = controller.videoAspect
         Box(
@@ -654,27 +670,34 @@ private fun VideoFrame(
                 },
             contentAlignment = Alignment.Center,
         ) {
+            val rendered = controller.hasRenderedFirstFrame(item.id)
             PlayerSurface(
                 player = controller.player,
                 modifier = when {
                     aspect <= 0f || fit == VideoFit.Stretch -> Modifier.fillMaxSize()
                     fit == VideoFit.Crop -> Modifier.coverAspect(aspect)
                     else -> Modifier.aspectRatio(aspect)
-                },
+                }
+                    // TextureView giữ lại khung hình cuối của video trước (khi chuyển video hoặc video chạy hết): ẩn tới khi video này
+                    // vẽ khung đầu, nếu không nó lộ ra ở phần chừa trống quanh thumbnail.
+                    .graphicsLayer { alpha = if (rendered) 1f else 0f },
                 surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
             )
             // Lỗi codec/đã xóa thì không phủ thumbnail lên thẻ lỗi; mất mạng vẫn giữ để có hình nền.
-            if (!controller.hasRenderedFirstFrame && (failure == null || failure == PlayerFailure.Network)) {
-                AsyncImage(
-                    model = item.thumbnailSource(ThumbnailSize.Viewer),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = when (fit) {
-                        VideoFit.Fit -> ContentScale.Fit
-                        VideoFit.Crop -> ContentScale.Crop
-                        VideoFit.Stretch -> ContentScale.FillBounds
-                    },
-                )
+            if (!rendered && (failure == null || failure == PlayerFailure.Network)) {
+                // key theo id: AsyncImage giữ ảnh cũ trong lúc tải ảnh mới, nên không có key thì thumbnail video trước hiện lại phía sau.
+                key(item.id) {
+                    AsyncImage(
+                        model = item.thumbnailSource(ThumbnailSize.Viewer),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = when (fit) {
+                            VideoFit.Fit -> ContentScale.Fit
+                            VideoFit.Crop -> ContentScale.Crop
+                            VideoFit.Stretch -> ContentScale.FillBounds
+                        },
+                    )
+                }
             }
         }
         // Vùng ripple (nửa trái/phải khung video) kèm sóng lan, và biểu tượng Phát/Tạm dừng giữa khung: đều nằm trong video.

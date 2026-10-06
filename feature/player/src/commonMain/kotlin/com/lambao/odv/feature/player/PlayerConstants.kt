@@ -162,4 +162,5 @@ internal object PlayerConstants {
 internal val playerLog: Logger = Logger.withTag(PlayerConstants.TAG)
 
 /** Id rút gọn để ghi log. */
-internal fun String.shortId(): String = take(PlayerConstants.LOG_ID_LENGTH)
+// Lấy phần cuối: id OneDrive trong cùng một drive có tiền tố giống hệt nhau nên log cắt đầu không phân biệt được video.
+internal fun String.shortId(): String = takeLast(PlayerConstants.LOG_ID_LENGTH)

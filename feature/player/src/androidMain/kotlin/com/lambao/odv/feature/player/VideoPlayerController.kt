@@ -1,4 +1,4 @@
-@file:OptIn(UnstableApi::class)
+@file:androidx.annotation.OptIn(UnstableApi::class)
 
 package com.lambao.odv.feature.player
 
@@ -57,11 +57,24 @@ internal class VideoPlayerController(
         private set
 
     /** Đã vẽ khung hình đầu tiên chưa; trước đó giao diện phủ thumbnail lên để không để màn đen (cải tiến Lát 6). */
-    var hasRenderedFirstFrame by mutableStateOf(false)
+    var renderedItemId by mutableStateOf<String?>(null)
         private set
+
+    /**
+     * Video [itemId] đã vẽ khung hình đầu chưa. So theo id chứ không dùng cờ true/false: ngay sau khi chuyển video, [load] chưa kịp
+     * chạy nên cờ cũ còn true, khung hình cuối của video trước (TextureView giữ lại) lộ ra phía sau thumbnail.
+     */
+    fun hasRenderedFirstFrame(itemId: String): Boolean = renderedItemId == itemId
 
     /** Khác null khi phát lỗi (VD-15, VD-16). */
     var failure by mutableStateOf<PlayerFailure?>(null)
+        private set
+
+    /**
+     * Id video mà [failure] thuộc về. Khi chuyển video, `current.id` đổi trước khi [load] kịp xóa lỗi cũ; giao diện so id này để
+     * không coi lỗi của video trước là lỗi của video mới (làm video mới bị bỏ qua oan, VD-15).
+     */
+    var failedItemId by mutableStateOf<String?>(null)
         private set
 
     init {
@@ -83,7 +96,8 @@ internal class VideoPlayerController(
      */
     suspend fun load(item: DriveItem, startPositionMs: Long, autoPlay: Boolean, speed: Float) {
         failure = null
-        hasRenderedFirstFrame = false
+        failedItemId = null
+        renderedItemId = null
         videoAspect = 0f
         positionMs = startPositionMs.coerceAtLeast(0L)
         bufferedPositionMs = positionMs
@@ -180,6 +194,7 @@ internal class VideoPlayerController(
     override fun onPlayerError(error: PlaybackException) {
         val classified = error.toFailure()
         playerLog.e { "[Player] LỖI phát → $classified: ${error.describe()} vị trí=${player.currentPosition}ms" }
+        failedItemId = player.currentMediaItem?.mediaId
         failure = classified
     }
 
@@ -197,7 +212,7 @@ internal class VideoPlayerController(
 
     override fun onRenderedFirstFrame() {
         playerLog.i { "[Player] đã vẽ khung hình đầu tiên" }
-        hasRenderedFirstFrame = true
+        renderedItemId = player.currentMediaItem?.mediaId
     }
 
     override fun onVideoSizeChanged(videoSize: VideoSize) {

@@ -1,10 +1,12 @@
-@file:OptIn(UnstableApi::class)
+@file:androidx.annotation.OptIn(UnstableApi::class)
 
 package com.lambao.odv.feature.player
 
+import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
+import androidx.media3.exoplayer.ExoPlaybackException
 import com.lambao.odv.core.common.error.AppError
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -76,5 +78,21 @@ internal fun PlaybackException.describe(): String {
         val name = error.javaClass.simpleName
         if (error is HttpDataSource.InvalidResponseCodeException) "$name(${error.responseCode})" else name
     }
-    return "$errorCodeName [$chain]"
+    // Lỗi từ renderer (giải mã): ghi định dạng video và mức hỗ trợ của máy để biết vì sao không phát được (vd Dolby Vision, HEVC 10-bit).
+    val renderer = (this as? ExoPlaybackException)?.takeIf { it.type == ExoPlaybackException.TYPE_RENDERER }?.let { e ->
+        val format = e.rendererFormat
+        " định dạng=${format?.sampleMimeType}/${format?.codecs} ${format?.width}x${format?.height} " +
+            "hỗ trợ=${formatSupportName(e.rendererFormatSupport)}"
+    }.orEmpty()
+    return "$errorCodeName [$chain]$renderer"
+}
+
+/** Media3 không có hàm đổi mã [C.FormatSupport] sang chữ, nên tự ánh xạ để log đọc được. */
+private fun formatSupportName(support: Int): String = when (support) {
+    C.FORMAT_HANDLED -> "HANDLED"
+    C.FORMAT_EXCEEDS_CAPABILITIES -> "EXCEEDS_CAPABILITIES"
+    C.FORMAT_UNSUPPORTED_DRM -> "UNSUPPORTED_DRM"
+    C.FORMAT_UNSUPPORTED_SUBTYPE -> "UNSUPPORTED_SUBTYPE"
+    C.FORMAT_UNSUPPORTED_TYPE -> "UNSUPPORTED_TYPE"
+    else -> "?$support"
 }
