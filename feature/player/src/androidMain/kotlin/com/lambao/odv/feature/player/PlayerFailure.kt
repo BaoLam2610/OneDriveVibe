@@ -2,11 +2,13 @@
 
 package com.lambao.odv.feature.player
 
+import android.media.MediaCodec
 import androidx.media3.common.C
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlaybackException
+import androidx.media3.exoplayer.mediacodec.MediaCodecDecoderException
 import com.lambao.odv.core.common.error.AppError
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -65,6 +67,19 @@ internal fun PlaybackException.toFailure(): PlayerFailure {
         }
     }
 }
+
+/** Tên bộ giải mã đã chết khi giải mã lỗi (`c2.mtk.hevc.decoder`...), null nếu lỗi không đến từ bộ giải mã. */
+internal fun PlaybackException.failedDecoderName(): String? =
+    causeChain().filterIsInstance<MediaCodecDecoderException>().firstNotNullOfOrNull { it.codecInfo?.name }
+
+/**
+ * Chi tiết `MediaCodec.CodecException` trong chuỗi nguyên nhân (mã lỗi, tạm thời/khôi phục được, chuỗi chẩn đoán của codec) để biết vì sao
+ * bộ giải mã chết. Không ghi message (CH-06); chuỗi chẩn đoán dạng `android.media.MediaCodec.error_neg_1000` không chứa dữ liệu người dùng.
+ */
+internal fun PlaybackException.codecExceptionDetail(): String =
+    causeChain().filterIsInstance<MediaCodec.CodecException>().firstOrNull()
+        ?.let { "CodecException(mã=${it.errorCode}, tạm thời=${it.isTransient}, khôi phục được=${it.isRecoverable}, chẩn đoán=${it.diagnosticInfo})" }
+        ?: "không có CodecException"
 
 private fun Throwable.causeChain(): List<Throwable> =
     generateSequence<Throwable>(this) { it.cause }.take(PlayerConstants.CAUSE_DEPTH).toList()

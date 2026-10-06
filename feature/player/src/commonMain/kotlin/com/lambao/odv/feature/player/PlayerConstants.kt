@@ -13,7 +13,7 @@ import co.touchlab.kermit.Logger
 internal object PlayerConstants {
 
     /** Thẻ log duy nhất của module. */
-    const val TAG = "Player"
+    const val TAG = "ODVPlayer"
 
     // --- Nguồn dữ liệu (StreamDataSource) ---
 
@@ -140,6 +140,12 @@ internal object PlayerConstants {
 
     /** Khi khóa thao tác (VD-08), gợi ý "Giữ để mở khóa" hiện chừng này sau mỗi lần chạm rồi mờ đi. */
     const val LOCK_HINT_MS = 3000L
+
+    /**
+     * Số lần tự chặn bộ giải mã vừa chết rồi phát lại cho một video (bug Dolby Vision trên MediaTek): mỗi lần loại một bộ, nên con số này
+     * cũng là số bộ tối đa được thử trước khi hiện thẻ lỗi. Hai lần đủ cho chuỗi phần cứng → phần mềm mà không treo máy yếu.
+     */
+    const val MAX_DECODER_RETRIES = 2
 
     // --- Log ---
 

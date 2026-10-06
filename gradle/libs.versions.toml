@@ -25,6 +25,8 @@ coil = "3.6.3"
 telephoto = "0.19.0"
 # Media3 (Lát 6): phát video stream + SimpleCache. Chưa tra bản mới nhất; kiểm tra khi build (media3-ui-compose cần từ 1.6 trở lên).
 androidx-media3 = "1.8.0"
+# NextLib (ADR-0018): decoder phần mềm FFmpeg cho Media3. Số trước dấu gạch là bản Media3 nó dựng trên (phải khớp androidx-media3), số sau là bản NextLib. GPL-3.0.
+nextlib = "1.8.0-0.9.0"
 composeMultiplatform = "1.12.1"
 koin = "4.2.2"
 kermit = "2.2.0"
@@ -115,6 +117,8 @@ telephoto-zoomable-image-coil3 = { module = "me.saket.telephoto:zoomable-image-c
 # Media3 (Lát 6): ExoPlayer + SimpleCache + DataSource cho video (VD-11, VD-14); ui-compose cho PlayerSurface (TextureView để zoom ở 6b).
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "androidx-media3" }
 androidx-media3-uiCompose = { module = "androidx.media3:media3-ui-compose", version.ref = "androidx-media3" }
+# ADR-0018: decoder FFmpeg chỉ chạy khi máy không có decoder nhận định dạng (HEVC 10-bit trên chip tầm trung). Maven Central.
+nextlib-media3ext = { module = "io.github.anilbeesetti:nextlib-media3ext", version.ref = "nextlib" }
 
 # DataStore Preferences (kế hoạch MVP1 mục 3). Gắn vào module cần lưu cài đặt khi dùng tới.
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }

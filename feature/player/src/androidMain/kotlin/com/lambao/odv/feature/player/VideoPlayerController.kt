@@ -10,13 +10,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import com.lambao.odv.core.designsystem.component.ODVPlayState
 import com.lambao.odv.core.domain.model.DriveItem
 
@@ -29,7 +33,11 @@ import com.lambao.odv.core.domain.model.DriveItem
 internal class VideoPlayerController(
     val player: ExoPlayer,
     private val videoCache: VideoCache,
+    private val decoders: VideoDecoders,
 ) : Player.Listener {
+
+    /** Số lần đã chặn bộ giải mã chết và phát lại cho video đang nạp (giới hạn [PlayerConstants.MAX_DECODER_RETRIES]). */
+    private var decoderRetries = 0
 
     /** Đang thật sự phát (không tính lúc đệm hay tạm dừng). */
     var isPlaying by mutableStateOf(false)
@@ -79,6 +87,17 @@ internal class VideoPlayerController(
 
     init {
         player.addListener(this)
+        // Ghi bộ giải mã video thật sự được dùng: cho biết video chạy bằng phần cứng của máy hay bằng FFmpeg dự phòng (ADR-0018).
+        player.addAnalyticsListener(object : AnalyticsListener {
+            override fun onVideoDecoderInitialized(
+                eventTime: AnalyticsListener.EventTime,
+                decoderName: String,
+                initializedTimestampMs: Long,
+                initializationDurationMs: Long,
+            ) {
+                playerLog.i { "[Decoder] video dùng bộ giải mã $decoderName (khởi tạo ${initializationDurationMs}ms)" }
+            }
+        })
     }
 
     /** Trạng thái cho nút giữa (mục 4.5). IDLE mà không lỗi nghĩa là chưa chuẩn bị xong nên coi là đang tải. */
@@ -97,6 +116,9 @@ internal class VideoPlayerController(
     suspend fun load(item: DriveItem, startPositionMs: Long, autoPlay: Boolean, speed: Float) {
         failure = null
         failedItemId = null
+        // Video mới: bộ giải mã bị chặn vì video trước không được áp sang video này.
+        decoders.reset()
+        decoderRetries = 0
         renderedItemId = null
         videoAspect = 0f
         positionMs = startPositionMs.coerceAtLeast(0L)
@@ -193,9 +215,34 @@ internal class VideoPlayerController(
 
     override fun onPlayerError(error: PlaybackException) {
         val classified = error.toFailure()
-        playerLog.e { "[Player] LỖI phát → $classified: ${error.describe()} vị trí=${player.currentPosition}ms" }
+        val decoderName = error.failedDecoderName()
+        playerLog.e { "[Player] LỖI phát → $classified: ${error.describe()} bộ giải mã lỗi=$decoderName vị trí=${player.currentPosition}ms" }
+        if (error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED && decoderName != null) {
+            val format = (error as? ExoPlaybackException)?.rendererFormat
+            playerLog.i { "[Decoder] ${decoders.describe(format)} chi tiết lỗi=${error.codecExceptionDetail()}" }
+            if (retryWithOtherDecoder(decoderName, format)) return
+        }
         failedItemId = player.currentMediaItem?.mediaId
         failure = classified
+    }
+
+    /**
+     * Bộ giải mã [decoderName] chết giữa chừng (Dolby Vision 8.4 trên MediaTek): chặn nó rồi `prepare()` lại để Media3 chọn bộ tiếp theo,
+     * giữ nguyên vị trí và ý định phát. Không đặt [failure] nên giao diện vẫn ở trạng thái đang tải thay vì nháy thẻ lỗi. False khi hết
+     * lượt thử hoặc bộ đó đã bị chặn rồi (thử lại cũng chỉ lặp lỗi), lúc đó lỗi được báo như bình thường.
+     */
+    private fun retryWithOtherDecoder(decoderName: String, format: Format?): Boolean {
+        // Không chặn bộ cuối cùng: không còn bộ nào thì Media3 bỏ track video và phát mỗi tiếng thay vì báo lỗi.
+        if (decoderRetries >= PlayerConstants.MAX_DECODER_RETRIES ||
+            !decoders.hasAlternative(format, decoderName) ||
+            !decoders.block(decoderName)
+        ) {
+            return false
+        }
+        decoderRetries++
+        playerLog.w { "[Decoder] bộ $decoderName chết khi giải mã, chặn và phát lại bằng bộ khác (lần $decoderRetries) vị trí=${player.currentPosition}ms" }
+        player.prepare()
+        return true
     }
 
     private fun stateName(state: Int): String = when (state) {
@@ -204,6 +251,17 @@ internal class VideoPlayerController(
         Player.STATE_READY -> "READY"
         Player.STATE_ENDED -> "ENDED"
         else -> "?$state"
+    }
+
+    override fun onTracksChanged(tracks: Tracks) {
+        // Có track video mà không bộ giải mã nào nhận: ExoPlayer bỏ track đó và vẫn phát tiếng, người xem chỉ thấy màn đen có tiếng. Báo lỗi
+        // và dừng để hiện thẻ "không hỗ trợ" như các lỗi giải mã khác.
+        if (tracks.containsType(C.TRACK_TYPE_VIDEO) && !tracks.isTypeSupported(C.TRACK_TYPE_VIDEO, true)) {
+            playerLog.e { "[Player] track video không có bộ giải mã nào nhận, dừng thay vì phát mỗi tiếng" }
+            player.pause()
+            failedItemId = player.currentMediaItem?.mediaId
+            failure = PlayerFailure.Unsupported
+        }
     }
 
     override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {

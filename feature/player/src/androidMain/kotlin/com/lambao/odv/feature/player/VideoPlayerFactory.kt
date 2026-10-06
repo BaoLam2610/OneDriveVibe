@@ -9,9 +9,11 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.lambao.odv.core.domain.usecase.viewer.GetStreamUrlUseCase
+import io.github.anilbeesetti.nextlib.media3ext.ffdecoder.NextRenderersFactory
 
 /**
  * Dựng một [VideoPlayerController] cho mỗi lần mở màn xem. Chuỗi nguồn dữ liệu của ExoPlayer, từ trên xuống:
@@ -46,7 +48,17 @@ internal class VideoPlayerFactory(
                     playerLog.w { "[Cache] bỏ qua cache, lý do=$reason (1 = lỗi cache, 2 = dữ liệu chưa biết độ dài)" }
                 }
             })
-        val player = ExoPlayer.Builder(appContext)
+        val decoders = VideoDecoders(appContext)
+        // Bộ chọn tự viết để chặn được bộ giải mã vừa chết giữa chừng (VideoDecoders). setEnableDecoderFallback lo phần còn lại: bộ giải
+        // mã *khởi tạo* lỗi thì Media3 tự thử bộ kế tiếp; còn lỗi *đang giải mã* thì do VideoPlayerController xử lý.
+        // FFmpeg (NextLib, ADR-0018) ở chế độ ON: đứng sau renderer của máy, ExoPlayer chọn renderer báo hỗ trợ tốt nhất nên FFmpeg chỉ
+        // được dùng khi decoder của máy không nhận định dạng (HEVC Main10 trên Helio G99: cả MTK lẫn decoder phần mềm của Android chỉ
+        // có Main). Máy giải mã được thì vẫn dùng phần cứng như cũ. Không dùng PREFER (sẽ ép mọi video HEVC xuống phần mềm).
+        val renderers = NextRenderersFactory(appContext)
+            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+            .setMediaCodecSelector(decoders.selector)
+            .setEnableDecoderFallback(true)
+        val player = ExoPlayer.Builder(appContext, renderers)
             .setMediaSourceFactory(DefaultMediaSourceFactory(cached))
             .setLoadControl(DefaultLoadControl.Builder().setBackBuffer(PlayerConstants.BACK_BUFFER_MS, true).build())
             // Nhường tiếng cho cuộc gọi/ứng dụng khác và tự dừng khi rút tai nghe (cải tiến Lát 6).
@@ -57,6 +69,6 @@ internal class VideoPlayerFactory(
             .setHandleAudioBecomingNoisy(true)
             .build()
         playerLog.i { "[Factory] player sẵn sàng" }
-        return VideoPlayerController(player, videoCache)
+        return VideoPlayerController(player, videoCache, decoders)
     }
 }
