@@ -224,6 +224,51 @@ internal class ShortPlayerController(
         refreshProgress()
     }
 
+    /** Đang kéo thanh tua với preview khung hình (SV-07, 2026-10-11). */
+    private var scrubbing = false
+
+    /** Video đang phát lúc bắt đầu kéo: nhả tay thì phát tiếp (đang chạy kéo xong vẫn chạy, đang dừng thì vẫn dừng). */
+    private var resumeAfterScrub = false
+    private var lastScrubSeekAt = 0L
+    private var scrubSeeks = 0
+
+    /**
+     * Bắt đầu kéo thanh tua: bật chế độ tua liên tục của Media3 (`setScrubbingModeEnabled`, có từ 1.8.0, tối ưu cho tua thường xuyên do người
+     * dùng kéo) và tạm dừng, để khung hình chạy theo ngón tay chính là preview (video đang chiếm cả màn nên không cần ảnh phụ). Không đặt
+     * [userPaused].
+     */
+    fun beginScrub() {
+        if (scrubbing) return
+        scrubbing = true
+        resumeAfterScrub = player.playWhenReady
+        scrubSeeks = 0
+        lastScrubSeekAt = 0L
+        shortsLog.i { "[Short][Seek] bắt đầu kéo có preview, vị trí=${player.currentPosition}ms đang phát=$resumeAfterScrub" }
+        player.setScrubbingModeEnabled(true)
+        player.pause()
+    }
+
+    /** Vị trí đang kéo tới: tua để hiện khung hình ở đó, tối đa một lần mỗi [ShortsConstants.SCRUB_SEEK_INTERVAL_MS] để không dồn lệnh tua. */
+    fun scrubTo(targetMs: Long) {
+        if (!scrubbing) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastScrubSeekAt < ShortsConstants.SCRUB_SEEK_INTERVAL_MS) return
+        lastScrubSeekAt = now
+        scrubSeeks++
+        val limit = if (durationMs > 0L) durationMs else Long.MAX_VALUE
+        player.seekTo(targetMs.coerceIn(0L, limit))
+    }
+
+    /** Nhả tay: tua tới vị trí cuối, tắt chế độ tua liên tục và khôi phục phát/dừng như lúc bắt đầu kéo. */
+    fun endScrub(targetMs: Long) {
+        seekTo(targetMs)
+        if (!scrubbing) return
+        scrubbing = false
+        player.setScrubbingModeEnabled(false)
+        shortsLog.i { "[Short][Seek] kết thúc kéo sau $scrubSeeks lần tua preview, phát tiếp=$resumeAfterScrub" }
+        if (resumeAfterScrub) player.play()
+    }
+
     /** Thử lại sau lỗi (lỗi chung, hoặc có mạng lại ở SV-14). Giữ nguyên vị trí đang dừng. */
     fun retry() {
         shortsLog.i { "[Short] thử lại sau lỗi $failure, vị trí=${player.currentPosition}ms" }

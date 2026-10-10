@@ -563,11 +563,18 @@ private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Mo
             ShortSeekBar(
                 position = played,
                 buffered = fraction(controller.bufferedPositionMs, duration),
-                onSeek = { if (duration > 0L) scrub = it },
+                // Kéo có preview (SV-07 sửa 2026-10-11): khung hình chạy theo ngón tay; nhả tay mới chốt vị trí và khôi phục phát/dừng.
+                onSeek = { fraction ->
+                    if (duration > 0L) {
+                        if (scrub == null) controller.beginScrub()
+                        scrub = fraction
+                        controller.scrubTo((fraction * duration).toLong())
+                    }
+                },
                 contentDescription = description,
                 valueDescription = valueDescription,
                 onSeekFinished = {
-                    scrub?.let { controller.seekTo((it * duration).toLong()) }
+                    scrub?.let { controller.endScrub((it * duration).toLong()) }
                     scrub = null
                 },
                 expanded = expanded,

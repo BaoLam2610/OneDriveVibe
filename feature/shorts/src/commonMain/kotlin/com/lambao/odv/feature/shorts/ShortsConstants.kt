@@ -39,6 +39,9 @@ internal object ShortsConstants {
     const val SCROLL_TOP_LOG_MS = 90f
     const val SCROLL_TOP_MAX_MS = 900
 
+    /** Khi kéo thanh tua có preview, tua tối đa một lần mỗi chừng này (khoảng 10 lần/giây) để không dồn lệnh tua cho bộ giải mã. */
+    const val SCRUB_SEEK_INTERVAL_MS = 100L
+
     /** Chờ chừng này mới hiện spinner tải: video đã được tải trước thường lên hình trong vài trăm ms, hiện spinner ngay chỉ gây nháy. */
     const val SPINNER_DELAY_MS = 400L
 
