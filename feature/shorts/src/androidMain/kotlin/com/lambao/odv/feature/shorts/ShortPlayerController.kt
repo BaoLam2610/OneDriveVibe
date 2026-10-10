@@ -2,6 +2,7 @@
 
 package com.lambao.odv.feature.shorts
 
+import android.os.SystemClock
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -19,6 +20,7 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.media.ExoPlayerHandle
 import com.lambao.odv.core.media.PlayerFailure
@@ -48,11 +50,18 @@ internal class ShortPlayerController(
     /** Số lần đã chặn bộ giải mã chết và phát lại cho video đang nạp (giới hạn [ShortsConstants.MAX_DECODER_RETRIES]). */
     private var decoderRetries = 0
 
-    /** Video đang nạp và đợt danh sách ([ShortsState.generation]) của nó, để biết khi nào cần nạp lại và khi nào chỉ cần phát tiếp. */
-    var loadedId: String? = null
+    /**
+     * Video đang nạp và đợt danh sách ([ShortsState.generation]) của nó, để biết khi nào cần nạp lại và khi nào chỉ cần phát tiếp.
+     * **Phải là Compose state**: giao diện quyết định dựng bề mặt phát theo [loadedId]; là biến thường thì trang không dựng lại sau khi
+     * [load] đổi nó, bề mặt không được gắn và video đứng hình dù tiếng và thanh tiến độ vẫn chạy (lỗi 2026-10-11).
+     */
+    var loadedId by mutableStateOf<String?>(null)
         private set
-    var loadedGeneration: Int = -1
+    var loadedGeneration by mutableIntStateOf(-1)
         private set
+
+    /** Mốc (elapsedRealtime) bắt đầu nạp video hiện tại, để log thời gian tới khung hình đầu. */
+    private var loadStartedAt = 0L
 
     var isPlaying by mutableStateOf(false)
         private set
@@ -90,6 +99,21 @@ internal class ShortPlayerController(
         player.repeatMode = Player.REPEAT_MODE_ONE
         player.setPlaybackSpeed(1f)
         player.volume = 1f
+        // Ghi bộ giải mã video thật sự được dùng và số khung rớt, để so phần cứng với FFmpeg dự phòng (ADR-0018) khi vuốt nhanh.
+        player.addAnalyticsListener(object : AnalyticsListener {
+            override fun onVideoDecoderInitialized(
+                eventTime: AnalyticsListener.EventTime,
+                decoderName: String,
+                initializedTimestampMs: Long,
+                initializationDurationMs: Long,
+            ) {
+                shortsLog.i { "[Short][Decoder] bộ giải mã $decoderName (khởi tạo ${initializationDurationMs}ms)" }
+            }
+
+            override fun onDroppedVideoFrames(eventTime: AnalyticsListener.EventTime, droppedFrames: Int, elapsedMs: Long) {
+                shortsLog.w { "[Short][Decoder] rớt $droppedFrames khung trong ${elapsedMs}ms vị trí=${player.currentPosition}ms" }
+            }
+        })
     }
 
     /**
@@ -109,6 +133,7 @@ internal class ShortPlayerController(
         durationMs = item.durationMs ?: 0L
         loadedId = item.id
         loadedGeneration = generation
+        loadStartedAt = SystemClock.elapsedRealtime()
         userPaused = !autoPlay
         val key = videoCacheKey(item.id, item.cTag)
         shortsLog.i { "[Short] nạp id=${item.id.takeLast(ID_LOG_LENGTH)} bắt đầu=${startPositionMs}ms tự phát=$autoPlay thời lượng(Room)=${item.durationMs}ms" }
@@ -120,6 +145,7 @@ internal class ShortPlayerController(
         player.setMediaItem(mediaItem, startPositionMs.coerceAtLeast(0L))
         player.playWhenReady = autoPlay
         player.prepare()
+        shortsLog.d { "[Short] đã prepare id=${item.id.takeLast(ID_LOG_LENGTH)} gen=$generation" }
         videoCache.dropStaleVersions(item.id, key)
     }
 
@@ -132,16 +158,20 @@ internal class ShortPlayerController(
             player.play()
             userPaused = false
         }
+        shortsLog.i { "[Short] chạm đổi trạng thái: tạm dừng bởi người dùng=$userPaused vị trí=${player.currentPosition}ms" }
     }
 
     /** Tạm dừng do vòng đời (đổi tab, xuống nền, bị khóa; SV-11): không đặt [userPaused] để quay lại thì tự phát tiếp. */
     fun pause() {
+        shortsLog.d { "[Short] tạm dừng theo vòng đời, vị trí=${player.currentPosition}ms người dùng đã dừng=$userPaused" }
         player.pause()
     }
 
     /** Phát tiếp sau khi quay lại, trừ khi người dùng đã tạm dừng hoặc video đang lỗi. */
     fun resume() {
-        if (!userPaused && loadedId != null && failure == null) player.play()
+        val can = !userPaused && loadedId != null && failure == null
+        shortsLog.d { "[Short] phát tiếp theo vòng đời: được phép=$can (người dùng dừng=$userPaused, đã nạp=${loadedId != null}, lỗi=$failure)" }
+        if (can) player.play()
     }
 
     /** Thử lại sau lỗi (lỗi chung, hoặc có mạng lại ở SV-14). Giữ nguyên vị trí đang dừng. */
@@ -169,13 +199,26 @@ internal class ShortPlayerController(
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
+        shortsLog.d { "[Short] đang phát=$isPlaying" }
         this.isPlaying = isPlaying
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
+        shortsLog.d {
+            "[Short] trạng thái ${stateName(playbackState)} vị trí=${player.currentPosition}ms đệm=${player.bufferedPosition}ms " +
+                "sau ${SystemClock.elapsedRealtime() - loadStartedAt}ms kể từ lúc nạp"
+        }
         this.playbackState = playbackState
         if (playbackState == Player.STATE_READY) failure = null
         refreshProgress()
+    }
+
+    private fun stateName(state: Int): String = when (state) {
+        Player.STATE_IDLE -> "IDLE"
+        Player.STATE_BUFFERING -> "BUFFERING"
+        Player.STATE_READY -> "READY"
+        Player.STATE_ENDED -> "ENDED"
+        else -> "?$state"
     }
 
     override fun onPlayerError(error: PlaybackException) {
@@ -221,9 +264,13 @@ internal class ShortPlayerController(
 
     override fun onRenderedFirstFrame() {
         renderedItemId = player.currentMediaItem?.mediaId
+        shortsLog.i {
+            "[Short] đã vẽ khung hình đầu id=${renderedItemId?.takeLast(ID_LOG_LENGTH)} sau ${SystemClock.elapsedRealtime() - loadStartedAt}ms kể từ lúc nạp"
+        }
     }
 
     override fun onVideoSizeChanged(videoSize: VideoSize) {
+        shortsLog.d { "[Short] kích thước video ${videoSize.width}x${videoSize.height} pixelRatio=${videoSize.pixelWidthHeightRatio}" }
         videoAspect = if (videoSize.width > 0 && videoSize.height > 0) {
             videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height
         } else {

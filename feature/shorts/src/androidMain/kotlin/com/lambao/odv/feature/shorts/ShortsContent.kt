@@ -127,6 +127,10 @@ private fun BoxScope.ShortsPager(
     val pagerState = rememberPagerState(initialPage = state.index.coerceIn(0, (ids.size - 1).coerceAtLeast(0))) { ids.size }
     val settled = pagerState.settledPage
 
+    LaunchedEffect(Unit) {
+        shortsLog.i { "[Short][UI] dựng Pager gen=${state.generation} index=${state.index} ${ids.size} video, player=${if (controller != null) "sẵn sàng" else "chưa có"}" }
+    }
+
     // SV-04: báo ViewModel khi người dùng vuốt sang video khác (không báo trang mở đầu).
     LaunchedEffect(settled) {
         if (settled != state.index) currentOnIntent(ShortsIntent.PageSettled(settled))
@@ -139,6 +143,10 @@ private fun BoxScope.ShortsPager(
         val player = controller ?: return@LaunchedEffect
         val video = currentVideo ?: return@LaunchedEffect
         val firstOfGeneration = player.loadedGeneration != state.generation
+        shortsLog.d {
+            "[Short][UI] quyết định nạp: trang=$settled id=${video.item.id.takeLast(ID_LOG_LENGTH)} đang nạp=${player.loadedId?.takeLast(ID_LOG_LENGTH)} " +
+                "gen=${state.generation}/${player.loadedGeneration} → ${if (player.loadedId != video.item.id || firstOfGeneration) "nạp mới" else "phát tiếp"}"
+        }
         if (player.loadedId != video.item.id || firstOfGeneration) {
             // Chỉ lần nạp đầu của một đợt danh sách mới dùng vị trí và trạng thái khôi phục (DH-06, SV-11).
             val restoring = firstOfGeneration && state.startPaused
@@ -167,8 +175,12 @@ private fun BoxScope.ShortsPager(
     // SV-11: tạm dừng khi rời tab, xuống nền hoặc bị khóa; quay lại thì phát tiếp (trừ khi người dùng đã tạm dừng).
     if (controller != null) {
         LifecycleResumeEffect(controller) {
+            shortsLog.d { "[Short][UI] vào/tiếp tục màn hình" }
             controller.resume()
-            onPauseOrDispose { controller.pause() }
+            onPauseOrDispose {
+                shortsLog.d { "[Short][UI] rời/tạm dừng màn hình (đổi tab, xuống nền hoặc bị khóa)" }
+                controller.pause()
+            }
         }
     }
 
@@ -437,3 +449,6 @@ private fun fraction(valueMs: Long, durationMs: Long): Float =
 
 /** Cao của dải gradient sau tên tệp (thiet-ke-ui.md mục 4.8). */
 private val INFO_HEIGHT = 96.dp
+
+/** Id Graph dài; log chỉ ghi chừng này ký tự cuối (cùng quy ước với `:core:media`, CH-06). */
+private const val ID_LOG_LENGTH = 8

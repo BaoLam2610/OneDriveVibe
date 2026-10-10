@@ -43,17 +43,25 @@ class ShortsViewModel(
         when (intent) {
             is ShortsIntent.Enter -> viewModelScope.launch { enter(intent.restore) }
             is ShortsIntent.PageSettled -> {
+                shortsLog.d { "[Short][VM] vuốt: ${currentState.index} → ${intent.index} / ${currentState.ids.size} video" }
                 setState { copy(index = intent.index) }
                 loadAround(intent.index)
             }
             ShortsIntent.Reshuffle -> reshuffle()
-            ShortsIntent.RestoreConsumed -> setState { copy(resumePositionMs = 0L, startPaused = false) }
+            ShortsIntent.RestoreConsumed -> {
+                shortsLog.d { "[Short][VM] đã dùng xong vị trí/trạng thái khôi phục" }
+                setState { copy(resumePositionMs = 0L, startPaused = false) }
+            }
         }
     }
 
     private suspend fun enter(restore: ShortsSnapshot?) {
         val max = observeMaxMinutes().first()
         val state = currentState
+        shortsLog.i {
+            "[Short][VM] vào tab: phase=${state.phase} tối đa=$max phút (đang dùng ${state.maxMinutes}) " +
+                "khôi phục=${restore != null} đang dựng=${buildJob?.isActive == true}"
+        }
         when {
             buildJob?.isActive == true -> Unit
             state.phase == ShortsPhase.Loading ->
@@ -124,7 +132,10 @@ class ShortsViewModel(
     /** SV-03: chỉ ở video đầu tiên; xáo toàn bộ và chọn seed sao cho video đầu mới khác video đang xem (khi có từ 2 video). */
     private fun reshuffle() {
         val state = currentState
-        if (state.phase != ShortsPhase.Ready || state.index != 0) return
+        if (state.phase != ShortsPhase.Ready || state.index != 0) {
+            shortsLog.w { "[Short][VM] bỏ qua yêu cầu xáo lại: phase=${state.phase} index=${state.index}" }
+            return
+        }
         val previousFirst = state.ids.firstOrNull()
         val seed = if (sourceIds.size >= 2) {
             (0 until ShortsConstants.RESHUFFLE_SEED_ATTEMPTS)
@@ -145,12 +156,19 @@ class ShortsViewModel(
                 startPaused = false,
             )
         }
-        shortsLog.i { "[Short] xáo lại ${ids.size} video" }
+        shortsLog.i {
+            "[Short][VM] xáo lại ${ids.size} video, video đầu ${previousFirst?.takeLast(ID_LOG_LENGTH)} → ${ids.firstOrNull()?.takeLast(ID_LOG_LENGTH)}"
+        }
         loadAround(0)
         sendEffect(ShortsEffect.Reshuffled)
     }
 
     private fun ordered(source: List<String>, seed: Long): List<String> = source.shuffled(Random(seed))
+
+    private companion object {
+        /** Id Graph dài; log chỉ ghi chừng này ký tự cuối (cùng quy ước với `:core:media`, CH-06). */
+        const val ID_LOG_LENGTH = 8
+    }
 
     private fun loadAround(center: Int) {
         val radius = ShortsConstants.NEIGHBOR_RADIUS
@@ -158,7 +176,12 @@ class ShortsViewModel(
             val id = currentState.ids.getOrNull(position) ?: continue
             if (id in currentState.videos) continue
             viewModelScope.launch {
-                val video = getVideo(id) ?: return@launch
+                val video = getVideo(id)
+                if (video == null) {
+                    shortsLog.w { "[Short][VM] không đọc được chi tiết video id=${id.takeLast(ID_LOG_LENGTH)} (không còn trong Room?)" }
+                    return@launch
+                }
+                shortsLog.d { "[Short][VM] đã nạp chi tiết id=${id.takeLast(ID_LOG_LENGTH)} thư mục=${video.folderName != null}" }
                 setState { copy(videos = videos + (id to video)) }
             }
         }
@@ -166,6 +189,7 @@ class ShortsViewModel(
 
     private fun reset() {
         if (currentState.phase == ShortsPhase.Loading && buildJob == null) return
+        shortsLog.i { "[Short][VM] bỏ trạng thái tab Short (mất điều kiện hiện mục Short, DH-01), phase=${currentState.phase}" }
         buildJob?.cancel()
         trackJob?.cancel()
         buildJob = null

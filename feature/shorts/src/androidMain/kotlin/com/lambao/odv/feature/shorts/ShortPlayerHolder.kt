@@ -1,5 +1,6 @@
 package com.lambao.odv.feature.shorts
 
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -7,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.media.ExoPlayerFactory
 import com.lambao.odv.core.media.VideoCache
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /**
@@ -26,11 +28,22 @@ internal class ShortPlayerHolder(
     init {
         // viewModelScope chạy trên luồng chính: ExoPlayer phải được tạo và dùng trên cùng một luồng.
         viewModelScope.launch {
-            controller = ShortPlayerController(factory.create(), videoCache)
+            val startedAt = SystemClock.elapsedRealtime()
+            shortsLog.i { "[Short][Holder] dựng player" }
+            try {
+                controller = ShortPlayerController(factory.create(), videoCache)
+                shortsLog.i { "[Short][Holder] player sẵn sàng sau ${SystemClock.elapsedRealtime() - startedAt}ms" }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Không dựng được player: tab Short ở trạng thái đang tải. Chỉ ghi tên lớp lỗi (CH-06).
+                shortsLog.e { "[Short][Holder] KHÔNG dựng được player: ${e.javaClass.simpleName}" }
+            }
         }
     }
 
     override fun onCleared() {
+        shortsLog.i { "[Short][Holder] giải phóng player (Màn chính bị bỏ)" }
         controller?.release()
         controller = null
     }
