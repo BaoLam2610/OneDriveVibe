@@ -7,7 +7,7 @@ App Android chỉ đọc OneDrive for Business qua Microsoft Graph: xem video, �
 | File | Dùng khi |
 |---|---|
 | `.claude/docs/dac-ta-nghiep-vu.md` | Nghiệp vụ: cái gì xảy ra. Các mã KN, BM, KH, DH, TM, TV, DS, SV, VD, AN, PD, CD, CH, TK, DB, BN... |
-| `.claude/docs/thiet-ke-ui.md` + `odv-tokens.json` | Giao diện: token, component, màn hình. Mục 1 là quy tắc bắt buộc khi dựng. Thanh điều hướng đáy và tab Short (Lát 8) đã có mô tả (mục 4.7, 4.8, 5.5) nhưng **chưa có artboard**; mục 11 là danh sách việc vẽ trên Claude Design (làm ở topic riêng) |
+| `.claude/docs/thiet-ke-ui.md` + `odv-tokens.json` | Giao diện: token, component, màn hình. Mục 1 là quy tắc bắt buộc khi dựng. Thanh điều hướng đáy và tab Short (Lát 8) đã có mô tả (mục 4.7, 4.8, 5.5) và **đã có artboard** (Foundations board 20, page Short SH1 đến SH9, Danh sách D1 đến D9, Cài đặt C1 đến C7 và O6); mục 11 là danh sách việc vẽ, còn lại 11.5 |
 | `.claude/docs/onedrive-graph-api.md` | Endpoint Graph, token, delta, mã lỗi |
 | `.claude/docs/onedrive-graph-responses.md` | Mẫu response thật (giá trị đã thay bằng mẫu) |
 | `.claude/adr/` | 24 quyết định kiến trúc (mục lục ở `README.md`). Muốn đổi thì viết ADR mới, không sửa ADR cũ |

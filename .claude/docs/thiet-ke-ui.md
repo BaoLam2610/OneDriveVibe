@@ -50,7 +50,7 @@
     - Thanh hệ thống có nền `bg` ở màn thường và `media.background` ở màn xem.
     - Video ngang ẩn thanh hệ thống (VD-07).
     - **Thanh điều hướng đáy** (N1) cộng thêm phần lề dưới của thanh điều hướng hệ thống vào chiều cao, nền thanh kéo dài xuống sát cạnh màn.
-    - **Tab Short** (đề xuất, chờ xác nhận): video vẽ tràn dưới thanh trạng thái, icon thanh trạng thái màu sáng như màn xem.
+    - **Tab Short** (đã vẽ ở page Short, 2026-10-10): video vẽ tràn dưới thanh trạng thái, icon thanh trạng thái màu sáng như màn xem.
 8. **Icon:**
     - Chỉ dùng bộ icon ODV ở mục 3: 24 × 24, nét 2dp, đầu tròn.
     - Không dùng Material Icons, không dùng emoji.
@@ -247,7 +247,7 @@ Viên chọn và icon mục đang chọn trên thanh đáy bản N4 dùng **bả
 | `nav-indicator-height` | 32dp | **Mới (Lát 8), chưa có trong `odv-tokens.json`** |
 | `nav-dot` | 8dp | **Mới (Lát 8), chưa có trong `odv-tokens.json`**. Chấm nhắc trên mục Cài đặt (DH-07) |
 
-Bốn token `nav-*` là đề xuất cho thanh điều hướng đáy (mục 4.7). Thêm vào `odv-tokens.json` và board Foundations khi artboard N1 được duyệt.
+Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đáy (mục 4.7) đã có trên board Bố cục của Foundations và trong `odv-tokens.json`.
 
 ### 2.7 Độ nổi
 
@@ -443,7 +443,7 @@ Bốn token `nav-*` là đề xuất cho thanh điều hướng đáy (mục 4.7
 
 - **AppBar:** cao 56, padding ngang 4.
     - Bên trái: ở gốc là mark 28, cách lề 12. Trong thư mục con là nút `arrow-left` "Lên một cấp".
-    - Tiêu đề `title`, một dòng, cắt "…". Tab Thư mục: tên thư mục đang mở ("OneDrive" ở gốc). Tab Thư viện: "Thư viện" (đề xuất, chờ xác nhận).
+    - Tiêu đề `title`, một dòng, cắt "…". Tab Thư mục: tên thư mục đang mở ("OneDrive" ở gốc). Tab Thư viện: "Thư viện" (đã vẽ ở D1 đến D8 bản mới).
     - Bên phải: chỉ còn IconButton `search` "Tìm kiếm". **Nút `settings` đã bỏ từ Lát 8** (Cài đặt là tab, DH-01).
 - **AppBar tìm kiếm:** nút quay lại, rồi ô tìm cao 48 tròn nền `surface-2` gồm icon `search` 20 màu `ink-muted`, chữ `body` (placeholder "Tìm tên tệp hoặc thư mục") và nút X "Xóa từ khóa".
 - **Breadcrumb:** padding ngang 16, chữ `body-sm`.
@@ -569,7 +569,7 @@ Bốn token `nav-*` là đề xuất cho thanh điều hướng đáy (mục 4.7
 
 ### 4.7 Thanh điều hướng đáy (NavBar, Lát 8, DH-01 → DH-08)
 
-Thay cho Tabs (mục 4.1). Chưa có artboard; số liệu dưới đây là đề xuất đã trình người dùng (2026-10-10), cần vẽ N1 đến N4 trên Foundations (mục 11) rồi mới chốt.
+Thay cho Tabs (mục 4.1). Đã có artboard N1 đến N4 ở board 20 "Thanh điều hướng đáy" của ODV Foundations (2026-10-10): N1 (4 mục, sáng/tối, nhấn, focus), N2 (3 mục), N3 (chấm warning/danger), N4 (nền đen cho tab Short). Số liệu dưới đây khớp thiết kế; nếu thấy lệch khi dựng thì hỏi lại, không tự sửa.
 
 - **Bố cục:**
     - Cao `nav-bar` 64 cộng lề dưới của thanh điều hướng hệ thống. Rộng toàn màn.
@@ -593,9 +593,9 @@ Thay cho Tabs (mục 4.1). Chưa có artboard; số liệu dưới đây là đ�
 
 ### 4.8 Short (Lát 8, SV-01 → SV-16)
 
-Chưa có artboard; số liệu dưới đây là đề xuất dựng từ token có sẵn, cần vẽ SH1 đến SH9 (mục 5.5, mục 11).
+Đã có artboard SH1 đến SH9 (cộng bản "Đã xáo lại") ở page Short (2026-10-10). Số liệu dưới đây dựng từ token có sẵn; nếu thấy lệch khi dựng thì hỏi lại, không tự sửa.
 
-- **Vùng video:** từ đỉnh màn (vẽ tràn dưới thanh trạng thái, đề xuất) tới mép trên thanh đáy N4. Nền `media.background`. Không có AppBar, không có nút nào trên video.
+- **Vùng video:** từ đỉnh màn (vẽ tràn dưới thanh trạng thái) tới mép trên thanh đáy N4. Nền `media.background`. Không có AppBar, không có nút nào trên video.
 - **Khung hình (SV-08):**
     - Video dọc gần tỉ lệ vùng video: Cắt đầy (lấp kín, cắt phần thừa).
     - Video dọc lệch tỉ lệ (vd. 3:4) và video ngang, vuông: Vừa khung, căn giữa, phần trống nền đen.
@@ -705,7 +705,7 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 | D3 | Thư viện · Tối | 390×844 | `ListLibraryDark` |
 | D4 | Tìm kiếm · Tối | 390×844 | `ListSearchDark` |
 | D7 | Đang lập chỉ mục · Tối | 390×844 | `ListIndexingDark` |
-| D9 | Thư mục · Banner secret sắp hết hạn (CD-06, Q4). **Chưa có artboard** | 390×844 | `ListExpireBanner` (dự kiến) |
+| D9 | Thư mục · Banner secret sắp hết hạn (CD-06, Q4) | 390×844 | `ListExpireBanner` |
 
 **Lát 8: toàn bộ artboard D1 đến D8 (kể cả bản tối) cần vẽ lại** theo bố cục mới dưới đây (mục 11). Cho tới khi vẽ lại, phần nội dung giữa AppBar và đáy vẫn so theo artboard cũ.
 
@@ -803,7 +803,7 @@ Page Màn xem **không đổi hình** ở Lát 8 (thanh điều hướng đáy �
 | O3 | Chọn · Chế độ phát (VD-13, VD-20) | 390×844 | `OptMode` |
 | O4 | Chọn · Khung hình mặc định (VD-06) | 390×844 | `OptFit` |
 | O5 | Chọn · Tốc độ mặc định (VD-05) | 390×844 | `OptSpeed` |
-| O6 | Chọn · Thời lượng tối đa của Short (CD-13). **Chưa có artboard** | 390×844 | `OptShortMax` (dự kiến) |
+| O6 | Chọn · Thời lượng tối đa của Short (CD-13), kèm bản đang kéo | 390×844 | `OptShortMax` |
 | D1 | Xác nhận · Tắt bảo vệ ứng dụng (CD-03) | 390×844 | `DlgSecOff` |
 | D2 | Xác nhận · Bật xóa dữ liệu tự động (CD-08) | 390×844 | `DlgWipe` |
 | D3 | Xác nhận · Ngắt kết nối, bước 1 (CD-05) | 390×844 | `DlgDisc1` |
@@ -826,11 +826,11 @@ Page Màn xem **không đổi hình** ở Lát 8 (thanh điều hướng đáy �
 **Bố cục:**
 - Cài đặt là **một màn cuộn**, 6 nhóm theo thứ tự: Hiển thị, Bảo mật, Video, PDF, Bộ nhớ đệm, Kết nối. Cuối màn có dòng phiên bản `meta` căn giữa.
 - C1 đến C4 là bốn vị trí cuộn của cùng màn đó.
-- **Thanh tiêu đề (từ Lát 8):** chỉ có chữ "Cài đặt" (`title`), lề trái 16, **không có nút quay lại** vì Cài đặt là tab (đề xuất, chờ xác nhận). Cao 56 cộng 24 thanh trạng thái. Khi đã cuộn thì có kẻ đáy `line`.
+- **Thanh tiêu đề (từ Lát 8):** chỉ có chữ "Cài đặt" (`title`), lề trái 16, **không có nút quay lại** vì Cài đặt là tab (đã vẽ ở C1 đến C7 bản mới). Cao 56 cộng 24 thanh trạng thái. Khi đã cuộn thì có kẻ đáy `line`.
 - **Đáy:** thanh điều hướng đáy N1 với mục Cài đặt đang chọn. Nội dung cuộn kết thúc ở mép trên thanh.
 
 **Thứ tự hàng:**
-- **Hiển thị:** Loại tệp hiển thị (ChipsRow) → Giao diện → Ngôn ngữ. Hai hàng "Ẩn thư mục không có tệp phù hợp" và "Hiện tệp không hỗ trợ" có trong artboard nhưng **đã bỏ, không dựng** (TM-04, chốt 2026-10-07). Hàng Ngôn ngữ (CD-10) chưa có artboard, dựng theo kiểu ValueRow + sheet như Giao diện (xem mục 9).
+- **Hiển thị:** Loại tệp hiển thị (ChipsRow) → Giao diện → Ngôn ngữ. Hai hàng "Ẩn thư mục không có tệp phù hợp" và "Hiện tệp không hỗ trợ" có trong artboard nhưng **đã bỏ, không dựng** (TM-04, chốt 2026-10-07). Hàng Ngôn ngữ (CD-10) đã có artboard (2026-10-10), dựng theo kiểu ValueRow + sheet như Giao diện.
 - **Bảo mật:** Bảo vệ ứng dụng → Đổi mã PIN → Mở khóa bằng sinh trắc học → **Bảo vệ màn hình** (SwitchRow, CD-12, không phụ thuộc PIN nên luôn hiện kể cả khi bảo vệ ứng dụng tắt) → Tự khóa khi rời app → Xóa dữ liệu khi nhập sai quá nhiều. Sheet O2 Tự khóa có các mốc: Ngay lập tức / 10 giây / 30 giây / 1 / 5 / 15 phút (mặc định 1 phút; 10 và 30 giây thêm 2026-10-07).
 - **Video:** Bước tua khi chạm đúp → Tốc độ mặc định → Khung hình mặc định → Hướng màn hình khi mở video → Chế độ phát → Nhớ vị trí xem → **Thời lượng tối đa của Short** (ValueRow, giá trị "3 phút", mở sheet O6; chỉ hiện khi loại Video đang bật; thêm 2026-10-10, CD-13).
 - **PDF:** Kiểu đọc.
@@ -841,7 +841,7 @@ Page Màn xem **không đổi hình** ở Lát 8 (thanh điều hướng đáy �
     - Giảm giới hạn hoặc đổi tỉ lệ làm loại nào vượt trần mới thì dọn ngay (D6 cho trường hợp giảm giới hạn, CD-07).
 - **Kết nối:** Tài khoản (UPN), Tenant ID, Client ID, Đồng bộ gần nhất (InfoRow) → Cập nhật Client Secret → Ngày hết hạn secret → Ngắt kết nối.
 
-**O6 · Thời lượng tối đa của Short (đề xuất, chờ duyệt):** Bottom sheet cùng kiểu sheet Giới hạn tối đa của bộ nhớ đệm: tiêu đề `heading` "Thời lượng tối đa của Short", câu hướng dẫn `caption` màu `ink-muted` "Chỉ video dài tối đa bằng mốc này mới xuất hiện ở tab Short.", một `ODVSlider` màu `volt-text` từ 3 đến 10, bước 1, viên giá trị "3 phút" ở góc phải, nút Áp dụng (tắt khi chưa đổi). Mặc định 3 phút. Câu chữ là [mới]. TalkBack đọc "Thời lượng tối đa, 3 phút".
+**O6 · Thời lượng tối đa của Short (đã vẽ `OptShortMax`, 2026-10-10; mô tả dưới đây cần đối chiếu lại với artboard, nhất là nút Áp dụng, trước khi dựng):** Bottom sheet cùng kiểu sheet Giới hạn tối đa của bộ nhớ đệm: tiêu đề `heading` "Thời lượng tối đa của Short", câu hướng dẫn `caption` màu `ink-muted` "Chỉ video dài tối đa bằng mốc này mới xuất hiện ở tab Short.", một `ODVSlider` màu `volt-text` từ 3 đến 10, bước 1, viên giá trị "3 phút" ở góc phải, nút Áp dụng (tắt khi chưa đổi). Mặc định 3 phút. Câu chữ là [mới]. TalkBack đọc "Thời lượng tối đa, 3 phút".
 
 **Luồng:**
 - Các hành động sau đi qua P1 (Nhập mã PIN hiện tại), rồi mới tới hộp thoại hoặc màn tiếp theo; dòng phụ đề của P1 đổi theo mục đích:
@@ -856,19 +856,19 @@ Page Màn xem **không đổi hình** ở Lát 8 (thanh điều hướng đáy �
 
 ### 5.5 Short (tab Short của Màn chính, Lát 8)
 
-Page mới **"Short"** trên canvas (đề xuất: page riêng, vì Short có thanh đáy còn page Màn xem thì không). Toàn bộ chưa có artboard.
+Page mới **"Short"** trên canvas (page riêng, vì Short có thanh đáy còn page Màn xem thì không). Đã vẽ SH1 đến SH9 cộng bản "Đã xáo lại" (viên thuốc sau khi xáo, SV-03). Page có hai ghi chú chứa luồng và toàn bộ SV-01 đến SV-16, DH-01 đến DH-08.
 
 | Mã | Màn / trạng thái | Kích thước | Ảnh tham chiếu (artboard) |
 |---|---|---|---|
-| SH1 | Short · Video dọc, Cắt đầy, tên tệp, thanh tiến độ (SV-07, SV-08, SV-09) | 390×844 | `ShortPortrait` (dự kiến) |
-| SH2 | Short · Video ngang, Vừa khung (SV-08) | 390×844 | `ShortLandscape` (dự kiến) |
-| SH3 | Short · Video dọc lệch tỉ lệ (3:4), Vừa khung (SV-08) | 390×844 | `ShortPortraitFit` (dự kiến) |
-| SH4 | Short · Đang tạm dừng (SV-06) | 390×844 | `ShortPaused` (dự kiến) |
-| SH5 | Short · Đang tải | 390×844 | `ShortBuffer` (dự kiến) |
-| SH6 | Short · Kéo xuống ở video đầu để xáo lại (SV-03) | 390×844 | `ShortReshuffle` (dự kiến) |
-| SH7 | Short · Không hỗ trợ định dạng (SV-14) | 390×844 | `ShortCodec` (dự kiến) |
-| SH8 | Short · Mất mạng (SV-14) | 390×844 | `ShortNet` (dự kiến) |
-| SH9 | Short · Không có video phù hợp (SV-15) | 390×844 | `ShortEmpty` (dự kiến) |
+| SH1 | Short · Video dọc, Cắt đầy, tên tệp, thanh tiến độ (SV-07, SV-08, SV-09) | 390×844 | `ShortPortrait` |
+| SH2 | Short · Video ngang, Vừa khung (SV-08) | 390×844 | `ShortLandscape` |
+| SH3 | Short · Video dọc lệch tỉ lệ (3:4), Vừa khung (SV-08) | 390×844 | `ShortPortraitFit` |
+| SH4 | Short · Đang tạm dừng (SV-06) | 390×844 | `ShortPaused` |
+| SH5 | Short · Đang tải | 390×844 | `ShortBuffer` |
+| SH6 | Short · Kéo xuống ở video đầu để xáo lại (SV-03) | 390×844 | `ShortReshuffle` |
+| SH7 | Short · Không hỗ trợ định dạng (SV-14) | 390×844 | `ShortCodec` |
+| SH8 | Short · Mất mạng (SV-14) | 390×844 | `ShortNet` |
+| SH9 | Short · Không có video phù hợp (SV-15) | 390×844 | `ShortEmpty` |
 
 Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy luôn là bản N4. Thành phần chi tiết ở mục 4.8.
 
@@ -979,10 +979,10 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
     - nội dung hộp thoại K6: tiêu đề "Thiết lập mã PIN?", đoạn giải thích, nút "Để sau" và "Thiết lập mã PIN"
     - Short: "Đã xáo lại", trạng thái trống SH9, sheet O6
 8. Nhảy trang PDF dùng bàn phím số của hệ thống.
-9. **Thanh điều hướng đáy (Lát 8):** số liệu ở mục 4.7 (cao 64, viên 56 × 32, nhãn `label`, chọn `volt-soft`/`volt-text`), đổi tab bằng cross-fade không trượt.
-10. **Short (Lát 8):** page canvas riêng "Short"; video vẽ tràn dưới thanh trạng thái; tên tệp có dải gradient `media.scrim` phía sau; thanh tiến độ 3dp sát mép trên thanh đáy; vòng tạm dừng 72 nền `media.pill`.
-11. **Tab Cài đặt:** thanh tiêu đề chỉ có chữ "Cài đặt", bỏ mũi tên quay lại. Tab Thư viện có tiêu đề "Thư viện".
-12. **O6:** chọn thời lượng tối đa bằng thanh trượt 3 đến 10 phút + nút Áp dụng (cùng kiểu sheet Giới hạn tối đa), không dùng danh sách radio.
+9. **Thanh điều hướng đáy (Lát 8, đã vẽ, đã chốt):** số liệu ở mục 4.7 (cao 64, viên 56 × 32, nhãn `label`, chọn `volt-soft`/`volt-text`), đổi tab bằng cross-fade không trượt.
+10. **Short (Lát 8, đã vẽ, đã chốt):** page canvas riêng "Short"; video vẽ tràn dưới thanh trạng thái; tên tệp có dải gradient `media.scrim` phía sau; thanh tiến độ 3dp sát mép trên thanh đáy; vòng tạm dừng 72 nền `media.pill`.
+11. **Tab Cài đặt (đã vẽ, đã chốt):** thanh tiêu đề chỉ có chữ "Cài đặt", bỏ mũi tên quay lại. Tab Thư viện có tiêu đề "Thư viện".
+12. **O6 (đã vẽ `OptShortMax`; đối chiếu nút Áp dụng với artboard khi dựng):** chọn thời lượng tối đa bằng thanh trượt 3 đến 10 phút + nút Áp dụng (cùng kiểu sheet Giới hạn tối đa), không dùng danh sách radio.
 
 ---
 
@@ -999,14 +999,14 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 | 7 | Khi xem với font thật, các board Foundations 02, 03, 07, 11, 12 bị tràn hoặc cắt chữ | Chỉ ảnh hưởng canvas, không ảnh hưởng app. Bản sửa chiều cao đã sẵn sàng, chờ đăng |
 | 8 | Artboard K4 `ConnectSuccess` (bottom sheet "Đã kết nối OneDrive" có thanh dung lượng) vẫn còn trên canvas v22, nhưng KN-08 và KN-12 đã bỏ màn này | Không dựng K4. Cần xóa hoặc đánh dấu "đã bỏ" artboard này trên canvas |
 | 9 | Các artboard K1, K2, K3, K5 (kể cả bản tối) và B1 đến B6, B8 trên canvas v22 còn hiện StepBar "BƯỚC 1 / 2", "BƯỚC 2 / 2" | Không dựng StepBar. Cần gỡ StepBar khỏi các artboard này trên canvas; style `step-label` trong token gỡ theo |
-| 10 | Phần đã dựng ở Cài đặt (Lát 7) mà **chưa có artboard**, chuỗi VI/EN đánh dấu [mới], chờ duyệt: hàng và sheet Ngôn ngữ (CD-10); sheet Hướng màn hình khi mở video; sheet Kiểu đọc PDF; hàng Bảo vệ màn hình (CD-12); các mốc Tự khóa 10 và 30 giây | Dựng theo kiểu ValueRow/SwitchRow + sheet đã có (mục 4.6). Không thêm màu, cỡ chữ hay khoảng cách mới. Cần người thiết kế bổ sung artboard |
+| 10 | Phần đã dựng ở Cài đặt (Lát 7) mà **còn thiếu artboard**, chuỗi VI/EN đánh dấu [mới], chờ duyệt: sheet Hướng màn hình khi mở video; sheet Kiểu đọc PDF. **Đã có artboard (2026-10-10):** hàng Ngôn ngữ (CD-10), hàng Bảo vệ màn hình (CD-12), các mốc Tự khóa 10 và 30 giây | Dựng theo kiểu ValueRow/SwitchRow + sheet đã có (mục 4.6). Không thêm màu, cỡ chữ hay khoảng cách mới. Cần người thiết kế bổ sung artboard cho hai sheet còn thiếu |
 | 11 | Bộ nhớ đệm: giới hạn tùy chỉnh 1 đến 10 GB và tỉ lệ chia theo loại (Q1, ADR-0021) dùng **thanh trượt `ODVSlider`**, nút Áp dụng và Mặc định; artboard `SetStorage`, `OptCache` chỉ có 4 mốc 1/2/5/10 GB | Theo mục 5.4. `ODVSlider`, `ODVSliderRow`, `ODVSplitBar` đã có board "Slider và tỉ lệ chia" trong ODV Foundations và đã dựng (2026-10-08); riêng sheet Giới hạn tối đa (1 đến 10 GB) vẫn chưa có artboard |
 | 12 | Banner secret sắp hết hạn (C7, CD-06) chỉ có ở Cài đặt trong artboard, nhưng đã chốt hiện cả ở màn Danh sách (Q4) | Dùng lại Banner C7 ở đầu Danh sách (D9, mục 5.2); cần vẽ artboard `ListExpireBanner` |
 | 13 | Video lỗi ở Tự phát tiếp / Lặp danh sách: thẻ lỗi kèm đếm ngược 5 giây và nút Hủy (VD-15); artboard V9 chỉ có thẻ lỗi tĩnh | Dùng lại vòng đếm ngược của thẻ "Tiếp theo" (V8) trong thẻ lỗi V9 |
 | 14 | Artboard B7 `SecOff`, `SecOffDark` và thẻ công tắc "Bảo vệ ứng dụng" trên B1 đến B6 vẫn còn trên canvas, nhưng BM-01 đã bỏ công tắc | Không dựng B7 và công tắc. Cần xóa hoặc đánh dấu "đã bỏ" trên canvas |
 | 15 | Chưa có artboard K6 (hộp thoại hỏi thiết lập mã PIN, KN-13), cả bản sáng lẫn tối | Người thiết kế dựng theo mô tả ở mục 5.1. Trong lúc chờ, dev dựng theo mô tả và component Dialog (mục 4.2) |
-| 16 | **Lát 8:** toàn bộ artboard Danh sách (D1 đến D8) và Cài đặt (C1 đến C7) còn Tabs, nút bánh răng, mũi tên quay lại ở Cài đặt, chưa có thanh điều hướng đáy; chưa có NavBar (N1 đến N4), page Short (SH1 đến SH9), O6, D9, icon `short` | Vẽ theo mục 11. Trong lúc chờ, dev dựng theo mục 4.7, 4.8, 5.2, 5.4, 5.5; không thêm giá trị ngoài các token đã liệt kê |
-| 17 | Token mới `nav-bar`, `nav-indicator-width`, `nav-indicator-height`, `nav-dot` (mục 2.6) chưa có trong `odv-tokens.json`; `tab-item` không còn dùng | Thêm 4 token vào `odv-tokens.json` khi N1 được duyệt; gỡ `tab-item` cùng lúc với `step-label` |
+| 16 | **Lát 8 (đã xử lý 2026-10-10):** Danh sách (D1 đến D8, D9) và Cài đặt (C1 đến C7) đã vẽ lại với thanh đáy, bỏ Tabs, bánh răng và mũi tên quay lại; đã có NavBar N1 đến N4, page Short (SH1 đến SH9 và bản "Đã xáo lại"), O6 (kèm bản đang kéo), D9, icon `short` (43 icon). Hai hàng "Ẩn thư mục…" và "Hiện tệp không hỗ trợ" đã bỏ khỏi artboard. Sheet "Tỉ lệ chia theo loại" bỏ mã O6 để không trùng | Dựng theo artboard cùng mục 4.7, 4.8, 5.2, 5.4, 5.5; nếu số liệu artboard lệch mô tả thì hỏi lại, không tự chế giá trị |
+| 17 | Token `nav-bar`, `nav-indicator-width`, `nav-indicator-height`, `nav-dot` (mục 2.6): **đã có** trong `odv-tokens.json` và board Bố cục (2026-10-10); `tab-item` không còn dùng | Dùng token. Gỡ `tab-item` cùng lúc với `step-label` khi người thiết kế gỡ khỏi board |
 
 ---
 
@@ -1072,7 +1072,7 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 
 ## 11. Việc cần làm trên Claude Design (bàn giao cho topic vẽ)
 
-Danh sách này là nhiệm vụ của topic vẽ Claude Design (chốt 2026-10-10). Vẽ đúng theo các mục được dẫn; giá trị nào chưa có trong tài liệu thì ghi lại và hỏi, không tự chế. Vẽ xong thì báo về topic tài liệu để cập nhật mục 5 (bỏ chữ "dự kiến", "chưa có artboard"), mục 9 và `odv-tokens.json`.
+Danh sách này là nhiệm vụ của topic vẽ Claude Design (chốt 2026-10-10). Vẽ đúng theo các mục được dẫn; giá trị nào chưa có trong tài liệu thì ghi lại và hỏi, không tự chế. **Trạng thái (2026-10-10): 11.1 đến 11.4 đã vẽ xong và đã cập nhật mục 5, 9, `odv-tokens.json`;** còn lại 11.5 (K6 và các việc tồn).
 
 **11.1 Foundations**
 | Việc | Artboard | Theo |
