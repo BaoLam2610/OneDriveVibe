@@ -92,6 +92,7 @@ internal fun ShortsContent(
     reshuffledShown: Boolean,
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
+    onPreload: (List<ShortVideo>) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -111,7 +112,7 @@ internal fun ShortsContent(
             )
             // Dựng lại Pager từ đầu mỗi lần danh sách được xây hoặc xáo lại (generation đổi).
             ShortsPhase.Ready -> key(state.generation) {
-                ShortsPager(state, controller, reshuffledShown, onIntent, onPositionChanged)
+                ShortsPager(state, controller, reshuffledShown, onIntent, onPositionChanged, onPreload)
             }
         }
     }
@@ -124,10 +125,12 @@ private fun BoxScope.ShortsPager(
     reshuffledShown: Boolean,
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
+    onPreload: (List<ShortVideo>) -> Unit,
 ) {
     val ids = state.ids
     val currentOnIntent by rememberUpdatedState(onIntent)
     val currentOnPosition by rememberUpdatedState(onPositionChanged)
+    val currentOnPreload by rememberUpdatedState(onPreload)
     val pagerState = rememberPagerState(initialPage = state.index.coerceIn(0, (ids.size - 1).coerceAtLeast(0))) { ids.size }
     val settled = pagerState.settledPage
 
@@ -143,6 +146,8 @@ private fun BoxScope.ShortsPager(
     // Nạp video của trang đang hiện. Cùng video và cùng đợt danh sách thì là quay lại tab: chỉ phát tiếp đúng vị trí (SV-11).
     val currentId = ids.getOrNull(settled)
     val currentVideo = currentId?.let { state.videos[it] }
+    // Lưu ý: sau khi app bị khóa, controller.loadedId về null nhưng không phải key của effect này; nạp lại chạy được vì màn Khóa đẩy Màn chính ra
+    // khỏi composition nên effect khởi động lại khi mở khóa. Nếu sau này Màn chính được giữ dưới màn Khóa thì phải thêm loadedId vào key.
     LaunchedEffect(controller, currentVideo?.item?.id, state.generation) {
         val player = controller ?: return@LaunchedEffect
         val video = currentVideo
@@ -160,16 +165,26 @@ private fun BoxScope.ShortsPager(
         if (player.loadedId != video.item.id || firstOfGeneration) {
             // Chỉ lần nạp đầu của một đợt danh sách mới dùng vị trí và trạng thái khôi phục (DH-06, SV-11).
             val restoring = firstOfGeneration && state.startPaused
+            // Sau khi app bị khóa (CH-03) player đã bị dừng và bỏ nguồn: nạp lại đúng vị trí, giữ nguyên ý định dừng/phát của người dùng.
+            val afterLock = if (firstOfGeneration) null else player.takeLockedResume(video.item.id)
             player.load(
                 item = video.item,
                 generation = state.generation,
-                startPositionMs = if (firstOfGeneration) state.resumePositionMs else 0L,
-                autoPlay = !restoring,
+                startPositionMs = if (firstOfGeneration) state.resumePositionMs else afterLock ?: 0L,
+                autoPlay = if (afterLock != null) !player.userPaused else !restoring,
             )
             if (firstOfGeneration) currentOnIntent(ShortsIntent.RestoreConsumed)
         } else {
             player.resume()
         }
+    }
+
+    // SV-13: tải trước đầu các video kế cận (kế tiếp trước, rồi video trước), chỉ sau khi video đang xem đã lên hình để không giành băng thông
+    // với nó. Mất mạng thì holder tự bỏ qua.
+    val currentRendered = controller != null && currentId != null && controller.renderedItemId == currentId
+    val neighbours = listOf(settled + 1, settled - 1).mapNotNull { ids.getOrNull(it) }.mapNotNull { state.videos[it] }
+    LaunchedEffect(currentRendered, settled, state.generation, neighbours.map { it.item.id }) {
+        if (currentRendered && neighbours.isNotEmpty()) currentOnPreload(neighbours)
     }
 
     // SV-07: đọc vị trí theo nhịp ngắn cho thanh tiến độ, đồng thời để màn lưu lại cho lần khôi phục.
@@ -397,7 +412,9 @@ private fun BoxScope.ShortFailure(failure: PlayerFailure, fileName: String, cont
             actionLabel = stringResource(R.string.shorts_resume),
             onAction = controller::retry,
             modifier = Modifier.align(Alignment.Center).padding(horizontal = 16.dp),
-            actionEnabled = true,
+            // VD-16: nút chỉ bật khi có mạng lại (NetworkMonitor); lúc tắt có dòng nhắc.
+            actionEnabled = controller.isOnline,
+            hint = stringResource(R.string.shorts_error_network_hint),
         )
         return
     }

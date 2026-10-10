@@ -20,6 +20,7 @@
     <string name="shorts_error_other_body">Something went wrong while loading the video. Try again.</string>
     <string name="shorts_error_network_title">No internet connection</string>
     <string name="shorts_error_network_body">Everything that was buffered has played. Check your connection, then tap Resume.</string>
+    <string name="shorts_error_network_hint">The button turns on when you\'re back online</string>
     <string name="shorts_retry">Try again</string>
     <string name="shorts_resume">Resume</string>
 

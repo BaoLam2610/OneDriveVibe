@@ -214,7 +214,7 @@ Xem video ngắn theo kiểu vuốt dọc (giống TikTok, YouTube Shorts) **nga
 
 - **SV-11** (tạm dừng và phát tiếp): video **tạm dừng** khi chuyển sang tab khác, app xuống nền hoặc app bị khóa. Quay lại tab Short thì phát tiếp **đúng video và đúng vị trí** đã dừng (DH-02); riêng trường hợp khôi phục sau khi hệ điều hành thu hồi tiến trình thì ở trạng thái tạm dừng (DH-06).
 - **SV-12** (không tính là xem): video xem ở Short **không** lưu vị trí xem (VD-12), không vào dải "Xem tiếp" và không đổi các lựa chọn của màn Xem video (chế độ phát, tốc độ, khung hình).
-- **SV-13** (tải trước): app tải trước phần đầu của video kế tiếp (và video trước) để vuốt sang là phát gần như ngay (ADR-0024). Phần tải trước dùng chung cache video (BN-01, phần video). Không tải trước khi không có mạng.
+- **SV-13** (tải trước): app tải trước phần đầu của video kế tiếp (và video trước) để vuốt sang là phát gần như ngay (ADR-0024). Phần tải trước dùng chung cache video (BN-01, phần video). Không tải trước khi không có mạng. Chỉ bắt đầu tải trước sau khi video đang xem đã lên hình, để không giành băng thông với nó (ADR-0026).
 - **SV-14** (lỗi):
   - Link stream hết hạn giữa chừng: như VD-14.
   - Định dạng/codec không phát được: hiện thẻ lỗi như VD-15 nhưng **không** đếm ngược và **không** tự chuyển; người dùng vuốt sang video khác.
@@ -376,7 +376,7 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
   - Bảo mật **bật**: mã hóa bằng khóa dẫn xuất từ mã PIN kết hợp khóa phần cứng của thiết bị (Android Keystore).
   - Bảo mật **tắt** (chế độ thiết bị): mã hóa bằng khóa phần cứng của thiết bị. Đây là chế độ config được lưu ngay sau khi kết nối thành công (KN-08), cho tới khi người dùng thiết lập PIN (BM-04, CD-02).
 - **CH-02**: Không lưu mã PIN hay mã băm của mã PIN. PIN đúng hay sai được xác định bằng việc giải mã config thành công hay không.
-- **CH-03**: Access token chỉ giữ trong bộ nhớ, không ghi xuống đĩa; khi app bị khóa thì xóa token và config đã giải mã khỏi bộ nhớ.
+- **CH-03**: Access token chỉ giữ trong bộ nhớ, không ghi xuống đĩa; khi app bị khóa thì xóa token và config đã giải mã khỏi bộ nhớ. Link tải đã ký (chứa `tempauth`, cho phép tải tệp mà không cần token) cũng bị xóa khi khóa: ở tab Short thì dừng player, bỏ nguồn đang nạp, dừng tải trước và xóa link; sau khi mở khóa nạp lại đúng video và vị trí (thêm 2026-10-11, ADR-0026).
 - **CH-04**: Dữ liệu app không được đưa vào sao lưu tự động của Android.
 - **CH-05**: Các màn Kết nối, Khóa, Thiết lập bảo mật và nhập PIN luôn chặn chụp màn hình. Tab Cài đặt **không** luôn chặn (đổi 2026-10-08, ADR-0022): chỉ chặn khi bật "Bảo vệ màn hình". Mục "Bảo vệ màn hình" ở Cài đặt › Bảo mật mở rộng việc chặn ra toàn app.
 - **Hướng màn hình (2026-10-07)**: toàn app chỉ hiển thị **dọc** (cấu hình toàn app, không có trong Cài đặt). Riêng màn xem video cho xoay ngang bằng nút xoay (VD-07), rời màn thì về dọc. Tab Short luôn dọc (SV-08).

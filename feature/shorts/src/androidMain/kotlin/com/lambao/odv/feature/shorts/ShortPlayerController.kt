@@ -46,6 +46,16 @@ internal class ShortPlayerController(
 
     val player: ExoPlayer = handle.player
     private val decoders: VideoDecoders = handle.decoders
+    private val streamUrls = handle.streamUrls
+
+    /**
+     * Có mạng hay không, do [ShortPlayerHolder] cập nhật từ `NetworkMonitor`. Nút "Tiếp tục" ở thẻ mất mạng chỉ bật khi `true` (VD-16, SV-14).
+     * Là Compose state để thẻ đổi ngay khi mạng trở lại.
+     */
+    var isOnline by mutableStateOf(true)
+
+    /** Video và vị trí đang phát lúc app bị khóa, để nạp lại đúng chỗ sau khi mở khóa ([onAppLocked], [takeLockedResume]). */
+    private var lockedResume: Pair<String, Long>? = null
 
     /** Số lần đã chặn bộ giải mã chết và phát lại cho video đang nạp (giới hạn [ShortsConstants.MAX_DECODER_RETRIES]). */
     private var decoderRetries = 0
@@ -147,6 +157,31 @@ internal class ShortPlayerController(
         player.prepare()
         shortsLog.d { "[Short] đã prepare id=${item.id.takeLast(ID_LOG_LENGTH)} gen=$generation" }
         videoCache.dropStaleVersions(item.id, key)
+    }
+
+    /**
+     * App bị khóa PIN (CH-03): dừng hẳn player, bỏ nguồn đang nạp và xóa link ký đang giữ (link cho phép tải tệp không cần token), nhưng giữ
+     * nguyên ExoPlayer và bộ giải mã (ADR-0024 mục 6). Nhớ video và vị trí để sau khi mở khóa nạp lại đúng chỗ; [userPaused] giữ nguyên nên video
+     * người dùng đã dừng vẫn nằm chờ.
+     */
+    fun onAppLocked() {
+        val id = loadedId
+        shortsLog.i { "[Short] app bị khóa: dừng player, bỏ nguồn và xóa link ký (đang nạp=${id != null}, vị trí=${player.currentPosition}ms)" }
+        // Khóa lần hai trước khi video kịp nạp lại thì loadedId đang null: giữ vị trí đã lưu ở lần khóa trước thay vì ghi đè bằng null.
+        lockedResume = id?.let { it to player.currentPosition } ?: lockedResume
+        player.pause()
+        player.stop()
+        player.clearMediaItems()
+        streamUrls.clear()
+        loadedId = null
+        renderedItemId = null
+    }
+
+    /** Vị trí cần nạp lại cho [itemId] nếu nó đang phát lúc app bị khóa; trả một lần rồi xóa. */
+    fun takeLockedResume(itemId: String): Long? {
+        val saved = lockedResume ?: return null
+        lockedResume = null
+        return saved.second.takeIf { saved.first == itemId }
     }
 
     /** Chạm một lần để tạm dừng/phát tiếp (SV-06). */

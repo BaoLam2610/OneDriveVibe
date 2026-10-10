@@ -8,5 +8,5 @@ import org.koin.dsl.module
  * `androidMediaModule` của `:core:media` (ADR-0025).
  */
 val androidShortsModule = module {
-    viewModel { ShortPlayerHolder(get(), get()) }
+    viewModel { ShortPlayerHolder(factory = get(), videoCache = get(), preloader = get(), network = get(), observeLockState = get()) }
 }

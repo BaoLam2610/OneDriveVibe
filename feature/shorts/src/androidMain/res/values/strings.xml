@@ -21,6 +21,7 @@
     <string name="shorts_error_other_body">Đã có lỗi khi tải video. Hãy thử lại.</string> <!-- [mới] -->
     <string name="shorts_error_network_title">Mất kết nối mạng</string>
     <string name="shorts_error_network_body">Đã phát hết phần đã tải trước. Kiểm tra mạng rồi nhấn Tiếp tục.</string>
+    <string name="shorts_error_network_hint">Nút bật lại khi có mạng</string>
     <string name="shorts_retry">Thử lại</string>
     <string name="shorts_resume">Tiếp tục</string>
 

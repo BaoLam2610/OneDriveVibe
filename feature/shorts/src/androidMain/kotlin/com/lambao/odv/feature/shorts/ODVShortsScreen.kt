@@ -67,6 +67,7 @@ fun ODVShortsScreen(
         reshuffledShown = reshuffledShown,
         onIntent = viewModel::onIntent,
         onPositionChanged = { savedPosition = it },
+        onPreload = holder::preload,
         onOpenSettings = onOpenSettings,
         modifier = modifier,
     )

@@ -14,4 +14,6 @@ import org.koin.dsl.module
 val androidMediaModule = module {
     single { VideoCache(get<Context>(), get(), get()) } binds arrayOf(ConnectionResetter::class, CacheStore::class)
     single { ExoPlayerFactory(get<Context>(), get(), get()) }
+    // Tải trước đầu video kế tiếp của tab Short vào cache video chung (SV-13, ADR-0026).
+    single { VideoPreloader(get(), get(), get()) }
 }

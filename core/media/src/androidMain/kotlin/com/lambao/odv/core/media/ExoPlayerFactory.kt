@@ -16,7 +16,7 @@ import com.lambao.odv.core.domain.usecase.viewer.GetStreamUrlUseCase
 import io.github.anilbeesetti.nextlib.media3ext.ffdecoder.NextRenderersFactory
 
 /** Một [ExoPlayer] vừa dựng cùng [VideoDecoders] của nó; người gọi (màn Xem video, tab Short) sở hữu và phải `release()` player. */
-class ExoPlayerHandle(val player: ExoPlayer, val decoders: VideoDecoders)
+class ExoPlayerHandle(val player: ExoPlayer, val decoders: VideoDecoders, val streamUrls: StreamUrlProvider)
 
 /**
  * Dựng [ExoPlayer] dùng chung cho màn Xem video và tab Short (ADR-0025). Chuỗi nguồn dữ liệu, từ trên xuống:
@@ -38,7 +38,9 @@ class ExoPlayerFactory(
         val http = DefaultHttpDataSource.Factory()
             .setConnectTimeoutMs(MediaConstants.HTTP_TIMEOUT_MS)
             .setReadTimeoutMs(MediaConstants.HTTP_TIMEOUT_MS)
-        val upstream = StreamDataSourceFactory(http, StreamUrlProvider(getStreamUrl))
+        // Giữ tham chiếu để chủ player xóa được link ký khi app bị khóa (CH-03, tab Short).
+        val streamUrls = StreamUrlProvider(getStreamUrl)
+        val upstream = StreamDataSourceFactory(http, streamUrls)
         val cached = CacheDataSource.Factory()
             .setCache(cache)
             .setUpstreamDataSourceFactory(upstream)
@@ -76,6 +78,6 @@ class ExoPlayerFactory(
             .setHandleAudioBecomingNoisy(true)
             .build()
         mediaLog.i { "[Factory] player sẵn sàng" }
-        return ExoPlayerHandle(player, decoders)
+        return ExoPlayerHandle(player, decoders, streamUrls)
     }
 }

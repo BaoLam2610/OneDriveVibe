@@ -47,6 +47,15 @@ class StreamUrlProvider(
     private val entries = ConcurrentHashMap<String, Entry>()
 
     /**
+     * Quên mọi link đang giữ. Gọi khi app bị khóa PIN (CH-03): link ký cho phép tải tệp mà không cần token nên không để nó nằm lại trong bộ nhớ
+     * sau khi khóa; lần mở kết nối kế tiếp sẽ tự lấy link mới.
+     */
+    fun clear() {
+        if (entries.isNotEmpty()) mediaLog.i { "[Url] xóa ${entries.size} link đã giữ" }
+        entries.clear()
+    }
+
+    /**
      * Link cho [itemId]; [refresh] bỏ qua bản đang giữ. Chặn luồng gọi: ExoPlayer mở DataSource trên luồng tải riêng của
      * nó nên chờ ở đây không đứng giao diện.
      */
