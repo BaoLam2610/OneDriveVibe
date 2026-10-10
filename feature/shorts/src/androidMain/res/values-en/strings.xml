@@ -31,4 +31,6 @@
     <string name="shorts_action_next">Next video</string>
     <string name="shorts_action_previous">Previous video</string>
     <string name="shorts_action_reshuffle">Reshuffle list</string>
+    <string name="shorts_seek_description">Playback position</string>
+    <string name="shorts_seek_value">%1$s of %2$s</string>
 </resources>

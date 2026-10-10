@@ -296,6 +296,10 @@ Thêm theo feature: `playback_progress`, `reading_progress`, `cache_entry`. Tab 
 
 Tổng hợp từ rà soát skill `android-clean-architecture` và `compose-multiplatform-patterns`, cộng các quy ước nhỏ của dự án. Phần **ghi đè** là chỗ quyết định của dự án thắng ví dụ trong skill.
 
+### Kotlin: lỗi hay gặp khi không được build
+- **Platform declaration clash:** `var x by ... private set` sinh `setX(...)`; đừng khai báo thêm hàm tên `setX` cùng kiểu tham số trong cùng lớp. Đặt tên hàm cập nhật là `applyX` (đã gặp với `pull` / `applyPull` ở `ReshuffleConnection`, 2026-10-11). Cũng vì thế không đặt tên `setSpeed` cho hàm khi có property `speed` (xem `VideoPlayerController.applySpeed`).
+- **Không ghi đè file người dùng đã sửa tay** (xem CLAUDE.md, "Cách làm việc"): dùng `Edit`, `Read` lại trước khi sửa.
+
 ### Ghi đè so với skill
 | Skill nói | Dự án chốt |
 |---|---|

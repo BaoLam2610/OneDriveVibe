@@ -10,13 +10,16 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
 
 /**
- * Cử chỉ kéo xuống để xáo lại (SV-03, SH6): chỉ khi [canPull] (đang ở video đầu và Pager không cuộn lùi được nữa). Phần kéo mà Pager không
- * dùng tới được cộng dồn vào [pull]; thả tay khi đã quá [thresholdPx] thì gọi [onTrigger]. Ở video khác video đầu, vuốt xuống là về video
- * trước (SV-04) do Pager tự xử lý nên không bao giờ vào đây.
+ * Cử chỉ kéo xuống để xáo lại (SV-03, SH6). Chỉ bắt đầu khi [canPull] (đang ở video đầu) và Pager không còn gì để cuộn lùi: phần kéo xuống mà
+ * Pager không dùng tới ([onPostScroll]) mở đầu [pull]. Thả tay khi đã quá [thresholdPx] thì gọi [onTrigger]. Ở video khác video đầu, vuốt xuống
+ * là về video trước (SV-04) do Pager tự xử lý nên không bao giờ vào đây.
  *
- * Khi đang giữ vòng kéo mà ngón tay đi **ngược lên** (người dùng nới tay hoặc rung tay), phần đi lên được trừ vào [pull] trước ([onPreScroll])
- * chứ không chuyển cho Pager. Trước đây Pager nhận phần đi lên đó như một cú vuốt sang video kế tiếp: vòng kéo tự mất và màn nhảy sang
- * video khác dù chưa thả tay (lỗi 2026-10-11).
+ * **Từ lúc bắt đầu kéo cho tới khi thả tay, lớp này sở hữu cử chỉ** (`owning`): [onPreScroll] nuốt mọi chuyển động của ngón tay, cả xuống lẫn
+ * ngược lên, nên Pager không bao giờ nhận được gì để cuộn. Trước đây phần chuyển động còn lại (lệch dưới 1px, hoặc ngón tay nới lên) lọt xuống
+ * Pager, nó cuộn một chút và vòng kéo bị hủy dù chưa thả tay (log 2026-10-11: `consumed=0.57px, đã kéo=432px`). Ngón tay đi ngược lên quá điểm bắt
+ * đầu chỉ thu vòng về 0 chứ không chuyển cho Pager; muốn sang video kế tiếp phải thả tay rồi vuốt lên lần khác.
+ *
+ * Quy ước tên: hàm cập nhật là `applyPull`, không phải `setPull`, vì `var pull ... private set` đã sinh `setPull(F)V` ("Platform declaration clash").
  */
 @Stable
 internal class ReshuffleConnection(
@@ -35,38 +38,55 @@ internal class ReshuffleConnection(
     /** Đã báo "đạt ngưỡng" trong lần kéo này chưa, để log mỗi lần kéo đúng một dòng khi vượt và một dòng khi tụt xuống dưới ngưỡng. */
     private var reachedThreshold = false
 
+    private val maxPull: Float get() = thresholdPx * MAX_PULL_FACTOR
+
+    /**
+     * Lần chạm hiện tại đã thuộc về cử chỉ xáo lại (từ lúc bắt đầu kéo xuống cho tới khi thả tay). Khác với [pull] > 0: ngón tay có thể nới
+     * ngược lên làm [pull] về 0 mà người dùng vẫn đang trong lần kéo đó, và khi ấy cú vuốt lên **không** được hiểu là sang video kế tiếp
+     * (kiểm tay 2026-10-11, mục 3: kéo xuống rồi kéo lên bị xung đột với vuốt lên để sang video dưới).
+     */
+    private var owning = false
+
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        if (source != NestedScrollSource.UserInput || pull <= 0f || available.y >= 0f) return Offset.Zero
-        // Ngón tay đi ngược lên khi vòng đang kéo: thu vòng lại, đừng để Pager cuộn sang video kế tiếp.
-        val used = maxOf(available.y, -pull)
-        applyPull(pull + used)
-        return Offset(0f, used)
+        if (source != NestedScrollSource.UserInput || !owning) return Offset.Zero
+        // Đang trong lần kéo xáo lại: nuốt hết chuyển động (xuống, nới lên, và cả đi lên quá điểm bắt đầu) để Pager không cuộn gì.
+        applyPull((pull + available.y).coerceIn(0f, maxPull))
+        return Offset(0f, available.y)
     }
 
     override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-        if (source != NestedScrollSource.UserInput) return Offset.Zero
-        if (canPull() && available.y > 0f) {
-            if (pull <= 0f) shortsLog.d { "[Short][Pull] bắt đầu kéo xuống ở video đầu" }
-            applyPull((pull + available.y).coerceAtMost(thresholdPx * MAX_PULL_FACTOR))
-            return Offset(0f, available.y)
-        }
-        // Pager tự cuộn (không phải do nới tay đã xử lý ở trên): hủy lần kéo, ghi log để biết khi nào xảy ra.
-        if (consumed.y != 0f && pull > 0f) {
-            shortsLog.w { "[Short][Pull] Pager tự cuộn nên hủy lần kéo (consumed=${consumed.y}px, đã kéo=${pull}px)" }
-            applyPull(0f)
-        }
-        return Offset.Zero
+        if (source != NestedScrollSource.UserInput || owning || available.y <= 0f || !canPull()) return Offset.Zero
+        shortsLog.d { "[Short][Pull] bắt đầu kéo xuống ở video đầu (còn ${available.y}px sau khi Pager cuộn ${consumed.y}px)" }
+        owning = true
+        applyPull(available.y.coerceAtMost(maxPull))
+        return Offset(0f, available.y)
     }
 
     override suspend fun onPreFling(available: Velocity): Velocity {
+        if (!owning) return Velocity.Zero
         val fire = pull >= thresholdPx
         shortsLog.i {
             "[Short][Pull] thả tay: đã kéo=${pull}px ngưỡng=${thresholdPx}px vận tốc=${available.y}px/s → ${if (fire) "xáo lại" else "hủy"}"
         }
-        applyPull(0f)
-        reachedThreshold = false
+        finishGesture()
         if (fire) onTrigger()
+        // Nuốt vận tốc của cú thả: nếu không Pager sẽ fling theo và có thể trượt sang video kế tiếp.
+        return available
+    }
+
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+        // Phòng khi cử chỉ kết thúc mà onPreFling không tới (bị hủy): đừng để lần chạm sau bị nuốt oan.
+        if (owning) {
+            shortsLog.w { "[Short][Pull] cử chỉ kết thúc mà chưa qua onPreFling, nhả quyền sở hữu" }
+            finishGesture()
+        }
         return Velocity.Zero
+    }
+
+    private fun finishGesture() {
+        owning = false
+        reachedThreshold = false
+        applyPull(0f)
     }
 
     private fun applyPull(value: Float) {

@@ -174,6 +174,21 @@ internal class ShortPlayerController(
         if (can) player.play()
     }
 
+    /**
+     * Tua tới [targetMs] (thanh tua, SV-07). Không đổi trạng thái phát/dừng: đang chạy thì kéo xong vẫn chạy, đang dừng thì vẫn dừng. Không lưu
+     * vị trí xem (SV-12).
+     */
+    fun seekTo(targetMs: Long) {
+        val limit = if (durationMs > 0L) durationMs else Long.MAX_VALUE
+        val target = targetMs.coerceIn(0L, limit)
+        shortsLog.i {
+            "[Short][Seek] tua tới ${target}ms / ${durationMs}ms từ ${player.currentPosition}ms " +
+                "(đang phát=${player.isPlaying}, người dùng dừng=$userPaused)"
+        }
+        player.seekTo(target)
+        refreshProgress()
+    }
+
     /** Thử lại sau lỗi (lỗi chung, hoặc có mạng lại ở SV-14). Giữ nguyên vị trí đang dừng. */
     fun retry() {
         shortsLog.i { "[Short] thử lại sau lỗi $failure, vị trí=${player.currentPosition}ms" }

@@ -32,6 +32,13 @@ class ShortsViewModel(
     private var sourceIds: List<String> = emptyList()
     private var liveIds: Set<String> = emptySet()
 
+    /**
+     * ViewModel này đã từng dựng danh sách. Ảnh chụp khôi phục (`rememberSaveable` ở màn) chỉ có nghĩa với ViewModel **mới sinh** sau khi
+     * tiến trình bị thu hồi; còn sau [reset] (tắt rồi bật lại Video, DH-01) màn vẫn giữ giá trị cũ nên phải bỏ qua, nếu không tab Short ra
+     * đúng thứ tự cũ và nằm chờ tạm dừng thay vì xáo mới (SV-02). Lỗi do review 2026-10-11.
+     */
+    private var everBuilt = false
+
     init {
         // DH-01: tắt loại Video (hoặc chưa đồng bộ xong) thì mục Short biến mất và trạng thái bị bỏ; bật lại thì lần vào kế tiếp xáo mới (SV-02).
         viewModelScope.launch {
@@ -65,7 +72,7 @@ class ShortsViewModel(
         when {
             buildJob?.isActive == true -> Unit
             state.phase == ShortsPhase.Loading ->
-                if (restore != null && restore.maxMinutes == max) {
+                if (restore != null && !everBuilt && restore.maxMinutes == max) {
                     build(max, restore.seed, restore.index, restore.positionMs, paused = true)
                 } else {
                     build(max, Random.nextLong(), index = 0, positionMs = 0L, paused = false)
@@ -77,6 +84,7 @@ class ShortsViewModel(
     }
 
     private fun build(max: Int, seed: Long, index: Int, positionMs: Long, paused: Boolean) {
+        everBuilt = true
         buildJob?.cancel()
         trackJob?.cancel()
         buildJob = viewModelScope.launch {
@@ -172,6 +180,9 @@ class ShortsViewModel(
 
     private fun loadAround(center: Int) {
         val radius = ShortsConstants.NEIGHBOR_RADIUS
+        val window = ((center - radius)..(center + radius)).mapNotNull { currentState.ids.getOrNull(it) }.toSet()
+        // Chỉ giữ chi tiết các video quanh trang hiện tại (ADR-0024 mục 5): vuốt hàng trăm video không làm map phình ra.
+        if (currentState.videos.keys.any { it !in window }) setState { copy(videos = videos.filterKeys { it in window }) }
         for (position in (center - radius)..(center + radius)) {
             val id = currentState.ids.getOrNull(position) ?: continue
             if (id in currentState.videos) continue
@@ -182,6 +193,8 @@ class ShortsViewModel(
                     return@launch
                 }
                 shortsLog.d { "[Short][VM] đã nạp chi tiết id=${id.takeLast(ID_LOG_LENGTH)} thư mục=${video.folderName != null}" }
+                // Đã vuốt đi chỗ khác trong lúc chờ Room: bỏ kết quả muộn, đừng làm phình map.
+                if (id !in window) return@launch
                 setState { copy(videos = videos + (id to video)) }
             }
         }

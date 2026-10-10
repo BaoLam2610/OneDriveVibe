@@ -200,7 +200,7 @@ Xem video ngắn theo kiểu vuốt dọc (giống TikTok, YouTube Shorts) **nga
 
 - **SV-05** (phát): video hiện trên màn thì tự phát **có tiếng**, chạy hết thì **tự lặp lại** từ đầu. Tốc độ luôn 1x. Giữ màn hình sáng khi đang phát (như VD-09). Âm lượng chỉnh bằng phím âm lượng của máy.
 - **SV-06** (chạm): chạm một lần để **tạm dừng / phát tiếp**, hiện biểu tượng ngắn ở giữa màn. Không có tua, chạm đúp, chỉnh tốc độ, zoom, khóa thao tác, vuốt chỉnh độ sáng/âm lượng hay nút xoay màn hình.
-- **SV-07** (thanh tiến độ): thanh mỏng ở mép trên thanh điều hướng đáy, chỉ để xem, không kéo để tua.
+- **SV-07** (thanh tiến độ và tua, sửa 2026-10-11): thanh mỏng ở mép trên thanh điều hướng đáy cho biết vị trí đang phát. **Chạm vào vùng thanh** thì hiện thanh tua (kéo hoặc chạm để chọn vị trí) kèm viên thời gian "đang kéo / tổng"; **nhả tay** thì tua tới đó và thanh tua ẩn lại. Khi video đang **tạm dừng** (SV-06) thanh tua luôn hiện. Kéo không đổi trạng thái: đang chạy thì kéo xong vẫn chạy, đang tạm dừng thì vẫn tạm dừng. Cú vuốt bắt đầu trên thanh tua không làm đổi video. Vị trí sau khi tua không được lưu (SV-12). Trước đây SV-07 ghi "chỉ để xem"; đổi theo yêu cầu người dùng.
 - **SV-08** (khung hình): xác định theo **tỉ lệ thật của hình sau khi giải mã** (đã tính hướng xoay ghi trong tệp), không chỉ dựa vào `video.width`/`height` của OneDrive:
   - Video **dọc** có tỉ lệ gần tỉ lệ vùng hiển thị (phần bị cắt không quá khoảng 20% mỗi chiều; ngưỡng chốt lại khi thử máy): **Cắt đầy**, lấp kín vùng phía trên thanh điều hướng đáy.
   - Video dọc lệch tỉ lệ nhiều (vd. 3:4): **Vừa khung**.

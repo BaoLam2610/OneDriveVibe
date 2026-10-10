@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lambao.odv.R
 import com.lambao.odv.core.designsystem.component.LocalODVNavBarOwnsInset
@@ -145,7 +146,9 @@ private fun HomeContent(
     }
 
     Column(modifier.fillMaxSize().background(ODVTheme.colors.bg)) {
-        Box(Modifier.weight(1f).fillMaxWidth()) {
+        // zIndex: vẽ vùng nội dung đè lên thanh đáy để núm thanh tua của Short (tâm ở rãnh sát đường tiếp xúc, tràn xuống vài dp) không bị
+        // thanh đáy che. Các tab khác không vẽ ra ngoài vùng của mình nên không bị ảnh hưởng.
+        Box(Modifier.weight(1f).fillMaxWidth().zIndex(1f)) {
             // Thanh đáy tự đệm inset thanh điều hướng hệ thống nên khung của từng tab không đệm đáy nữa khi thanh đang hiện.
             CompositionLocalProvider(LocalODVNavBarOwnsInset provides barVisible) {
                 stateHolder.SaveableStateProvider(selected) {

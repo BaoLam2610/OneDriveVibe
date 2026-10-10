@@ -32,4 +32,6 @@
     <string name="shorts_action_next">Video kế tiếp</string>
     <string name="shorts_action_previous">Video trước</string>
     <string name="shorts_action_reshuffle">Xáo lại danh sách</string>
+    <string name="shorts_seek_description">Vị trí phát</string>
+    <string name="shorts_seek_value">%1$s trên %2$s</string> <!-- [mới] -->
 </resources>

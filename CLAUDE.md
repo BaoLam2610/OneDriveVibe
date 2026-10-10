@@ -72,6 +72,7 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 
 ## Cách làm việc
 
+- **Người dùng sửa tay file bất cứ lúc nào (build rồi tự sửa lỗi biên dịch). Không bao giờ ghi đè file có sẵn bằng `Write`; chỉ dùng `Edit`, và `Read` lại file ngay trước khi sửa nếu nó đã được sửa trước đó trong phiên hoặc hệ thống báo "changed on disk".** Đã có sự cố 2026-10-11: người dùng đổi `setPull` thành `applyPull` để hết lỗi "Platform declaration clash", rồi tôi ghi đè cả file `ShortsReshuffle.kt` bằng `Write` và đưa lỗi trở lại (người dùng nhắc đến lần thứ hai). Muốn viết lại cả file thì `Read` trước, giữ nguyên mọi chỗ người dùng đã sửa, hoặc hỏi.
 - **Thêm hoặc đổi giá trị theo yêu cầu của người dùng thì sửa luôn tài liệu liên quan:** `dac-ta-nghiep-vu.md` nếu ở đó có nêu (bảng Cài đặt mục 3.8, các quy tắc CD/VD/CH...), `thiet-ke-ui.md` nếu là giao diện, `tech-stack.md` nếu là quy ước kỹ thuật. Rà lại bằng grep các chỗ nhắc cùng giá trị để không còn câu mâu thuẫn.
 - **Đổi thứ tự hay số Lát thì sửa cùng lúc** `ke-hoach-mvp1.md`, `tien-do-mvp1.md`, `tech-stack.md` và `ke-hoach-refactor-kien-truc.md` (các lần đổi trước từng để lại chỗ lệch).
 - **Vẽ thiết kế làm ở topic riêng:** topic tài liệu chỉ sửa các file `.md`; việc vẽ trên Claude Design làm ở topic khác và theo đúng mục 11 của `thiet-ke-ui.md`, không tự chế giá trị.

@@ -3,7 +3,15 @@
 package com.lambao.odv.feature.shorts
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -40,7 +48,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -55,7 +62,6 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
-import coil3.compose.AsyncImage
 import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.component.ODVViewerBufferSpinner
 import com.lambao.odv.core.designsystem.component.ODVViewerButton
@@ -68,8 +74,6 @@ import com.lambao.odv.core.designsystem.theme.ODVMediaColors
 import com.lambao.odv.core.designsystem.theme.ODVSize
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.domain.model.ShortVideo
-import com.lambao.odv.core.domain.model.ThumbnailSize
-import com.lambao.odv.core.domain.model.thumbnailSource
 import com.lambao.odv.core.media.PlayerFailure
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -141,7 +145,13 @@ private fun BoxScope.ShortsPager(
     val currentVideo = currentId?.let { state.videos[it] }
     LaunchedEffect(controller, currentVideo?.item?.id, state.generation) {
         val player = controller ?: return@LaunchedEffect
-        val video = currentVideo ?: return@LaunchedEffect
+        val video = currentVideo
+        if (video == null) {
+            // Chi tiết trang mới chưa có (hoặc bản ghi vừa bị xóa): trang vẽ đen, nên đừng để video trước còn phát tiếng ở phía sau.
+            shortsLog.d { "[Short][UI] trang $settled chưa có chi tiết, tạm dừng video đang nạp" }
+            player.pause()
+            return@LaunchedEffect
+        }
         val firstOfGeneration = player.loadedGeneration != state.generation
         shortsLog.d {
             "[Short][UI] quyết định nạp: trang=$settled id=${video.item.id.takeLast(ID_LOG_LENGTH)} đang nạp=${player.loadedId?.takeLast(ID_LOG_LENGTH)} " +
@@ -176,7 +186,8 @@ private fun BoxScope.ShortsPager(
     if (controller != null) {
         LifecycleResumeEffect(controller) {
             shortsLog.d { "[Short][UI] vào/tiếp tục màn hình" }
-            controller.resume()
+            // Chỉ phát tiếp video của đúng đợt danh sách này: sau khi xáo lại, player còn video đợt cũ cho tới khi load chạy xong.
+            if (controller.loadedGeneration == state.generation) controller.resume()
             onPauseOrDispose {
                 shortsLog.d { "[Short][UI] rời/tạm dừng màn hình (đổi tab, xuống nền hoặc bị khóa)" }
                 controller.pause()
@@ -196,7 +207,8 @@ private fun BoxScope.ShortsPager(
     val reshuffle = remember(pagerState, thresholdPx) {
         ReshuffleConnection(
             thresholdPx = thresholdPx,
-            canPull = { !pagerState.canScrollBackward },
+            // Dùng chỉ số trang chứ không dùng canScrollBackward: thuộc tính đó cập nhật chậm một khung nên có lúc còn `true` dù Pager đã về 0.
+            canPull = { pagerState.currentPage == 0 },
             onTrigger = { currentOnIntent(ShortsIntent.Reshuffle) },
         )
     }
@@ -236,32 +248,15 @@ private fun BoxScope.ShortsPager(
             )
         }
 
-        // SV-07: thanh tiến độ mỏng sát mép trên thanh đáy, chỉ để xem.
+        // SV-07: thanh tiến độ mỏng sát mép trên thanh đáy; chạm vào thì hiện thanh tua, đang tạm dừng cũng hiện.
         val loaded = controller?.takeIf { it.loadedId == currentId }
         if (loaded != null) {
-            ODVViewerMiniProgress(
-                position = fraction(loaded.positionMs, loaded.durationMs),
-                buffered = fraction(loaded.bufferedPositionMs, loaded.durationMs),
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            ShortSeek(loaded, Modifier.align(Alignment.BottomCenter))
         }
 
         // SH6: vòng xáo lại trượt xuống theo ngón tay khi kéo ở video đầu (SV-03).
-        if (reshuffle.pull > 0f) {
-            Box(
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
-                    .padding(top = 12.dp)
-                    .offset { IntOffset(0, (reshuffle.pull * 0.5f).roundToInt()) }
-                    .graphicsLayer { alpha = reshuffle.progress }
-                    .size(40.dp)
-                    .background(ODVMediaColors.pill, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                ODVIcon(ODVIcon.Sync, contentDescription = null, tint = ODVMediaColors.onMedia, size = 24.dp)
-            }
-        }
+        // Đọc `pull` trong composable con để chỉ vòng này dựng lại theo từng px kéo, không kéo theo cả Pager.
+        ReshuffleIndicator(reshuffle, Modifier.align(Alignment.TopCenter))
         AnimatedVisibility(
             visible = reshuffledShown,
             modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 16.dp),
@@ -273,9 +268,28 @@ private fun BoxScope.ShortsPager(
     }
 }
 
+/** SH6: vòng xáo lại trượt xuống theo ngón tay khi kéo ở video đầu (SV-03); không vẽ gì khi chưa kéo. */
+@Composable
+private fun ReshuffleIndicator(reshuffle: ReshuffleConnection, modifier: Modifier = Modifier) {
+    if (reshuffle.pull <= 0f) return
+    Box(
+        modifier
+            .statusBarsPadding()
+            .padding(top = 12.dp)
+            .offset { IntOffset(0, (reshuffle.pull * 0.5f).roundToInt()) }
+            .graphicsLayer { alpha = reshuffle.progress }
+            .size(40.dp)
+            .background(ODVMediaColors.pill, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        ODVIcon(ODVIcon.Sync, contentDescription = null, tint = ODVMediaColors.onMedia, size = 24.dp)
+    }
+}
+
 /**
- * Một trang video. Bề mặt phát chỉ dựng ở trang đang hiện và đúng video player đang nạp; thumbnail phủ lên tới khi có khung hình đầu để
- * không để màn đen (SH5). Khung hình theo [decideFit] (SV-08), tên tệp và thư mục chứa nó luôn hiện ở góc dưới trái (SV-09).
+ * Một trang video. Bề mặt phát chỉ dựng ở trang đang hiện và đúng video player đang nạp; trước khung hình đầu là nền đen kèm spinner (SH5,
+ * không dùng thumbnail của OneDrive vì nó không phải khung hình đầu và gây nháy). Khung hình theo [decideFit] (SV-08), tên tệp và thư mục
+ * chứa nó luôn hiện ở góc dưới trái (SV-09).
  */
 @Composable
 private fun ShortPage(
@@ -327,18 +341,9 @@ private fun ShortPage(
                     surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
                 )
             }
-            // Lỗi codec/đã xóa thì không phủ thumbnail lên thẻ lỗi; mất mạng vẫn giữ để có hình nền.
-            if (!rendered && (failure == null || failure == PlayerFailure.Network)) {
-                // key theo id: AsyncImage giữ ảnh cũ trong lúc tải ảnh mới nên cần key để thumbnail video trước không hiện lại.
-                key(item.id) {
-                    AsyncImage(
-                        model = item.thumbnailSource(ThumbnailSize.Viewer),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = if (fit == ShortFit.Cover) ContentScale.Crop else ContentScale.Fit,
-                    )
-                }
-            }
+            // Cố ý KHÔNG phủ thumbnail của OneDrive trước khung hình đầu (kiểm tay 2026-10-11): thumbnail không phải khung hình đầu của video nên
+            // khi khung hình thật hiện ra, hình bị nháy từ ảnh này sang ảnh khác. Nền đen cộng spinner cho tới khi có khung hình đầu thật.
+            // Việc dùng đúng khung hình đầu làm poster (như các app Short khác) cần tải trước và giải mã sẵn, ghi ở kế hoạch 8c.
             if (isCurrent && !rendered && failure == null) {
                 ODVSpinner(
                     size = 36.dp,
@@ -441,6 +446,86 @@ private fun ShortInfo(name: String, folder: String, modifier: Modifier = Modifie
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+/**
+ * Thanh tiến độ kiêm thanh tua của Short (SV-07). Luôn có thanh mảnh [ODVViewerMiniProgress]; **chạm vào vùng thanh** hoặc **khi người dùng
+ * đang tạm dừng** thì thay bằng [ShortSeekBar] (rãnh 4, núm 16, vùng chạm 24, rãnh sát đường tiếp xúc với thanh đáy). Khi đang chạm còn hiện viên thời gian
+ * "đang kéo / tổng" phía trên. Kéo hoặc chạm chỉ đổi vị trí hiển thị; tua thật khi **nhả tay** ([ShortPlayerController.seekTo]), và không đổi
+ * trạng thái phát/dừng. Thanh nằm trên Pager nên cú vuốt bắt đầu ở đây không làm đổi video.
+ */
+@Composable
+private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Modifier) {
+    var touching by remember { mutableStateOf(false) }
+    // Phần đang kéo (0..1); null khi không kéo thì thanh theo vị trí phát thật.
+    var scrub by remember { mutableStateOf<Float?>(null) }
+    val duration = controller.durationMs
+    val played = scrub ?: fraction(controller.positionMs, duration)
+    val seekVisible = touching || controller.userPaused
+    val seekAlpha by animateFloatAsState(
+        targetValue = if (seekVisible) 1f else 0f,
+        animationSpec = tween(ShortsConstants.PAUSE_FADE_MS),
+        label = "shortSeekAlpha",
+    )
+    val description = stringResource(R.string.shorts_seek_description)
+    val valueDescription = stringResource(
+        R.string.shorts_seek_value,
+        odvFormatDuration((played * duration).toLong()),
+        odvFormatDuration(duration),
+    )
+    Box(modifier.fillMaxWidth()) {
+        ODVViewerMiniProgress(
+            position = fraction(controller.positionMs, duration),
+            buffered = fraction(controller.bufferedPositionMs, duration),
+            modifier = Modifier.align(Alignment.BottomCenter).graphicsLayer { alpha = 1f - seekAlpha },
+        )
+        if (touching && duration > 0L) {
+            ODVViewerPill(
+                text = "${odvFormatDuration((played * duration).toLong())} / ${odvFormatDuration(duration)}",
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = ODVSize.seekTouch + 8.dp),
+                mono = true,
+            )
+        }
+        // alpha 0 vẫn nhận chạm, nên chạm vào vùng này khi thanh tua đang ẩn sẽ hiện nó ngay. Không chừa lề trái phải: thanh phẳng, liền hai mép
+        // màn như thanh mảnh (kiểm tay 2026-10-11).
+        Box(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .graphicsLayer { alpha = seekAlpha }
+                .observeTouch { isTouching ->
+                    touching = isTouching
+                    shortsLog.d { "[Short][Seek] ${if (isTouching) "chạm vào thanh tua" else "nhả tay khỏi thanh tua"}" }
+                },
+        ) {
+            ShortSeekBar(
+                position = played,
+                buffered = fraction(controller.bufferedPositionMs, duration),
+                onSeek = { if (duration > 0L) scrub = it },
+                contentDescription = description,
+                valueDescription = valueDescription,
+                onSeekFinished = {
+                    scrub?.let { controller.seekTo((it * duration).toLong()) }
+                    scrub = null
+                },
+            )
+        }
+    }
+}
+
+/**
+ * Báo ngón tay đang chạm vùng này hay không, **không** chiếm cử chỉ: đọc sự kiện ở lượt Initial/Final nên thanh tua bên trong vẫn nhận chạm và
+ * kéo bình thường.
+ */
+private fun Modifier.observeTouch(onTouching: (Boolean) -> Unit): Modifier = pointerInput(Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        onTouching(true)
+        do {
+            val event = awaitPointerEvent(PointerEventPass.Final)
+        } while (event.changes.any { it.pressed })
+        onTouching(false)
     }
 }
 
