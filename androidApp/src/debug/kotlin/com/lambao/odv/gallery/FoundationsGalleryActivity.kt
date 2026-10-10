@@ -42,7 +42,7 @@ internal enum class GalleryDestination(val title: String, val subtitle: String, 
     Pin("Mã PIN và bàn phím số", "15 · PinDots, Keypad", { pinPage() }),
     Lists("Thẻ và danh sách", "11, 16 · Card, FileRow, FileCard, AppBar, Thư viện...", { listPage() }),
     Viewer("Trình xem", "17 · TopBar, SeekBar, điều khiển giữa, HUD, lỗi, mất mạng...", { viewerPage() }),
-    Settings("Cài đặt", "18, 11 · SettingsGroup, các loại hàng, CacheUsage, xác nhận", { settingsPage() }),
+    Settings("Cài đặt", "18, 11 · SettingsGroup, các loại hàng, CacheUsage, Slider, SplitBar, xác nhận", { settingsPage() }),
 }
 
 /** Màn kiểm tra thiết kế (chỉ bản debug). Chuỗi để trực tiếp vì chỉ dùng khi phát triển. */

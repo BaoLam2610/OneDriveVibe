@@ -54,6 +54,9 @@ interface SecurityRepository {
      */
     suspend fun enableBiometric(): BiometricOutcome
 
+    /** Tắt mở khóa bằng sinh trắc học (CD-02): xóa phần bọc khóa phiên, PIN vẫn dùng được. Không cần xác nhận. */
+    suspend fun disableBiometric()
+
     /**
      * Mở khóa bằng sinh trắc học (KH-01). Từ chối khi đang bị khóa nhập vì sai PIN ([UnlockResult.Cooldown], KH-02) để sinh
      * trắc học không né được việc chống đoán PIN. Không tính vào bộ đếm sai: sai sinh trắc học do hệ điều hành giới hạn.

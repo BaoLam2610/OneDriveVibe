@@ -4,6 +4,7 @@ import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.FolderRef
 import com.lambao.odv.core.domain.model.PlayMode
 import com.lambao.odv.core.domain.model.VideoFit
+import com.lambao.odv.core.domain.model.VideoSettingOptions
 
 /**
  * Nội dung bảng thông tin tệp (VD-17). Mọi thứ lấy từ Room nên hiện ngay và dùng được khi offline; chỉ đường dẫn thư mục
@@ -45,6 +46,10 @@ data class PlayerState(
     val failedIds: Set<String> = emptySet(),
     /** Khác null khi bảng thông tin đang mở (VD-17). */
     val info: PlayerInfo? = null,
+    /** Bước tua khi chạm đúp, giây (VD-03), theo Cài đặt. */
+    val seekStepSeconds: Int = VideoSettingOptions.DEFAULT_SEEK_STEP,
+    /** Mở video ở hướng ngang theo Cài đặt (VD-07, VD-19); null cho tới khi đọc xong. Giao diện chỉ áp dụng một lần. */
+    val openInLandscape: Boolean? = null,
 ) {
     private val currentIndex: Int get() = videos.indexOfFirst { it.id == currentId }
 

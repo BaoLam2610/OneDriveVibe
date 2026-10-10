@@ -45,6 +45,7 @@ include(":feature:browser")
 include(":feature:library")
 include(":feature:imageviewer")
 include(":feature:player")
+include(":feature:settings")
 
 // Công cụ chỉ cho bản debug (ADR-0012). androidApp gắn bằng debugImplementation.
 include(":tools:debug")

@@ -8,6 +8,7 @@ import com.lambao.odv.core.domain.model.SortOrder
 import com.lambao.odv.core.domain.model.ViewMode
 import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.settings.BrowserPreferences
+import com.lambao.odv.core.domain.settings.SettingsPreferences
 import com.lambao.odv.core.domain.usecase.folder.ObserveFolderContentUseCase
 import com.lambao.odv.core.domain.usecase.folder.SearchDriveUseCase
 import com.lambao.odv.core.domain.usecase.sync.ObserveOnlineAndSyncUseCase
@@ -42,6 +43,7 @@ class BrowserViewModel(
     private val syncIfStale: SyncIfStaleUseCase,
     private val refreshSync: RefreshSyncUseCase,
     private val preferences: BrowserPreferences,
+    private val settings: SettingsPreferences,
 ) : BaseMviViewModel<BrowserState, BrowserIntent, BrowserEffect>(BrowserState()) {
 
     private val log = Logger.withTag("Browser")
@@ -131,6 +133,8 @@ class BrowserViewModel(
     private fun observePreferences() {
         viewModelScope.launch { preferences.sortOrder.collect { order -> setState { copy(sort = order) } } }
         viewModelScope.launch { preferences.viewMode.collect { mode -> setState { copy(viewMode = mode) } } }
+        // CD-01: bật/tắt loại tệp ở Cài đặt; ViewModel sống trong back stack nên đổi xong quay về là danh sách đã lọc lại.
+        viewModelScope.launch { settings.enabledKinds.collect { kinds -> setState { copy(enabledKinds = kinds) } } }
     }
 
     private fun observeSync() {
@@ -151,9 +155,12 @@ class BrowserViewModel(
     private fun observeContent() {
         val folderId = state.map { it.path.lastOrNull()?.id }.distinctUntilChanged()
         val synced = state.map { it.sync.initialSyncDone }.distinctUntilChanged()
+        // Đọc thẳng từ Cài đặt chứ không qua State: State khởi đầu bằng "cả ba loại" nên đi qua đó sẽ truy vấn một lần với loại đã tắt
+        // (tệp PDF chớp lên) rồi mới truy vấn lại với giá trị thật.
+        val kinds = settings.enabledKinds.distinctUntilChanged()
         viewModelScope.launch {
-            combine(folderId, synced, retryTick) { folder, done, _ -> folder to done }
-                .flatMapLatest { (folder, done) -> observeFolderContent(folder, done, sortOrders, BrowserConstants.ENABLED_KINDS) }
+            combine(folderId, synced, kinds, retryTick) { folder, done, enabled, _ -> Triple(folder, done, enabled) }
+                .flatMapLatest { (folder, done, enabled) -> observeFolderContent(folder, done, sortOrders, enabled) }
                 .collect(::applyContent)
         }
     }
@@ -185,7 +192,7 @@ class BrowserViewModel(
                 }
                 setState { copy(search = search?.copy(isSearching = true)) }
                 // Chỉ đọc Room, không gọi API: dùng được khi offline (DS-03).
-                val results = searchDrive(query, BrowserConstants.ENABLED_KINDS)
+                val results = searchDrive(query, currentState.enabledKinds)
                 setState { copy(search = search?.copy(results = results, isSearching = false)) }
             }
         }

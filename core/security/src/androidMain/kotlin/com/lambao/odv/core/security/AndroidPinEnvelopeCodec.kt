@@ -59,6 +59,27 @@ internal class AndroidPinEnvelopeCodec(
         return decrypt(key.copyOf(), envelope, name)
     }
 
+    override suspend fun resealWithKey(key: ByteArray, currentEnvelope: ByteArray, plain: ByteArray, name: String): AppResult<ByteArray> {
+        if (parse(currentEnvelope) == null) return AppResult.Failure(AppError.SecureStorage)
+        // Khóa phải mở được phong bì hiện tại: tránh ghi phong bì mà PIN thật không mở được (bản sao khóa bị xóa dở khi lock() chen vào,
+        // hay khóa của phiên khác), vì lần mở sau sẽ ra WrongKey và tính vào bộ đếm sai (KH-02, KH-06).
+        when (val check = decrypt(key.copyOf(), currentEnvelope, name)) {
+            is EnvelopeOpen.Opened -> { check.plain.fill(0); check.key.fill(0) }
+            else -> return AppResult.Failure(AppError.SecureStorage)
+        }
+        return try {
+            // Cùng khóa nên IV phải mới mỗi lần (GCM); salt và tham số lấy nguyên từ header cũ để khóa phiên vẫn đúng.
+            val header = currentEnvelope.copyOfRange(0, EnvelopeFormat.HEADER_BYTES)
+            val iv = ByteArray(CryptoConstants.IV_BYTES).also(random::nextBytes)
+            val encrypted = cipher(Cipher.ENCRYPT_MODE, key, iv, header, name).doFinal(plain)
+            AppResult.Success(header + iv + encrypted)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            AppResult.Failure(AppError.SecureStorage)
+        }
+    }
+
     /** Giải mã bằng [key]; [key] được trả lại trong `Opened`, còn các nhánh lỗi thì xóa luôn. */
     private fun decrypt(key: ByteArray, envelope: ByteArray, name: String): EnvelopeOpen = try {
         val header = envelope.copyOfRange(0, EnvelopeFormat.HEADER_BYTES)

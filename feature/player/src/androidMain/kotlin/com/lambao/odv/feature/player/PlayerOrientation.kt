@@ -6,10 +6,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalView
 
 /**
- * Hướng màn hình của màn xem video (VD-07, VD-19). Hướng **chỉ đổi bằng nút xoay**, không theo cảm biến: vào màn là khóa Dọc,
- * [landscape] true thì khóa Ngang (cả hai chiều ngang, vì quay máy 180° ở hướng ngang vẫn là ngang). Chuyển video trước/sau giữ
- * nguyên [landscape] vì trạng thái này nằm ngoài vòng đời của từng video. Rời màn thì về Dọc rồi trả cho hệ thống (VD-19: bấm
- * Back một lần, màn hình trở về hướng dọc).
+ * Hướng màn hình của màn xem video (VD-07, VD-19). Toàn app khóa Dọc ở manifest; đây là nơi duy nhất cho phép xoay ngang. Hướng
+ * **chỉ đổi bằng nút xoay**, không theo cảm biến: vào màn là khóa Dọc, [landscape] true thì khóa Ngang (cả hai chiều ngang, vì quay
+ * máy 180° ở hướng ngang vẫn là ngang). Chuyển video trước/sau giữ nguyên [landscape] vì trạng thái này nằm ngoài vòng đời của từng
+ * video. Rời màn thì về Dọc và **giữ Dọc** (VD-19: bấm Back một lần, màn hình trở về hướng dọc); không trả `UNSPECIFIED` cho hệ thống
+ * vì đó là ghi đè khóa dọc của manifest và app sẽ xoay tự do ở mọi màn.
  *
  * Activity khai `configChanges` (AndroidManifest) nên đổi hướng không tạo lại Activity, không làm gián đoạn phát.
  */
@@ -24,9 +25,8 @@ internal fun PlayerOrientationEffect(landscape: Boolean) {
     }
     DisposableEffect(activity) {
         onDispose {
-            // Về Dọc ngay rồi mới trả quyền cho hệ thống, nếu không máy đang nằm ngang sẽ giữ ngang khi về Danh sách.
+            // Về Dọc và ở lại Dọc: toàn app chỉ hiển thị dọc, máy đang nằm ngang cũng phải trở về dọc ở Danh sách.
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            view.post { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
         }
     }
 }

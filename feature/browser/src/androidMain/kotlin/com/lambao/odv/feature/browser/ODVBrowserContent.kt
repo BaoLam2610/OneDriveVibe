@@ -22,7 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -51,6 +51,7 @@ import com.lambao.odv.core.designsystem.component.ODVThumbnailPlaceholder
 import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.icon.ODVIcon
+import com.lambao.odv.core.designsystem.odvLocale
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.MediaKind
@@ -61,7 +62,6 @@ import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.ViewMode
 import com.lambao.odv.core.domain.model.thumbnailSource
 import java.text.NumberFormat
-import java.util.Locale
 
 // Thứ tự trong bottom sheet sắp xếp (TM-05): theo Tên, Ngày sửa, Dung lượng; mỗi trường một cặp tăng/giảm.
 private val SortChoices = listOf(
@@ -73,19 +73,17 @@ private val SortChoices = listOf(
     SortOrder(SortField.Size, SortDirection.Descending),
 )
 
-// Số theo vi-VN (CLAUDE.md): "1.234 mục".
-private val ViVn: Locale = Locale.forLanguageTag("vi-VN")
-
 /**
  * Giao diện tab Thư mục (thiet-ke-ui.md mục 4.4, 5.2; D1, D2, D4 → D6, D8): AppBar (hoặc thanh tìm), Banner, Breadcrumb,
  * SortBar, rồi danh sách hoặc lưới, kéo xuống để làm mới. [tabs] là thanh Tabs Thư mục/Thư viện do màn chứa dựng, đặt ngay
- * dưới AppBar (chỉ hiện khi không tìm kiếm). Chưa có dải Xem tiếp (Lát 8), nút Cài đặt (Lát 9) và dấu `cloud-off` trên
+ * dưới AppBar (chỉ hiện khi không tìm kiếm). Chưa có dải Xem tiếp (Lát 9) và dấu `cloud-off` trên
  * thẻ tệp chưa có trong cache (Lát 5 → 7, khi có cache tệp gốc).
  */
 @Composable
 internal fun ODVBrowserContent(
     state: BrowserState,
     onIntent: (BrowserIntent) -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     tabs: @Composable () -> Unit = {},
 ) {
@@ -93,7 +91,7 @@ internal fun ODVBrowserContent(
     ODVScaffold(
         modifier = modifier,
         topBar = {
-            if (search != null) SearchTopBar(search, onIntent) else BrowseTopBar(state, onIntent)
+            if (search != null) SearchTopBar(search, onIntent) else BrowseTopBar(state, onIntent, onOpenSettings)
         },
     ) { contentPadding ->
         if (search != null) {
@@ -106,7 +104,7 @@ internal fun ODVBrowserContent(
 }
 
 @Composable
-private fun BrowseTopBar(state: BrowserState, onIntent: (BrowserIntent) -> Unit) {
+private fun BrowseTopBar(state: BrowserState, onIntent: (BrowserIntent) -> Unit, onOpenSettings: () -> Unit) {
     val inRoot = state.path.isEmpty()
     ODVAppBar(
         title = if (inRoot) stringResource(R.string.browser_title) else state.path.last().name,
@@ -119,6 +117,7 @@ private fun BrowseTopBar(state: BrowserState, onIntent: (BrowserIntent) -> Unit)
         },
         actions = {
             ODVIconButton(ODVIcon.Search, stringResource(R.string.browser_search), { onIntent(BrowserIntent.OpenSearch) })
+            ODVIconButton(ODVIcon.Settings, stringResource(R.string.browser_settings), onOpenSettings)
         },
     )
 }
@@ -216,7 +215,8 @@ private fun SyncBanner(state: BrowserState, onIntent: (BrowserIntent) -> Unit) {
             modifier = spacing,
         )
         !sync.initialSyncDone && sync.isSyncing -> {
-            val scanned = remember(sync.scannedCount) { NumberFormat.getIntegerInstance(ViVn).format(sync.scannedCount) }
+            val locale = odvLocale()
+            val scanned = remember(sync.scannedCount, locale) { NumberFormat.getIntegerInstance(locale).format(sync.scannedCount) }
             ODVBanner(
                 text = stringResource(R.string.browser_indexing, scanned),
                 tone = ODVBannerTone.Volt,
@@ -263,13 +263,14 @@ private fun BoxScope.ErrorState(error: BrowserError, onRetry: () -> Unit) {
 
 @Composable
 private fun ItemList(items: List<DriveItem>, contentPadding: PaddingValues, onIntent: (BrowserIntent) -> Unit) {
-    val resources = LocalContext.current.resources
+    val resources = LocalResources.current
+    val languageTag = odvLocale().toLanguageTag()
     LazyColumn(contentPadding = contentPadding) {
         items(items, key = { it.id }) { item ->
             ODVFileRow(
                 title = item.name,
                 leading = { ItemThumbnail(item, ThumbnailSize.Cell) },
-                meta = item.meta(resources),
+                meta = item.meta(resources, languageTag),
                 metaMono = item.durationMs?.let(::odvFormatDuration),
                 showChevron = item.isFolder,
                 onClick = { onIntent(BrowserIntent.Open(item)) },
@@ -281,7 +282,8 @@ private fun ItemList(items: List<DriveItem>, contentPadding: PaddingValues, onIn
 /** Lưới 2 cột, khe 12 ngang và 16 dọc (mục 4.4 FileCard). */
 @Composable
 private fun ItemGrid(items: List<DriveItem>, contentPadding: PaddingValues, onIntent: (BrowserIntent) -> Unit) {
-    val resources = LocalContext.current.resources
+    val resources = LocalResources.current
+    val languageTag = odvLocale().toLanguageTag()
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         contentPadding = PaddingValues(
@@ -297,13 +299,13 @@ private fun ItemGrid(items: List<DriveItem>, contentPadding: PaddingValues, onIn
             if (item.isFolder) {
                 ODVFolderCard(
                     name = item.name,
-                    meta = item.meta(resources).orEmpty(),
+                    meta = item.meta(resources, languageTag).orEmpty(),
                     onClick = { onIntent(BrowserIntent.Open(item)) },
                 )
             } else {
                 ODVFileCard(
                     title = item.name,
-                    meta = item.meta(resources).orEmpty(),
+                    meta = item.meta(resources, languageTag).orEmpty(),
                     onClick = { onIntent(BrowserIntent.Open(item)) },
                     kindIcon = if (item.mediaKind == MediaKind.Video) ODVIcon.Video else null,
                     duration = item.durationMs?.let(::odvFormatDuration),
@@ -317,7 +319,8 @@ private fun ItemGrid(items: List<DriveItem>, contentPadding: PaddingValues, onIn
 /** Kết quả tìm (D4, DS-03): danh sách, mỗi dòng có đường dẫn cha và từ khớp được tô. */
 @Composable
 private fun SearchBody(search: SearchState, contentPadding: PaddingValues, onIntent: (BrowserIntent) -> Unit) {
-    val resources = LocalContext.current.resources
+    val resources = LocalResources.current
+    val languageTag = odvLocale().toLanguageTag()
     val rootLabel = stringResource(R.string.browser_root)
     val query = search.query.trim()
     Box(Modifier.fillMaxSize()) {
@@ -335,7 +338,7 @@ private fun SearchBody(search: SearchState, contentPadding: PaddingValues, onInt
                     ODVFileRow(
                         title = item.name,
                         leading = { ItemThumbnail(item, ThumbnailSize.Cell) },
-                        meta = item.meta(resources),
+                        meta = item.meta(resources, languageTag),
                         metaMono = item.durationMs?.let(::odvFormatDuration),
                         path = (listOf(rootLabel) + result.parentPath.map { it.name }).joinToString(" › "),
                         titleHighlight = query,
@@ -388,12 +391,12 @@ private fun ItemThumbnail(item: DriveItem, size: ThumbnailSize) {
     }
 }
 
-/** Thư mục: "N mục"; tệp: dung lượng theo vi-VN. */
-private fun DriveItem.meta(resources: Resources): String? =
+/** Thư mục: "N mục"; tệp: dung lượng theo ngôn ngữ đang dùng (CD-10). */
+private fun DriveItem.meta(resources: Resources, languageTag: String): String? =
     if (isFolder) {
         childCount?.let { resources.getQuantityString(R.plurals.browser_item_count, it, it) }
     } else {
-        odvFormatFileSize(sizeBytes)
+        odvFormatFileSize(sizeBytes, languageTag)
     }
 
 private fun DriveItem.fileKind(): ODVFileKind = when {

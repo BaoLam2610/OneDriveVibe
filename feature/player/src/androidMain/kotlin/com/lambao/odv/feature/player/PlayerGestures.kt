@@ -10,8 +10,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.Job
 
 /** Vùng chạm theo bề ngang khung cử chỉ (không phụ thuộc hướng màn hình): trái tua lùi, giữa tạm dừng/phát, phải tua tới. */
+/** Ghi nhớ giữa hai lần chạm của một cặp chạm đúp; không đọc trong composition nên không cần là state. */
+internal class TapMemo {
+    /** Điều khiển đang hiện ngay trước lần chạm đầu: nếu có thì lần chạm thứ hai bị chặn, không tua. */
+    var controlsWereVisible = false
+
+    /** Hẹn giờ hiện điều khiển sau lần chạm đầu (khi đang ẩn); chạm đúp hoặc chạm tiếp thì hủy. */
+    var pendingShow: Job? = null
+}
+
+/** Mức đang chỉnh trong một lần vuốt dọc (cộng dồn qua các lần [PlayerConstants.SWIPE_FULL_RANGE_RATIO]). */
+internal class SwipeSession {
+    var level = 0f
+}
+
 internal enum class TapZone { Left, Center, Right }
 
 internal fun tapZoneOf(x: Float, width: Float): TapZone {

@@ -23,6 +23,7 @@
 
     <!-- Tìm kiếm (D4, DS-03) -->
     <string name="browser_search">Tìm kiếm</string>
+    <string name="browser_settings">Cài đặt</string>
     <string name="browser_search_placeholder">Tìm tên tệp hoặc thư mục</string>
     <string name="browser_search_back">Quay lại</string>
     <string name="browser_search_clear">Xóa từ khóa</string>

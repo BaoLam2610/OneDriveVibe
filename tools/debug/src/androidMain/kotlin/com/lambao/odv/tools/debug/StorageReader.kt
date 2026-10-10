@@ -55,7 +55,10 @@ internal object StorageReader {
     // `odv.db` đi qua kết nối của chính Room, các DB khác (Media3...) qua SQLite hệ thống: xem SqlSource. Không bao giờ mở `odv.db`
     // bằng SQLite hệ thống (hỏng DB, "file is not a database", Nhật ký 2026-10-04).
     private suspend fun dump(context: Context, name: String): DatabaseDump {
-        val size = context.getDatabasePath(name).length()
+        // Cộng cả -wal và -shm: dữ liệu mới nằm trong WAL tới khi checkpoint, nên chỉ đo tệp chính thì trước và sau khi xóa
+        // đều ra cỡ DB rỗng (khoảng 40KB) và không phân biệt được "đã xóa sạch" với "còn dữ liệu trong WAL".
+        val main = context.getDatabasePath(name)
+        val size = main.length() + File(main.path + "-wal").length() + File(main.path + "-shm").length()
         return try {
             DatabaseDump(name, size, DatabaseBrowser(sqlSourceFor(context, name)).tables(), error = null)
         } catch (e: CancellationException) {

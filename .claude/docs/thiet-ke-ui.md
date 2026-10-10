@@ -1,6 +1,6 @@
-# Đặc tả giao diện ODV (bàn giao thiết kế cho code)
+# Đặc tả giao diện OneDriveVibe (bàn giao thiết kế cho code)
 
-- **Áp dụng cho:** app Android ODV (Kotlin, Jetpack Compose)
+- **Áp dụng cho:** app Android OneDriveVibe (Kotlin, Jetpack Compose). Tên app đổi từ "ODV" thành OneDriveVibe (chốt 2026-10-07); tiền tố code UI vẫn là `ODV`, và tên canvas/file nguồn "ODV Foundations", "ODV Settings" giữ nguyên.
 - **Nguồn thiết kế:** canvas "ODV Foundations" trên Claude Design (bản v22, 02/10/2026). Có 5 page: Foundations, Khởi động, Danh sách, Màn xem, Cài đặt.
 - **Tài liệu đi kèm:**
   - `claude/dac-ta-nghiep-vu.md`: nghiệp vụ, mã KN, BM, KH, TM, TV, DS, VD, AN, PD, CD…
@@ -55,11 +55,13 @@
 9. **Viết hoa kiểu câu:**
    - Không viết hoa toàn bộ.
    - Câu chữ lấy nguyên văn từ thiết kế. Bảng câu chữ chính ở mục 5 và 7.
-10. **Số và ngày theo vi-VN:** `12.480`, `4,9 MB`, `23/05/2026`, `1:26:02`. Số đổi liên tục hoặc cần thẳng cột dùng JetBrains Mono.
+10. **Số và ngày theo ngôn ngữ đang dùng (CD-10; đổi từ "vi-VN cố định" ngày 2026-10-07):** bản tiếng Việt ra `12.480`, `4,9 MB`, `23/05/2026`, `1:26:02`; bản English ra `12,480`, `4.9 MB`, `5/23/2026`. Trong Compose lấy locale bằng `odvLocale()` (`:core:designsystem`), không viết `Locale.forLanguageTag("vi-VN")`. Số đổi liên tục hoặc cần thẳng cột dùng JetBrains Mono.
 11. **Trạng thái:** mỗi component có đủ trạng thái ở mục 4: mặc định, nhấn, focus, tắt, lỗi, đang tải.
 12. **Riêng tư:** các màn sau chặn chụp màn hình (`FLAG_SECURE`) và ẩn nội dung trong danh sách app gần đây (KN-10, KH-04, CH-05):
     - Kết nối (kể cả hộp thoại K6), Khóa, nhập PIN.
-    - Cài đặt, ở cả hai nhóm Bảo mật và Kết nối, vì đây là một màn cuộn chung.
+    - Thiết lập bảo mật (cùng nhóm màn nhập PIN, kể cả màn PIN mở từ Cài đặt).
+    - Màn Cài đặt **không** nằm trong danh sách luôn chặn (đổi 2026-10-08, ADR-0022): chụp được khi tắt "Bảo vệ màn hình". Đánh đổi: Tenant ID, Client ID đã che bớt lộ trong ảnh chụp.
+    - Khi bật Cài đặt › Bảo mật › **Bảo vệ màn hình** (CD-12, mặc định tắt): **mọi màn** của app chặn chụp/quay màn hình và ẩn nội dung ở danh sách app gần đây, kể cả hộp thoại và màn Debug (ADR-0020). Cài đặt này không phụ thuộc có bật PIN hay không.
 
 ---
 
@@ -268,7 +270,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `claude/odv-t
 ### 2.9 Độ mờ
 
 - `opacity.disabled` = 0.38: điều khiển bị tắt (nút Kết nối khi form chưa hợp lệ, nút "Video sau" ở video cuối, bàn phím khi khóa tạm).
-- `opacity.unsupported` = 0.5: tệp không hỗ trợ khi bật "Hiện tệp không hỗ trợ" (TM-03).
+- `opacity.unsupported` = 0.5: tệp không hỗ trợ khi bật "Hiện tệp không hỗ trợ" (TM-03). **Hiện chưa dùng**: tùy chọn đó đã bỏ (chốt 2026-10-07), tệp không hỗ trợ luôn ẩn.
 
 ---
 
@@ -701,7 +703,7 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 | P8 | PDF · Thông tin tệp · Tối | 390×844 | `ViewPdfInfoDark` |
 
 **Luồng:**
-- Mở video luôn ở hướng dọc. Nút xoay đổi Dọc ↔ Ngang và không gián đoạn phát.
+- Mở video ở hướng theo Cài đặt › Video › Hướng màn hình khi mở video (mặc định **dọc**). Toàn app khóa dọc; riêng màn video xoay ngang bằng nút xoay, rời màn thì về dọc. Nút xoay đổi Dọc ↔ Ngang và không gián đoạn phát.
 - Back thoát ngay cả khi đang ngang, rồi trở về hướng dọc (VD-19).
 - Mở lại video có vị trí đã lưu thì hiện Dialog V3 trước khi phát.
 - Hết video: chế độ Không lặp, hoặc hết video cuối ở chế độ Tự phát tiếp, thì vào V19 (nút Phát lại, điều khiển không tự ẩn). Tự phát tiếp còn video sau thì vào V8.
@@ -748,11 +750,15 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 - Thanh tiêu đề: nút quay lại + "Cài đặt" (`title`), cao 56 cộng 24 thanh trạng thái. Khi đã cuộn thì có kẻ đáy `line`.
 
 **Thứ tự hàng:**
-- **Hiển thị:** Loại tệp hiển thị (ChipsRow) → Ẩn thư mục không có tệp phù hợp → Hiện tệp không hỗ trợ → Giao diện.
-- **Bảo mật:** Bảo vệ ứng dụng → Đổi mã PIN → Mở khóa bằng sinh trắc học → Tự khóa khi rời app → Xóa dữ liệu khi nhập sai quá nhiều.
+- **Hiển thị:** Loại tệp hiển thị (ChipsRow) → Giao diện → Ngôn ngữ. Hai hàng "Ẩn thư mục không có tệp phù hợp" và "Hiện tệp không hỗ trợ" có trong artboard nhưng **đã bỏ, không dựng** (TM-04, chốt 2026-10-07). Hàng Ngôn ngữ (CD-10) chưa có artboard, dựng theo kiểu ValueRow + sheet như Giao diện (xem mục 9).
+- **Bảo mật:** Bảo vệ ứng dụng → Đổi mã PIN → Mở khóa bằng sinh trắc học → **Bảo vệ màn hình** (SwitchRow, CD-12, không phụ thuộc PIN nên luôn hiện kể cả khi bảo vệ ứng dụng tắt) → Tự khóa khi rời app → Xóa dữ liệu khi nhập sai quá nhiều. Sheet O2 Tự khóa có các mốc: Ngay lập tức / 10 giây / 30 giây / 1 / 5 / 15 phút (mặc định 1 phút; 10 và 30 giây thêm 2026-10-07).
 - **Video:** Bước tua khi chạm đúp → Tốc độ mặc định → Khung hình mặc định → Hướng màn hình khi mở video → Chế độ phát → Nhớ vị trí xem.
 - **PDF:** Kiểu đọc.
-- **Bộ nhớ đệm:** CacheUsage → Giới hạn tối đa → Xóa bộ nhớ đệm.
+- **Bộ nhớ đệm:** CacheUsage (theo loại) → Giới hạn tối đa → **Tỉ lệ chia theo loại** → Xóa bộ nhớ đệm. Hai hàng giữa mở sheet (ValueRow), **ngoài thiết kế, chờ duyệt** (chốt Q1 2026-10-07, ADR-0021):
+  - Giới hạn tối đa: thanh trượt `ODVSlider` từ 1 đến 10 GB, bước 1 GB (mặc định 2 GB), hiện giá trị đang kéo, nút Áp dụng chỉ bật khi giá trị đổi. Thiết kế gốc chỉ có 4 mốc 1/2/5/10 GB.
+  - Tỉ lệ chia theo loại (board "Slider và tỉ lệ chia" của ODV Foundations, đã có thiết kế): dưới tiêu đề và câu hướng dẫn là **SplitBar** cao 12 (các đoạn cách 2, bo 3, tô màu loại; bên phải tổng "100%" kèm dấu check `success`), rồi 4 hàng slider (Thumbnail `line-strong`, Ảnh `kind-photo`, Video `kind-video`, PDF `kind-pdf`), mỗi hàng 0 đến 100%. Kéo một hàng thì ba hàng còn lại tự tính lại để tổng luôn 100. Hai nút: Mặc định (10/30/45/15, tắt khi đang là mặc định) và Áp dụng (tắt khi chưa đổi).
+  - `ODVSlider`: rãnh cao 8 bo 4 màu `surface-2`, phần đã có tô màu loại; núm `volt` 24 viền 2 `volt-text`; **đang kéo** núm 32 kèm vòng 6 `volt-soft`; vùng chạm cao 48, hai đầu lùi 12; focus ring quanh núm; vô hiệu mờ 0.38. Không dùng bong bóng nổi (ngón tay che): giá trị hiện ở viên góc phải của hàng (`code` 13, "45%" đậm vừa + dung lượng mờ 75%), đổi sang nền `volt-soft` chữ `volt-text` khi đang kéo. TalkBack đọc "Video 45%, 921,6 MB"; slider giới hạn 1 đến 10 GB dùng cùng kiểu nhưng màu `volt-text`, không có ô loại (thiết kế chưa vẽ riêng).
+  - Giảm giới hạn hoặc đổi tỉ lệ làm loại nào vượt trần mới thì dọn ngay (D6 cho trường hợp giảm giới hạn, CD-07).
 - **Kết nối:** Tài khoản (UPN), Tenant ID, Client ID, Đồng bộ gần nhất (InfoRow) → Cập nhật Client Secret → Ngày hết hạn secret → Ngắt kết nối.
 
 **Luồng:**
@@ -762,7 +768,7 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
   - Đổi PIN
   - Cập nhật Client Secret
 - Đổi PIN đi P1 → P2 → P3. PIN dễ đoán và PIN không khớp dùng cùng thông báo như B3 / B5.
-- Cập nhật secret đi S1 → S2 (loading toàn màn, không có Hủy) → S3 (lỗi, giữ secret cũ) hoặc quay về Cài đặt kèm Snackbar S5.
+- Cập nhật secret đi S1 → S2 (loading toàn màn, không có Hủy) → S3 (lỗi, giữ secret cũ) hoặc quay về Cài đặt kèm Snackbar S5. Đã dựng (Lát 7e, 2026-10-08): S2 chỉ có tiêu đề và phụ đề, chưa có danh sách ba bước ("Đã lấy access token", "Đang kiểm tra OneDrive…", "Lưu secret mới") vì use case chạy một lần, không báo từng bước. Chuỗi lỗi hết hạn, mạng, lỗi khác, "hết hạn hôm nay", "đã hết hạn" và dòng báo ngày sai định dạng ở S4 là chuỗi [mới], thiết kế chưa có.
 - Khi bảo vệ đang **tắt** (kể cả khi người dùng chọn "Để sau" ở K6), công tắc "Bảo vệ ứng dụng" bật lên thì đi theo luồng B1 → … → B8 (CD-02). Hành động trong danh sách trên không cần P1 vì chưa có PIN.
 
 ---
@@ -835,7 +841,7 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 - Màn Danh sách là màn Home. Biểu tượng bánh răng trên AppBar mở Cài đặt.
 - Không có "Kệ truyện". PDF xem qua Thư mục và dải Đọc tiếp.
 - Không có "Mở bằng ứng dụng khác".
-- Video không có nút toàn màn hình. Nút xoay đổi hướng, luôn mở ở hướng dọc.
+- Video không có nút toàn màn hình. Nút xoay đổi hướng; mở ở hướng dọc theo mặc định, đổi được ở Cài đặt › Video (VD-19).
 - Loading toàn màn hình khi kiểm tra Client Secret, không có nút Hủy.
 
 **Đề xuất, cần xác nhận trước khi code (nếu không ai phản đối thì làm theo thiết kế):**
@@ -868,6 +874,10 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 | 7 | Khi xem với font thật, các board Foundations 02, 03, 07, 11, 12 bị tràn hoặc cắt chữ | Chỉ ảnh hưởng canvas, không ảnh hưởng app. Bản sửa chiều cao đã sẵn sàng, chờ đăng |
 | 8 | Artboard K4 `ConnectSuccess` (bottom sheet "Đã kết nối OneDrive" có thanh dung lượng) vẫn còn trên canvas v22, nhưng KN-08 và KN-12 đã bỏ màn này | Không dựng K4. Cần xóa hoặc đánh dấu "đã bỏ" artboard này trên canvas |
 | 9 | Các artboard K1, K2, K3, K5 (kể cả bản tối) và B1 đến B6, B8 trên canvas v22 còn hiện StepBar "BƯỚC 1 / 2", "BƯỚC 2 / 2" | Không dựng StepBar. Cần gỡ StepBar khỏi các artboard này trên canvas; style `step-label` trong token gỡ theo |
+| 10 | Phần đã dựng ở Cài đặt (Lát 7) mà **chưa có artboard**, chuỗi VI/EN đánh dấu [mới], chờ duyệt: hàng và sheet Ngôn ngữ (CD-10); sheet Hướng màn hình khi mở video; sheet Kiểu đọc PDF; hàng Bảo vệ màn hình (CD-12); các mốc Tự khóa 10 và 30 giây | Dựng theo kiểu ValueRow/SwitchRow + sheet đã có (mục 4.6). Không thêm màu, cỡ chữ hay khoảng cách mới. Cần người thiết kế bổ sung artboard |
+| 11 | Bộ nhớ đệm: giới hạn tùy chỉnh 1 đến 10 GB và tỉ lệ chia theo loại (Q1, ADR-0021) dùng **thanh trượt `ODVSlider`**, nút Áp dụng và Mặc định; artboard `SetStorage`, `OptCache` chỉ có 4 mốc 1/2/5/10 GB | Theo mục 5.4. `ODVSlider`, `ODVSliderRow`, `ODVSplitBar` đã có board "Slider và tỉ lệ chia" trong ODV Foundations và đã dựng (2026-10-08); riêng sheet Giới hạn tối đa (1 đến 10 GB) vẫn chưa có artboard |
+| 12 | Banner secret sắp hết hạn (C7, CD-06) chỉ có ở Cài đặt trong artboard, nhưng đã chốt hiện cả ở màn Danh sách (Q4) | Dùng lại Banner C7 ở đầu Danh sách; chưa có artboard cho vị trí này |
+| 13 | Video lỗi ở Tự phát tiếp / Lặp danh sách: thẻ lỗi kèm đếm ngược 5 giây và nút Hủy (VD-15); artboard V9 chỉ có thẻ lỗi tĩnh | Dùng lại vòng đếm ngược của thẻ "Tiếp theo" (V8) trong thẻ lỗi V9 |
 | 10 | Artboard B7 `SecOff`, `SecOffDark` và thẻ công tắc "Bảo vệ ứng dụng" trên B1 đến B6 vẫn còn trên canvas, nhưng BM-01 đã bỏ công tắc | Không dựng B7 và công tắc. Cần xóa hoặc đánh dấu "đã bỏ" trên canvas |
 | 11 | Chưa có artboard K6 (hộp thoại hỏi thiết lập mã PIN, KN-13), cả bản sáng lẫn tối | Người thiết kế dựng theo mô tả ở mục 5.1. Trong lúc chờ, dev dựng theo mô tả và component Dialog (mục 4.2) |
 
@@ -886,7 +896,7 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 - [ ] Khoảng cách, bo góc, kích thước khớp mục 2 và 4. Lề màn 16
 - [ ] Vùng chạm ≥ 48dp, cách nhau ≥ 8dp
 - [ ] Đủ trạng thái: mặc định, nhấn, focus, tắt, lỗi, đang tải, trống, offline (nếu màn có)
-- [ ] Câu chữ khớp nguyên văn, viết hoa kiểu câu, số và ngày theo vi-VN
+- [ ] Câu chữ khớp nguyên văn, viết hoa kiểu câu, số và ngày theo ngôn ngữ đang dùng (CD-10)
 - [ ] Nhãn TalkBack theo mục 7. Thứ tự đọc đúng
 - [ ] Chuyển động đúng thời lượng và easing. Giảm hiệu ứng hoạt động
 - [ ] Cỡ chữ 200%: không cắt chữ, hàng tự cao lên
@@ -894,7 +904,7 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 - [ ] Edge-to-edge: không bị thanh hệ thống che, đúng màu thanh hệ thống
 
 **Kiểm riêng màn xem video:**
-- [ ] Mở luôn ở hướng dọc. Xoay không tải lại video. Back thoát một lần
+- [ ] Mở ở hướng theo Cài đặt (mặc định dọc). Xoay không tải lại video. Back thoát một lần
 - [ ] Tự ẩn sau 3 giây. Không tự ẩn ở trạng thái Phát lại hay đang tải
 - [ ] Chạm đúp cộng dồn. Vuốt bị tắt khi zoom > 1x
 - [ ] Đủ 4 trạng thái nút giữa: phát, dừng, phát lại, đang tải

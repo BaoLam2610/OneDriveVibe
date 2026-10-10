@@ -1,6 +1,7 @@
 package com.lambao.odv.feature.player
 
 import co.touchlab.kermit.Logger
+import com.lambao.odv.core.domain.model.VideoSettingOptions
 
 /**
  * Mọi hằng số của `:feature:player` nằm ở đây để dễ tìm và dễ chỉnh. [TAG] là thẻ log duy nhất của module: lọc "Player" ở tab Log
@@ -41,8 +42,7 @@ internal object PlayerConstants {
     /** Thư mục cache video trong `cacheDir` (không sao lưu, CH-04). */
     const val CACHE_DIR_NAME = "video"
 
-    /** Trần dung lượng cache video (BN-01), tạm cố định; Lát 9 nối với giới hạn cache trong Cài đặt (CD). */
-    const val CACHE_MAX_BYTES = 2L * 1024 * 1024 * 1024
+    // Trần dung lượng cache video không còn là hằng số: người dùng đặt ở Cài đặt (CD) và đọc qua CacheBudgetProvider (7d).
 
     /** Giữ lại chừng này đã phát phía sau để tua lùi ngắn không phải tải lại. */
     const val BACK_BUFFER_MS = 30_000
@@ -54,16 +54,12 @@ internal object PlayerConstants {
 
     // --- Giao diện và cử chỉ ---
 
-    /** Bước tua mặc định (VD-03). Lát 9 nối với Cài đặt. */
-    const val SEEK_STEP_SECONDS = 10
-    const val SEEK_STEP_MS = SEEK_STEP_SECONDS * 1000L
-
     /** Tốc độ khi giữ lâu để phát nhanh; nhả tay thì về tốc độ đã chọn. */
     const val BOOST_SPEED = 2f
     const val NORMAL_SPEED = 1f
 
-    /** Các tốc độ phát (VD-05). */
-    val SPEEDS: List<Float> = listOf(0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+    /** Các tốc độ phát (VD-05); cùng danh sách với tốc độ mặc định ở Cài đặt (domain). */
+    val SPEEDS: List<Float> = VideoSettingOptions.SPEEDS
 
     /** Khung video ở hướng dọc: rộng toàn màn, tỉ lệ 16:9, căn giữa theo chiều dọc (thiet-ke-ui.md mục 4.5). */
     const val FRAME_ASPECT = 16f / 9f

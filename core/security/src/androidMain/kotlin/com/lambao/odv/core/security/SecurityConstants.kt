@@ -19,8 +19,8 @@ internal object KeystoreConstants {
     // Khóa bọc khóa dẫn xuất cho sinh trắc học (tạo ở bước sinh trắc, ADR-0014); xóa cùng lúc khi ngắt kết nối.
     const val BIO_KEY_ALIAS = "odv_bio_key"
 
-    /** Tên tệp bộ đếm sai PIN: phải khớp `StorageNames.LOCKOUT` (`lock_state`) + `.bin` ở `:core:data`. */
-    const val LAST_WIPED_FILE = "lock_state.bin"
+    /** Đuôi tệp bí mật trên đĩa (`{tên}.bin`). Tên bộ đếm sai PIN nằm ở [SecretNames.LOCKOUT], dùng chung với `:core:data`. */
+    const val FILE_EXTENSION = ".bin"
     val NAME_PATTERN = Regex("^[a-z0-9_-]{1,64}$")
 }
 

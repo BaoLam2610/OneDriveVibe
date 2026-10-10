@@ -12,4 +12,12 @@
     <string name="biometric_enroll_title">Turn on biometric unlock</string>
     <string name="biometric_enroll_subtitle">Confirm with your biometrics</string>
     <string name="biometric_use_pin">Use PIN</string>
+
+    <plurals name="home_expiry_banner">
+        <item quantity="one">Client Secret expires in %1$d day</item>
+        <item quantity="other">Client Secret expires in %1$d days</item>
+    </plurals>
+    <string name="home_expiry_banner_today">Client Secret expires today</string>
+    <string name="home_expiry_banner_expired">Client Secret has expired</string>
+    <string name="home_expiry_banner_action">Update</string>
 </resources>

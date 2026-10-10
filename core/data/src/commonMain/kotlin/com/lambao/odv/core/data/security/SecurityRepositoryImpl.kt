@@ -120,6 +120,10 @@ internal class SecurityRepositoryImpl(
         }
     }
 
+    override suspend fun disableBiometric() {
+        biometric.clear()
+    }
+
     override suspend fun unlockWithBiometric(): UnlockResult {
         vault.initialize()
         if (!vault.pinMode) return UnlockResult.Success

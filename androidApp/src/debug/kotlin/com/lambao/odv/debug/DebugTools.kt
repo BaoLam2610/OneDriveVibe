@@ -4,11 +4,15 @@ import android.app.Application
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import com.lambao.odv.MainActivity
+import com.lambao.odv.core.designsystem.component.ODVSecureWindowPolicy
 import com.lambao.odv.core.domain.hook.PreferencesInspector
 import com.lambao.odv.core.domain.hook.ThumbnailCache
 import com.lambao.odv.core.domain.hook.ThumbnailQuality
+import com.lambao.odv.core.domain.settings.SecuritySettings
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
+import com.lambao.odv.core.domain.usecase.security.ObserveProtectionUseCase
 import com.lambao.odv.gallery.FoundationsGalleryActivity
+import com.lambao.odv.shouldSecureWholeWindow
 import com.lambao.odv.tools.debug.DebugAction
 import com.lambao.odv.tools.debug.DebugActions
 import com.lambao.odv.tools.debug.DebugActivity
@@ -17,6 +21,8 @@ import com.lambao.odv.tools.debug.DebugLogging
 import com.lambao.odv.tools.debug.DebugSettings
 import com.lambao.odv.tools.debug.ODVDebugBugButton
 import com.lambao.odv.tools.debug.debugModule
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import org.koin.mp.KoinPlatform
@@ -39,7 +45,7 @@ object DebugTools {
     }
 
     /**
-     * Gọi trước `startKoin`: ghi log ra Logcat và vào màn Debug, nạp cài đặt debug (FLAG_SECURE toàn app, che log API),
+     * Gọi trước `startKoin`: ghi log ra Logcat và vào màn Debug, nạp cài đặt debug (che log API, chất lượng thumbnail),
      * đăng ký công cụ riêng của app. Chỉ có MỘT icon launcher: Foundations gallery mở từ tab "Khác" của màn Debug.
      */
     fun install(application: Application) {
@@ -56,6 +62,17 @@ object DebugTools {
         }
         // Tab Khác, nhóm Thumbnail: xóa cache ảnh thu nhỏ. Koin chỉ có sau startKoin nên lấy lúc bấm.
         DebugHooks.clearThumbnailCache = { KoinPlatform.getKoin().get<ThumbnailCache>().clear() }
+        // Tab Khác: công tắc Bảo vệ màn hình = cài đặt thật (SecuritySettings). MainActivity đang dừng khi màn Debug hiện nên ODVApp không
+        // dựng lại để đặt lại cờ; vì vậy ghi xong phải áp dụng ngay (dùng chung quy tắc với ODVApp qua shouldSecureWholeWindow).
+        DebugHooks.screenProtection = { KoinPlatform.getKoin().get<SecuritySettings>().screenProtection }
+        DebugHooks.setScreenProtection = { enabled ->
+            val koin = KoinPlatform.getKoin()
+            koin.get<SecuritySettings>().setScreenProtection(enabled)
+            val isProtected = koin.get<ObserveProtectionUseCase>().invoke().value
+            withContext(Dispatchers.Main.immediate) {
+                ODVSecureWindowPolicy.setAppWide(shouldSecureWholeWindow(enabled, isProtected))
+            }
+        }
         // Tab Lưu trữ, mục DataStore: xem khóa và giá trị (chỉ đọc).
         DebugHooks.dumpPreferences = { KoinPlatform.getKoin().get<PreferencesInspector>().dump() }
         DebugActions.register(

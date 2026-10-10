@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.database.DatabaseCompactor
 import com.lambao.odv.core.database.DriveDao
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.model.SyncPhase
@@ -42,6 +43,7 @@ internal class SyncCoordinator(
     dispatchers: DispatcherProvider,
     private val clock: Clock,
     private val security: SecurityRepository,
+    private val compactor: DatabaseCompactor,
 ) : SyncRepository, ConnectionResetter {
 
     private class RunState(val syncing: Boolean = false, val scanned: Int = 0, val error: AppError? = null)
@@ -160,7 +162,18 @@ internal class SyncCoordinator(
         try {
             // Dừng mọi lần đồng bộ đang chạy (không dựa vào một biến job có thể chưa kịp gán) rồi mới xóa.
             scope.coroutineContext[Job]?.children?.toList()?.forEach { it.cancelAndJoin() }
-            running.withLock { dao.clearAll() }
+            running.withLock {
+                dao.clearAll()
+                // DELETE chỉ đánh dấu trang trống nên tên tệp cũ còn trong odv.db và WAL; thu gọn để dữ liệu thật sự mất (CD-05).
+                // Lỗi ở đây không được chặn việc xóa config và khóa (hợp đồng ConnectionResetter), chỉ ghi tên loại ngoại lệ (CH-06).
+                try {
+                    compactor.compact()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    log.w { "Không thu gọn được odv.db sau khi xóa: ${e::class.simpleName}" }
+                }
+            }
             interruptedByLock = false
             runtime.value = RunState()
         } finally {

@@ -1,6 +1,7 @@
 package com.lambao.odv.ui.home
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -12,6 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 import com.lambao.odv.R
 import com.lambao.odv.core.designsystem.component.ODVTab
 import com.lambao.odv.core.designsystem.component.ODVTabs
@@ -29,13 +32,19 @@ private const val TAB_LIBRARY = 1
  * của nó; Tabs do màn này dựng rồi truyền xuống để nằm ngay dưới AppBar của từng tab. Tab đang chọn nhớ qua xoay màn
  * hình, và trạng thái cuộn của tab vừa rời được giữ lại để quay về không mất vị trí.
  *
- * [onOpenFile] chạy khi chạm một tệp ở bất kỳ tab nào; màn xem làm ở Lát 5–7.
+ * [onOpenFile] chạy khi chạm một tệp ở bất kỳ tab nào; màn xem làm ở Lát 5–7. [onOpenSettings] chạy khi bấm bánh răng ở AppBar
+ * của một trong hai tab (Lát 7).
  */
 @Composable
 fun ODVHomeScreen(
     modifier: Modifier = Modifier,
     onOpenFile: (DriveItem, ViewerContext) -> Unit = { _, _ -> },
+    onOpenSettings: () -> Unit = {},
+    onUpdateSecret: (requiresPin: Boolean) -> Unit = {},
+    bannerViewModel: HomeBannerViewModel = koinViewModel(),
 ) {
+    val notice by bannerViewModel.notice.collectAsStateWithLifecycle()
+    val protectionEnabled by bannerViewModel.protectionEnabled.collectAsStateWithLifecycle()
     var selected by rememberSaveable { mutableIntStateOf(TAB_FOLDERS) }
     val stateHolder = rememberSaveableStateHolder()
     val foldersLabel = stringResource(R.string.home_tab_folders)
@@ -45,18 +54,23 @@ fun ODVHomeScreen(
     }
     // Padding 4/16/0 của Tabs cộng khoảng cách 12 giữa các khối của màn Danh sách (thiet-ke-ui.md mục 5.2).
     val tabs: @Composable () -> Unit = {
-        Box(Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 12.dp)) {
-            ODVTabs(tabs = tabItems, selectedIndex = selected, onSelect = { selected = it })
+        Column {
+            // C7 (CD-06, Q4): banner secret sắp hết hạn ở đầu Danh sách, trên Tabs.
+            notice?.let { SecretExpiryBanner(it, onUpdate = { onUpdateSecret(protectionEnabled) }, modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp)) }
+            Box(Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 12.dp)) {
+                ODVTabs(tabs = tabItems, selectedIndex = selected, onSelect = { selected = it })
+            }
         }
     }
     stateHolder.SaveableStateProvider(selected) {
         if (selected == TAB_FOLDERS) {
-            ODVBrowserScreen(modifier = modifier, onOpenFile = onOpenFile, tabs = tabs)
+            ODVBrowserScreen(modifier = modifier, onOpenFile = onOpenFile, onOpenSettings = onOpenSettings, tabs = tabs)
         } else {
             ODVLibraryScreen(
                 modifier = modifier,
                 onOpenFile = onOpenFile,
                 onShowFolders = { selected = TAB_FOLDERS },
+                onOpenSettings = onOpenSettings,
                 tabs = tabs,
             )
         }

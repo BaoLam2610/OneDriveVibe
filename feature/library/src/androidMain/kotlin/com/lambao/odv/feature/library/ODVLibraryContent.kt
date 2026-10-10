@@ -27,9 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -44,6 +43,7 @@ import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVDateHeader
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVFastScroller
+import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVPhotoCell
 import com.lambao.odv.core.designsystem.component.ODVPhotoCellPlaceholder
 import com.lambao.odv.core.designsystem.component.ODVRemoteImage
@@ -52,6 +52,7 @@ import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.icon.ODVIcon
+import com.lambao.odv.core.designsystem.odvLocale
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
@@ -84,9 +85,6 @@ private const val SCROLLER_HIDE_DELAY_MS = 2_000L
 private const val HEADER = "header"
 private const val CELL = "cell"
 
-// Số theo vi-VN (CLAUDE.md): "1.234 mục".
-private val ViVn: Locale = Locale.forLanguageTag("vi-VN")
-
 /**
  * Giao diện tab Thư viện (thiet-ke-ui.md mục 4.4, 5.2; D3, D7): AppBar, Tabs, Banner (offline / đang lập chỉ mục / lỗi),
  * chip lọc, rồi lưới 4 cột nhóm theo ngày với cuộn nhanh. [tabs] là thanh Tabs Thư mục/Thư viện do màn chứa dựng.
@@ -97,19 +95,26 @@ internal fun ODVLibraryContent(
     pages: LazyPagingItems<DriveItem>,
     onIntent: (LibraryIntent) -> Unit,
     onShowFolders: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
     tabs: @Composable () -> Unit = {},
 ) {
     ODVScaffold(
         modifier = modifier,
         topBar = {
-            ODVAppBar(title = stringResource(R.string.library_title), navigation = { ODVAppBarLogo() })
+            ODVAppBar(
+                title = stringResource(R.string.library_title),
+                navigation = { ODVAppBarLogo() },
+                actions = {
+                    ODVIconButton(ODVIcon.Settings, stringResource(R.string.library_settings), onOpenSettings)
+                },
+            )
         },
     ) { contentPadding ->
         Column(Modifier.fillMaxSize()) {
             tabs()
             LibraryBanner(state, onIntent, onShowFolders)
-            FilterRow(state.filter, onIntent)
+            if (state.showFilters) FilterRow(state.filter, onIntent)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 val layout = remember(state.days) { LibraryLayout(state.days) }
                 when {
@@ -142,7 +147,8 @@ private fun LibraryBanner(state: LibraryState, onIntent: (LibraryIntent) -> Unit
             modifier = spacing,
         )
         !sync.initialSyncDone && sync.isSyncing -> {
-            val scanned = remember(sync.scannedCount) { NumberFormat.getIntegerInstance(ViVn).format(sync.scannedCount) }
+            val locale = odvLocale()
+            val scanned = remember(sync.scannedCount, locale) { NumberFormat.getIntegerInstance(locale).format(sync.scannedCount) }
             ODVBanner(
                 text = stringResource(R.string.library_indexing, scanned),
                 tone = ODVBannerTone.Volt,
@@ -164,7 +170,7 @@ private fun LibraryBanner(state: LibraryState, onIntent: (LibraryIntent) -> Unit
     }
 }
 
-/** Chip lọc Tất cả / Ảnh / Video (TV-03). Cài đặt bật/tắt từng loại là Lát 9 nên hiện đủ cả ba. */
+/** Chip lọc Tất cả / Ảnh / Video (TV-03). Chỉ hiện khi cả ảnh và video đang bật ([LibraryState.showFilters], CD-01). */
 @Composable
 private fun FilterRow(selected: LibraryFilter, onIntent: (LibraryIntent) -> Unit) {
     Row(
@@ -199,10 +205,10 @@ private fun LibraryGrid(
     contentPadding: PaddingValues,
     onIntent: (LibraryIntent) -> Unit,
 ) {
-    val resources = LocalContext.current.resources
-    val locale = LocalConfiguration.current.locales[0]
+    val resources = LocalResources.current
+    val locale = odvLocale()
     val dates = remember(locale) { LibraryDateFormatter(locale) }
-    val labels = remember(resources, dates, state.utcOffsetMs) { DayLabels(resources, dates, state.utcOffsetMs) }
+    val labels = remember(resources, dates, locale, state.utcOffsetMs) { DayLabels(resources, dates, locale, state.utcOffsetMs) }
     val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
     val headerHeightPx = with(LocalDensity.current) { DateHeaderHeight.toPx() }
@@ -275,7 +281,7 @@ private fun LibraryGrid(
                         val isVideo = item.mediaKind == MediaKind.Video
                         ODVPhotoCell(
                             onClick = { onIntent(LibraryIntent.Open(item)) },
-                            contentDescription = item.describe(resources, dates, state.utcOffsetMs),
+                            contentDescription = item.describe(resources, dates, locale.toLanguageTag(), state.utcOffsetMs),
                             kindIcon = if (isVideo) ODVIcon.Video else null,
                             duration = if (isVideo) item.durationMs?.let(::odvFormatDuration) else null,
                         ) {
@@ -324,10 +330,11 @@ private fun LibraryGrid(
 private class DayLabels(
     private val resources: Resources,
     private val dates: LibraryDateFormatter,
+    locale: Locale,
     utcOffsetMs: Long,
 ) {
     private val today = dayNumberOf(System.currentTimeMillis(), utcOffsetMs)
-    private val numbers = NumberFormat.getIntegerInstance(ViVn)
+    private val numbers = NumberFormat.getIntegerInstance(locale)
 
     fun title(day: LibraryDay): String = when (day.dayNumber) {
         today -> resources.getString(R.string.library_today)
@@ -351,8 +358,8 @@ private fun LibraryFilter.labelRes(): Int = when (this) {
 }
 
 /** Nhãn TalkBack đủ thông tin, ví dụ "Video, mau-01.mp4, 1 giờ 26 phút, 974 MB, 23 tháng 5, 2026" (thiet-ke-ui.md mục 7). */
-private fun DriveItem.describe(resources: Resources, dates: LibraryDateFormatter, utcOffsetMs: Long): String {
-    val size = odvFormatFileSize(sizeBytes)
+private fun DriveItem.describe(resources: Resources, dates: LibraryDateFormatter, languageTag: String, utcOffsetMs: Long): String {
+    val size = odvFormatFileSize(sizeBytes, languageTag)
     val date = dates.day(libraryDate, utcOffsetMs)
     return if (mediaKind == MediaKind.Video) {
         val spoken = durationMs?.let { resources.spokenDuration(it) }

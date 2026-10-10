@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+
+    <string name="settings_group_display">Display</string>
+    <string name="settings_theme">Appearance</string>
+    <string name="settings_option_system">System default</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_language">Language</string>
+
+    <string name="settings_file_kinds">File types shown</string>
+    <string name="settings_file_kinds_desc">Applies to Folders, Library and search</string>
+    <string name="settings_kind_photo">Photos</string>
+    <string name="settings_kind_video">Videos</string>
+    <string name="settings_file_kinds_warning">Turn on at least 1 file type</string>
+
+    <string name="settings_group_security">Security</string>
+    <string name="settings_protection">App protection</string>
+    <string name="settings_protection_on">Require a PIN to open</string>
+    <string name="settings_protection_off">Off. Anyone holding your unlocked phone can see your OneDrive</string>
+    <string name="settings_screen_protection">Screen protection</string>
+    <string name="settings_screen_protection_desc">Block screenshots and screen recording, and hide content in recent apps</string>
+    <string name="settings_change_pin">Change PIN</string>
+    <string name="settings_biometric">Unlock with biometrics</string>
+    <string name="settings_biometric_desc">Fingerprint or face</string>
+    <string name="settings_auto_lock">Lock when leaving the app</string>
+    <string name="settings_auto_lock_immediately">Immediately</string>
+    <string name="settings_minutes">%1$d min</string>
+    <string name="settings_wipe">Erase data after too many wrong PINs</string>
+    <string name="settings_wipe_desc">After 10 wrong PINs in a row</string>
+    <string name="settings_cancel">Cancel</string>
+    <string name="settings_disable_title">Turn off app protection?</string>
+    <string name="settings_disable_body">Anyone holding your unlocked phone can see your OneDrive. Your current PIN will no longer be used.</string>
+    <string name="settings_disable_confirm">Turn off</string>
+    <string name="settings_wipe_title">Turn on automatic erase?</string>
+    <string name="settings_wipe_body">After 10 wrong PINs in a row, all data and the connection will be erased. This only protects against PIN guessing inside the app and does not replace your device screen lock.</string>
+    <string name="settings_wipe_confirm">Enter PIN to turn on</string>
+
+    <string name="settings_pin_current">Enter your current PIN</string>
+    <string name="settings_pin_for_disable">To turn off app protection</string>
+    <string name="settings_pin_for_wipe">To turn on automatic erase</string>
+    <string name="settings_pin_for_change">To change your PIN</string>
+    <string name="settings_pin_for_secret">To update your Client Secret</string>
+    <string name="settings_pin_new">Enter a new PIN</string>
+    <string name="settings_pin_new_hint">Pick 6 digits and avoid easy patterns like 123456</string>
+    <string name="settings_pin_confirm">Re-enter the new PIN</string>
+    <string name="settings_pin_confirm_hint">Enter it again to confirm. Both must match</string>
+    <string name="settings_pin_weak">That PIN is too easy to guess, pick another</string>
+    <string name="settings_pin_mismatch">The two PINs do not match, try again</string>
+    <string name="settings_pin_wrong">Wrong PIN</string>
+    <string name="settings_pin_failed">Could not complete this, try again</string>
+    <string name="settings_pin_attempts">%1$d tries left before data is erased</string>
+    <string name="settings_pin_cooldown">Too many wrong attempts, try again in %1$s</string>
+    <string name="settings_pin_description">PIN, %1$d of 6 digits entered</string>
+    <string name="settings_pin_backspace">Delete last digit</string>
+
+    <string name="settings_group_video">Video</string>
+    <string name="settings_seek_step">Double-tap seek step</string>
+    <string name="settings_seconds">%1$d sec</string>
+    <string name="settings_default_speed">Default speed</string>
+    <string name="settings_default_fit">Default aspect</string>
+    <string name="settings_fit_remember">Remember last</string>
+    <string name="settings_fit_remember_desc">Use the mode you picked last time</string>
+    <string name="settings_fit_fit">Fit</string>
+    <string name="settings_fit_fit_desc">Keep the ratio, with black bars</string>
+    <string name="settings_fit_crop">Fill</string>
+    <string name="settings_fit_crop_desc">Zoom to fill the screen, extra is cropped</string>
+    <string name="settings_fit_stretch">Stretch</string>
+    <string name="settings_fit_stretch_desc">Stretch to fill the screen, the picture may be distorted</string>
+    <string name="settings_orientation">Orientation when opening video</string>
+    <string name="settings_orientation_portrait">Portrait</string>
+    <string name="settings_orientation_landscape">Landscape</string>
+    <string name="settings_play_mode">Play mode</string>
+    <string name="settings_mode_no_repeat">No repeat</string>
+    <string name="settings_mode_no_repeat_desc">Stop at the end and show a Replay button</string>
+    <string name="settings_mode_auto_next">Auto next</string>
+    <string name="settings_mode_auto_next_desc">Count down 5 seconds, then play the next video</string>
+    <string name="settings_mode_repeat_one">Repeat one</string>
+    <string name="settings_mode_repeat_one_desc">Replay from the start right away</string>
+    <string name="settings_mode_repeat_list">Repeat list</string>
+    <string name="settings_mode_repeat_list_desc">After the last video, go back to the first</string>
+    <string name="settings_remember_position">Remember position</string>
+    <string name="settings_remember_position_desc">Ask “Resume from…?” when reopening</string>
+
+    <string name="settings_pdf_style">Reading style</string>
+    <string name="settings_pdf_vertical">Vertical scroll</string>
+    <string name="settings_pdf_horizontal">Horizontal pages</string>
+
+    <string name="settings_group_cache">Cache</string>
+    <string name="settings_cache_usage">Storage in use</string>
+    <string name="settings_cache_usage_description">Using %1$s of %2$s</string>
+    <string name="settings_cache_thumbnail">Thumbnails</string>
+    <string name="settings_cache_limit">Maximum size</string>
+    <string name="settings_cache_limit_hint">Drag to pick from 1 to 10 GB. Lowering the limit deletes the least recently used files right away.</string>
+    <string name="settings_cache_shares">Split by type</string>
+    <string name="settings_cache_shares_desc">Thumbnails · Photos · Videos · PDF</string>
+    <string name="settings_cache_shares_hint">Drag one type and the others adjust, always totaling 100%.</string>
+    <string name="settings_cache_shares_default">Default</string>
+    <string name="settings_cache_shares_state">%1$s %2$d%%, %3$s</string>
+    <string name="settings_cache_shares_bar">Split: %1$s</string>
+    <string name="settings_apply">Apply</string>
+    <string name="settings_cache_clear">Clear cache</string>
+    <string name="settings_cache_clear_desc">Free up %1$s</string>
+    <string name="settings_cache_clear_title">Clear cache?</string>
+    <string name="settings_cache_clear_body">Frees up %1$s (thumbnails, photos, watched videos and downloaded PDFs). Your watch history is kept; files download again when opened.</string>
+    <string name="settings_cache_clear_confirm">Clear</string>
+    <string name="settings_cache_shrink_title">Lower the limit to %1$s?</string>
+    <string name="settings_cache_shrink_body">The cache is using %1$s, which is over the new limit. OneDriveVibe will delete the least recently used files right away until it is under %2$s.</string>
+    <string name="settings_cache_shrink_confirm">Lower and clean up</string>
+
+    <string name="settings_group_connection">Connection</string>
+    <string name="settings_account">Account (UPN)</string>
+    <string name="settings_last_sync">Last synced</string>
+    <string name="settings_last_sync_today">Today %1$s</string>
+    <string name="settings_last_sync_yesterday">Yesterday %1$s</string>
+    <string name="settings_last_sync_never">Never</string>
+
+    <string name="settings_version">OneDriveVibe %1$s · read-only, never changes files on OneDrive</string>
+
+    <!-- Connection (CD-04 to CD-06, slice 7e) -->
+    <string name="settings_update_secret">Update Client Secret</string>
+    <string name="settings_secret_expiry">Secret expiry date</string>
+    <string name="settings_secret_expiry_desc">Remind %1$d days before</string>
+    <string name="settings_secret_expiry_none">Not set</string>
+    <string name="settings_secret_expiry_label">Expiry date</string>
+    <string name="settings_secret_expiry_hint">Remind in the app from %1$d days before this date</string>
+    <string name="settings_secret_expiry_invalid">Enter the date as %1$s</string>
+    <string name="settings_expiry_plus_6_months">+6 months</string>
+    <string name="settings_expiry_plus_1_year">+1 year</string>
+    <string name="settings_expiry_plus_2_years">+2 years</string>
+    <string name="settings_expiry_clear">Clear date</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_continue">Continue</string>
+    <plurals name="settings_expiry_banner">
+        <item quantity="one">Client Secret expires in %1$d day</item>
+        <item quantity="other">Client Secret expires in %1$d days</item>
+    </plurals>
+    <string name="settings_expiry_banner_today">Client Secret expires today</string>
+    <string name="settings_expiry_banner_expired">Client Secret has expired</string>
+    <string name="settings_expiry_banner_action">Update</string>
+    <string name="settings_disconnect">Disconnect</string>
+    <string name="settings_disconnect_desc">Erase all data on this device</string>
+    <string name="settings_disconnect_title">Disconnect OneDrive?</string>
+    <string name="settings_disconnect_body">The only way to use the app again is to connect from scratch. Files on OneDrive are not affected.</string>
+    <string name="settings_disconnect_final_title">Erase data and disconnect?</string>
+    <string name="settings_disconnect_final_body">Connection details, watch history and settings on this device will be erased. Files on OneDrive are not affected.</string>
+    <string name="settings_disconnect_final_confirm">Erase data</string>
+
+    <!-- Update Client Secret screen -->
+    <string name="secret_title">Update Client Secret</string>
+    <string name="secret_description">Create a new secret in the Entra admin center, then paste its value here. OneDriveVibe only saves it after the connection check succeeds.</string>
+    <string name="secret_label">New Client Secret</string>
+    <string name="secret_placeholder">Paste the Value column from the Entra admin center</string>
+    <string name="secret_note">If the check fails, OneDriveVibe keeps the current secret.</string>
+    <string name="secret_submit">Check and save</string>
+    <string name="secret_show">Show characters</string>
+    <string name="secret_hide">Hide characters</string>
+    <string name="secret_loading_title">Checking Client Secret</string>
+    <string name="secret_loading_subtitle">Keep the app open for a few seconds.</string>
+    <string name="secret_loading_description">Checking Client Secret</string>
+    <string name="secret_error_invalid">Wrong Client Secret. Make sure you copied the Value column, not the Secret ID</string>
+    <string name="secret_error_expired">This Client Secret has expired, please create a new one.</string>
+    <string name="secret_error_network">Cannot connect. Check your network and try again.</string>
+    <string name="secret_error_other">Something went wrong. Try again later.</string>
+    <string name="secret_error_save">Could not save the new secret on this device.</string>
+    <string name="secret_error_not_saved">Not saved. OneDriveVibe is still using the old secret.</string>
+    <string name="secret_saved">Client Secret updated</string>
+</resources>

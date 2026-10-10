@@ -10,12 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.lambao.odv.core.designsystem.component.ODVInfoRow
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
+import com.lambao.odv.core.designsystem.odvLocale
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
-
-/** Ngày theo vi-VN (CLAUDE.md: số và ngày theo vi-VN), như các màn khác. */
-private val ViVn: Locale = Locale.forLanguageTag("vi-VN")
 
 /**
  * Các dòng của bảng thông tin ảnh (AN-05): tên tệp, kích thước ảnh, dung lượng, ngày chụp, thiết bị chụp, đường dẫn thư mục.
@@ -25,8 +22,9 @@ private val ViVn: Locale = Locale.forLanguageTag("vi-VN")
 internal fun ImageInfoContent(info: ImageViewerInfo, modifier: Modifier = Modifier) {
     val item = info.item
     val details = info.details
-    val dateFormat = remember {
-        SimpleDateFormat(DateFormat.getBestDateTimePattern(ViVn, "yMMMMdHm"), ViVn)
+    val locale = odvLocale()
+    val dateFormat = remember(locale) {
+        SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "yMMMMdHm"), locale)
     }
     val takenAt = item.takenAt ?: details?.takenAt
     val root = stringResource(R.string.image_info_root)
@@ -38,7 +36,7 @@ internal fun ImageInfoContent(info: ImageViewerInfo, modifier: Modifier = Modifi
         if (width != null && height != null) {
             ODVInfoRow(stringResource(R.string.image_info_dimensions), "$width × $height", mono = true)
         }
-        ODVInfoRow(stringResource(R.string.image_info_size), odvFormatFileSize(item.sizeBytes), mono = true)
+        ODVInfoRow(stringResource(R.string.image_info_size), odvFormatFileSize(item.sizeBytes, locale.toLanguageTag()), mono = true)
         if (takenAt != null) {
             ODVInfoRow(stringResource(R.string.image_info_taken), dateFormat.format(Date(takenAt)), mono = true)
         }

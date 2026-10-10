@@ -1,6 +1,11 @@
 package com.lambao.odv.core.data
 
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 
 /** Hằng số đồng bộ delta (ADR-0007, DS-04). */
 internal object SyncConstants {
@@ -36,28 +41,24 @@ internal object ThumbnailConstants {
     const val MIN_SIDE = 60
     const val MAX_SIDE = 1600
 
-    /** Trần dung lượng cache thumbnail (BN-01). Lát 9 nối giới hạn này với Cài đặt (CD). */
-    const val CACHE_MAX_BYTES = 200L * 1024 * 1024
-
     /** Bộ nhớ RAM cho thumbnail đã giải mã: 15% heap, thấp hơn mặc định của Coil vì Thư viện có thể cuộn rất dài. */
     const val MEMORY_PERCENT = 0.15
 }
 
-/** Hằng số kho ảnh gốc (AN-01, BN-01 → BN-03). */
-internal object OriginalImageConstants {
-    /** Phát tiến trình tối đa mỗi chừng này byte để UI không bị ngập (ảnh gốc vài chục MB tải theo khúc 64 KB). */
+/** Hằng số kho tệp tải về dùng chung cho ảnh gốc và PDF (AN-01, BN-01 → BN-03). */
+internal object ResumableFileConstants {
+    /** Phát tiến trình tối đa mỗi chừng này byte để UI không bị ngập (tệp vài chục MB tải theo khúc 64 KB). */
     const val PROGRESS_STEP_BYTES = 256L * 1024
 
     const val PART_SUFFIX = ".part"
 
-    /** Số khóa chia theo băm của khóa tệp: một ảnh chỉ có một luồng ghi, không cần giữ Mutex riêng cho từng ảnh đã xem. */
+    /** Số khóa chia theo băm của khóa tệp: một tệp chỉ có một luồng ghi, không cần giữ Mutex riêng cho từng tệp đã xem. */
     const val LOCK_STRIPES = 16
 
     val NON_ALPHANUMERIC = Regex("[^A-Za-z0-9]")
-
-    /** Trần dung lượng cache ảnh gốc (BN-01), tạm cố định; Lát 9 nối với giới hạn cache trong Cài đặt (CD). */
-    const val CACHE_MAX_BYTES = 1024L * 1024 * 1024
 }
+
+// Trần dung lượng cache từng loại không còn là hằng số: người dùng đặt ở Cài đặt (CD) và đọc qua CacheBudgetProvider (7d).
 
 /**
  * Tên lưu trên máy. **Không được đổi giá trị:** đổi là người dùng mất dữ liệu (config không đọc lại được, mất lựa chọn đã lưu,
@@ -67,12 +68,10 @@ internal object StorageNames {
     /** Tên bí mật của config; cũng là AAD của phong bì PIN. */
     const val CONFIG = "connection_config"
 
-    /** Bộ đếm sai PIN. Phải khớp `KeystoreConstants.LAST_WIPED_FILE` (tên bí mật + `.bin`) ở `:core:security`. */
-    const val LOCKOUT = "lock_state"
-
     /** Tệp DataStore `{tên}.preferences_pb`. */
     const val BROWSER_PREFERENCES = "browser"
     const val PLAYER_PREFERENCES = "player"
+    const val SETTINGS_PREFERENCES = "settings"
 
     /** Thư mục con của `cacheDir`. */
     const val THUMBNAILS_DIR = "thumbnails"
@@ -86,4 +85,22 @@ internal object PreferenceKeys {
     val VIEW_MODE = stringPreferencesKey("view_mode")
     val PLAY_MODE = stringPreferencesKey("play_mode")
     val VIDEO_FIT = stringPreferencesKey("video_fit")
+    val THEME_MODE = stringPreferencesKey("theme_mode")
+    val ENABLED_KINDS = stringSetPreferencesKey("enabled_kinds")
+    val SEEK_STEP_SECONDS = intPreferencesKey("seek_step_seconds")
+    val DEFAULT_SPEED = floatPreferencesKey("default_speed")
+
+    /** Vắng mặt nghĩa là "nhớ lần gần nhất"; có mặt thì là tên `VideoFit` cố định. */
+    val DEFAULT_VIDEO_FIT = stringPreferencesKey("default_video_fit")
+    val OPEN_VIDEO_LANDSCAPE = booleanPreferencesKey("open_video_landscape")
+    val REMEMBER_VIDEO_POSITION = booleanPreferencesKey("remember_video_position")
+    val PDF_READING_STYLE = stringPreferencesKey("pdf_reading_style")
+    val SECRET_EXPIRY_EPOCH_DAY = longPreferencesKey("secret_expiry_epoch_day")
+    val WIPE_ON_TOO_MANY_FAILURES = booleanPreferencesKey("wipe_on_too_many_failures")
+    val AUTO_LOCK_DELAY = stringPreferencesKey("auto_lock_delay")
+    val SCREEN_PROTECTION = booleanPreferencesKey("screen_protection")
+    val CACHE_LIMIT_GB = intPreferencesKey("cache_limit_gb")
+
+    /** "thumbnail,ảnh,video,pdf" theo phần trăm, vd `10,30,45,15`; sai định dạng hoặc tổng khác 100 thì dùng mặc định. */
+    val CACHE_SHARES = stringPreferencesKey("cache_shares")
 }

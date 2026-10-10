@@ -10,6 +10,7 @@ import com.lambao.odv.core.database.DriveDao
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
+import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.repository.LibraryRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
@@ -22,7 +23,7 @@ internal class LibraryRepositoryImpl(
     private val dispatchers: DispatcherProvider,
 ) : LibraryRepository {
 
-    override fun libraryPages(filter: LibraryFilter): Flow<PagingData<DriveItem>> =
+    override fun libraryPages(filter: LibraryFilter, enabledKinds: Set<MediaKind>): Flow<PagingData<DriveItem>> =
         Pager(
             PagingConfig(
                 pageSize = DriveConstants.LIBRARY_PAGE_SIZE,
@@ -32,12 +33,12 @@ internal class LibraryRepositoryImpl(
                 // từ số mục theo ngày (libraryDays) mà không chờ nạp hết.
                 enablePlaceholders = true,
             ),
-        ) { dao.pagedLibrary(filter.kinds.map { it.name }) }
+        ) { dao.pagedLibrary((filter.kinds intersect enabledKinds).map { it.name }) }
             .flow
             .map { page -> page.map { it.toDomain() } }
 
-    override fun libraryDays(filter: LibraryFilter, utcOffsetMs: Long): Flow<List<LibraryDay>> =
-        dao.libraryDays(filter.kinds.map { it.name }, utcOffsetMs)
+    override fun libraryDays(filter: LibraryFilter, enabledKinds: Set<MediaKind>, utcOffsetMs: Long): Flow<List<LibraryDay>> =
+        dao.libraryDays((filter.kinds intersect enabledKinds).map { it.name }, utcOffsetMs)
             .conflate()
             .map { rows -> rows.map { LibraryDay(it.dayNumber, it.count, it.videoCount) } }
             .distinctUntilChanged()

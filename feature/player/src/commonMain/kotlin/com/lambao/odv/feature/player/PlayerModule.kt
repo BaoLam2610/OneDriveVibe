@@ -16,6 +16,7 @@ val playerModule = module {
             getFolderPath = get(),
             network = get(),
             prefs = get(),
+            settings = get(),
         )
     }
 }

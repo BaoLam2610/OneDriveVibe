@@ -1,6 +1,7 @@
 package com.lambao.odv.core.data.config
 
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.common.result.flatMap
 import com.lambao.odv.core.data.security.LockoutStore
 import com.lambao.odv.core.domain.model.ConnectionConfig
 import com.lambao.odv.core.domain.repository.ConfigRepository
@@ -24,4 +25,7 @@ internal class ConfigRepositoryImpl(
     }
 
     override suspend fun load(): AppResult<ConnectionConfig> = vault.load()
+
+    override suspend fun updateClientSecret(secret: String): AppResult<Unit> =
+        vault.load().flatMap { vault.replace(it.copy(clientSecret = secret)) }
 }

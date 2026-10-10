@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
+         Câu chữ lấy từ thiết kế (ODV Settings); mục ghi [mới] chưa có trong thiết kế, cần duyệt. -->
+    <string name="settings_title">Cài đặt</string>
+    <string name="settings_back">Quay lại</string>
+
+    <!-- Nhóm Hiển thị -->
+    <string name="settings_group_display">Hiển thị</string>
+    <string name="settings_theme">Giao diện</string>
+    <string name="settings_option_system">Theo hệ thống</string>
+    <string name="settings_theme_light">Sáng</string>
+    <string name="settings_theme_dark">Tối</string>
+    <!-- [mới] Hàng Ngôn ngữ có trong đặc tả (3.8, CD-10) nhưng chưa có trong thiết kế; sheet dùng cùng kiểu OptionRow như Giao diện -->
+    <string name="settings_language">Ngôn ngữ</string>
+    <string name="settings_language_vi" translatable="false">Tiếng Việt</string>
+    <string name="settings_language_en" translatable="false">English</string>
+
+    <!-- Loại tệp hiển thị (CD-01) -->
+    <string name="settings_file_kinds">Loại tệp hiển thị</string>
+    <string name="settings_file_kinds_desc">Áp dụng cho Thư mục, Thư viện và tìm kiếm</string>
+    <string name="settings_kind_photo">Ảnh</string>
+    <string name="settings_kind_video">Video</string>
+    <string name="settings_kind_pdf" translatable="false">PDF</string>
+    <string name="settings_file_kinds_warning">Phải bật ít nhất 1 loại tệp</string>
+
+    <!-- Nhóm Bảo mật (CD-02, CD-03, CD-08, CD-09). Câu chữ lấy từ thiết kế (ODV Settings: C1, C5, D1, D2, P1 → P3) -->
+    <string name="settings_group_security">Bảo mật</string>
+    <string name="settings_protection">Bảo vệ ứng dụng</string>
+    <string name="settings_protection_on">Yêu cầu mã PIN khi mở</string>
+    <string name="settings_protection_off">Đang tắt. Ai cầm máy đang mở khóa cũng xem được OneDrive</string>
+    <string name="settings_screen_protection">Bảo vệ màn hình</string> <!-- [mới] -->
+    <string name="settings_screen_protection_desc">Chặn chụp và quay màn hình, ẩn nội dung ở danh sách app gần đây</string> <!-- [mới] -->
+    <string name="settings_change_pin">Đổi mã PIN</string>
+    <string name="settings_biometric">Mở khóa bằng sinh trắc học</string>
+    <string name="settings_biometric_desc">Vân tay hoặc khuôn mặt</string>
+    <string name="settings_auto_lock">Tự khóa khi rời app</string>
+    <string name="settings_auto_lock_immediately">Ngay lập tức</string>
+    <string name="settings_minutes">%1$d phút</string>
+    <string name="settings_wipe">Xóa dữ liệu khi nhập sai quá nhiều</string>
+    <string name="settings_wipe_desc">Sau 10 lần nhập sai liên tiếp</string>
+    <string name="settings_cancel">Hủy</string>
+    <string name="settings_disable_title">Tắt bảo vệ ứng dụng?</string>
+    <string name="settings_disable_body">Bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn. Mã PIN hiện tại sẽ không còn được dùng.</string>
+    <string name="settings_disable_confirm">Tắt bảo vệ</string>
+    <string name="settings_wipe_title">Bật xóa dữ liệu tự động?</string>
+    <string name="settings_wipe_body">Sau 10 lần nhập sai liên tiếp, toàn bộ dữ liệu và kết nối sẽ bị xóa. Tùy chọn này chỉ chống đoán PIN trong app, không thay thế khóa màn hình của thiết bị.</string>
+    <string name="settings_wipe_confirm">Nhập PIN để bật</string>
+
+    <!-- Màn PIN (P1 → P3). Thông báo lỗi và đồng hồ chờ lấy cùng câu với màn Khóa; [mới] ở các câu chưa có trong thiết kế -->
+    <string name="settings_pin_current">Nhập mã PIN hiện tại</string>
+    <string name="settings_pin_for_disable">Để tắt bảo vệ ứng dụng</string>
+    <string name="settings_pin_for_wipe">Để bật xóa dữ liệu tự động</string>
+    <string name="settings_pin_for_change">Để đổi mã PIN</string> <!-- [mới] -->
+    <string name="settings_pin_for_secret">Để cập nhật Client Secret</string> <!-- [mới] -->
+    <string name="settings_pin_new">Nhập mã PIN mới</string>
+    <string name="settings_pin_new_hint">Chọn 6 số, tránh dãy dễ đoán như 123456</string>
+    <string name="settings_pin_confirm">Nhập lại mã PIN mới</string>
+    <string name="settings_pin_confirm_hint">Nhập lại để xác nhận. Hai lần phải khớp</string>
+    <string name="settings_pin_weak">Mã PIN quá dễ đoán, hãy chọn mã khác</string>
+    <string name="settings_pin_mismatch">Hai mã PIN không khớp, hãy nhập lại</string>
+    <string name="settings_pin_wrong">Mã PIN không đúng</string>
+    <string name="settings_pin_failed">Không thực hiện được, hãy thử lại</string> <!-- [mới] -->
+    <string name="settings_pin_attempts">Còn %1$d lần thử trước khi xóa dữ liệu</string>
+    <string name="settings_pin_cooldown">Nhập sai quá nhiều lần, hãy thử lại sau %1$s</string>
+    <string name="settings_pin_description">Mã PIN, đã nhập %1$d trên 6 số</string>
+    <string name="settings_pin_backspace">Xóa số cuối</string>
+
+    <!-- Nhóm Video -->
+    <string name="settings_group_video">Video</string>
+    <string name="settings_seek_step">Bước tua khi chạm đúp</string>
+    <string name="settings_seconds">%1$d giây</string>
+    <string name="settings_default_speed">Tốc độ mặc định</string>
+    <string name="settings_default_fit">Khung hình mặc định</string>
+    <string name="settings_fit_remember">Nhớ lần gần nhất</string>
+    <string name="settings_fit_remember_desc">Dùng chế độ bạn chọn ở lần xem trước</string>
+    <string name="settings_fit_fit">Vừa khung</string>
+    <string name="settings_fit_fit_desc">Giữ tỉ lệ, có viền đen</string>
+    <string name="settings_fit_crop">Cắt đầy</string>
+    <string name="settings_fit_crop_desc">Phóng to cho đầy màn hình, phần thừa bị cắt</string>
+    <string name="settings_fit_stretch">Kéo giãn</string>
+    <string name="settings_fit_stretch_desc">Kéo cho đầy màn hình, hình có thể méo</string>
+    <string name="settings_orientation">Hướng màn hình khi mở video</string>
+    <string name="settings_orientation_portrait">Dọc</string>
+    <string name="settings_orientation_landscape">Ngang</string>
+    <string name="settings_play_mode">Chế độ phát</string>
+    <string name="settings_mode_no_repeat">Không lặp</string>
+    <string name="settings_mode_no_repeat_desc">Dừng ở cuối, hiện nút Phát lại</string>
+    <string name="settings_mode_auto_next">Tự phát tiếp</string>
+    <string name="settings_mode_auto_next_desc">Đếm ngược 5 giây rồi sang video sau</string>
+    <string name="settings_mode_repeat_one">Lặp một video</string>
+    <string name="settings_mode_repeat_one_desc">Phát lại từ đầu ngay</string>
+    <string name="settings_mode_repeat_list">Lặp danh sách</string>
+    <string name="settings_mode_repeat_list_desc">Hết video cuối thì quay về video đầu</string>
+    <string name="settings_remember_position">Nhớ vị trí xem</string>
+    <string name="settings_remember_position_desc">Hỏi “Xem tiếp từ…?” khi mở lại</string>
+
+    <!-- Nhóm PDF. [mới] Thiết kế chỉ có hàng "Kiểu đọc: Cuộn dọc"; tên lựa chọn thứ hai lấy từ đặc tả (Cuộn dọc / Lật trang ngang), không có artboard sheet -->
+    <string name="settings_group_pdf" translatable="false">PDF</string>
+    <string name="settings_pdf_style">Kiểu đọc</string>
+    <string name="settings_pdf_vertical">Cuộn dọc</string>
+    <string name="settings_pdf_horizontal">Lật trang ngang</string>
+
+    <!-- Nhóm Bộ nhớ đệm (CD, CD-07). Câu chữ D5, D6 và CacheUsage lấy từ thiết kế; thanh trượt, tỉ lệ chia và nút Áp dụng là [mới] (chưa có thiết kế) -->
+    <string name="settings_group_cache">Bộ nhớ đệm</string>
+    <string name="settings_cache_usage">Dung lượng đang dùng</string>
+    <string name="settings_cache_usage_description">Đã dùng %1$s trên %2$s</string>
+    <string name="settings_cache_thumbnail">Thumbnail</string>
+    <string name="settings_cache_limit">Giới hạn tối đa</string>
+    <string name="settings_cache_limit_hint">Kéo để chọn từ 1 đến 10 GB. Giảm giới hạn thì tệp lâu không dùng nhất bị xóa ngay.</string> <!-- [mới] -->
+    <string name="settings_cache_shares">Tỉ lệ chia theo loại</string> <!-- [mới] -->
+    <string name="settings_cache_shares_desc">Thumbnail · Ảnh · Video · PDF</string> <!-- [mới] -->
+    <string name="settings_cache_shares_hint">Kéo một loại thì các loại còn lại tự điều chỉnh, tổng luôn 100%.</string> <!-- [mới] -->
+    <string name="settings_cache_shares_default">Mặc định</string> <!-- [mới] -->
+    <string name="settings_cache_shares_state">%1$s %2$d%%, %3$s</string> <!-- [mới] lời đọc của slider: "Video 45%, 921,6 MB" -->
+    <string name="settings_cache_shares_bar">Tỉ lệ chia: %1$s</string> <!-- [mới] -->
+    <string name="settings_apply">Áp dụng</string> <!-- [mới] -->
+    <string name="settings_cache_clear">Xóa bộ nhớ đệm</string>
+    <string name="settings_cache_clear_desc">Giải phóng %1$s</string>
+    <string name="settings_cache_clear_title">Xóa bộ nhớ đệm?</string>
+    <string name="settings_cache_clear_body">Giải phóng %1$s (thumbnail, ảnh, video đã xem và PDF đã tải). Lịch sử xem được giữ lại; tệp sẽ tải lại khi mở.</string>
+    <string name="settings_cache_clear_confirm">Xóa</string> <!-- [mới] -->
+    <string name="settings_cache_shrink_title">Giảm giới hạn xuống %1$s?</string>
+    <string name="settings_cache_shrink_body">Bộ nhớ đệm đang dùng %1$s, vượt giới hạn mới. OneDriveVibe sẽ dọn ngay các tệp lâu không dùng nhất cho tới khi còn dưới %2$s.</string>
+    <string name="settings_cache_shrink_confirm">Giảm và dọn</string>
+
+    <!-- Nhóm Kết nối -->
+    <string name="settings_group_connection">Kết nối</string>
+    <string name="settings_account">Tài khoản (UPN)</string>
+    <string name="settings_tenant_id" translatable="false">Tenant ID</string>
+    <string name="settings_client_id" translatable="false">Client ID</string>
+    <string name="settings_last_sync">Đồng bộ gần nhất</string>
+    <string name="settings_last_sync_today">Hôm nay %1$s</string>
+    <!-- [mới] thiết kế chỉ có "Hôm nay 09:12" -->
+    <string name="settings_last_sync_yesterday">Hôm qua %1$s</string>
+    <string name="settings_last_sync_never">Chưa có</string>
+
+    <!-- Dòng phiên bản cuối màn. Thiết kế ghi "ODV 1.0.0"; đổi thành tên app (quyết định Q2, 2026-10-07) -->
+    <string name="settings_version">OneDriveVibe %1$s · chỉ đọc, không thay đổi tệp trên OneDrive</string>
+
+    <!-- Kết nối (CD-04 đến CD-06, Lát 7e). Chữ lấy từ artboard S1 đến S5, C7, D3 trong ODV Settings; "ODV" đổi thành OneDriveVibe (Q2) -->
+    <string name="settings_update_secret">Cập nhật Client Secret</string>
+    <string name="settings_secret_expiry">Ngày hết hạn secret</string>
+    <string name="settings_secret_expiry_desc">Nhắc trước %1$d ngày</string>
+    <string name="settings_secret_expiry_none">Chưa đặt</string>
+    <string name="settings_secret_expiry_label">Ngày hết hạn</string>
+    <string name="settings_secret_expiry_hint">Nhắc trong app từ %1$d ngày trước ngày này</string>
+    <string name="settings_secret_expiry_invalid">Nhập ngày theo dạng %1$s</string> <!-- [mới] -->
+    <string name="settings_expiry_plus_6_months">+6 tháng</string>
+    <string name="settings_expiry_plus_1_year">+1 năm</string>
+    <string name="settings_expiry_plus_2_years">+2 năm</string>
+    <string name="settings_expiry_clear">Xóa ngày</string>
+    <string name="settings_save">Lưu</string>
+    <string name="settings_continue">Tiếp tục</string>
+    <plurals name="settings_expiry_banner">
+        <item quantity="other">Client Secret hết hạn sau %1$d ngày</item>
+    </plurals>
+    <string name="settings_expiry_banner_today">Client Secret hết hạn hôm nay</string> <!-- [mới] -->
+    <string name="settings_expiry_banner_expired">Client Secret đã hết hạn</string> <!-- [mới] -->
+    <string name="settings_expiry_banner_action">Cập nhật</string>
+    <string name="settings_disconnect">Ngắt kết nối</string>
+    <string name="settings_disconnect_desc">Xóa toàn bộ dữ liệu trên máy</string>
+    <string name="settings_disconnect_title">Ngắt kết nối OneDrive?</string>
+    <string name="settings_disconnect_body">Cách duy nhất để dùng lại là kết nối từ đầu. Các tệp trên OneDrive không bị ảnh hưởng.</string>
+    <string name="settings_disconnect_final_title">Xóa dữ liệu và ngắt kết nối?</string> <!-- [mới] D4, cùng lời với KH-03 -->
+    <string name="settings_disconnect_final_body">Thông tin kết nối, lịch sử xem và cài đặt trên máy sẽ bị xóa. Các tệp trên OneDrive không bị ảnh hưởng.</string> <!-- [mới] -->
+    <string name="settings_disconnect_final_confirm">Xóa dữ liệu</string> <!-- [mới] -->
+
+    <!-- Màn Cập nhật Client Secret (S1 đến S3, S5) -->
+    <string name="secret_title">Cập nhật Client Secret</string>
+    <string name="secret_description">Tạo secret mới trên Entra admin center, sau đó dán giá trị vào đây. OneDriveVibe chỉ lưu khi kiểm tra kết nối thành công.</string>
+    <string name="secret_label">Client Secret mới</string>
+    <string name="secret_placeholder">Dán giá trị cột Value trên Entra admin center</string>
+    <string name="secret_note">Nếu kiểm tra thất bại, OneDriveVibe giữ nguyên secret hiện tại.</string>
+    <string name="secret_submit">Kiểm tra và lưu</string>
+    <string name="secret_show">Hiện ký tự</string>
+    <string name="secret_hide">Ẩn ký tự</string>
+    <string name="secret_loading_title">Đang kiểm tra Client Secret</string>
+    <string name="secret_loading_subtitle">Giữ ứng dụng mở trong vài giây.</string>
+    <string name="secret_loading_description">Đang kiểm tra Client Secret</string>
+    <string name="secret_error_invalid">Client Secret không đúng. Kiểm tra đã copy cột Value, không phải Secret ID</string>
+    <string name="secret_error_expired">Client Secret đã hết hạn, hãy tạo secret mới.</string> <!-- [mới] -->
+    <string name="secret_error_network">Không kết nối được, kiểm tra mạng và thử lại.</string> <!-- [mới] -->
+    <string name="secret_error_other">Đã xảy ra lỗi, thử lại sau.</string> <!-- [mới] -->
+    <string name="secret_error_save">Không lưu được secret mới trên máy.</string> <!-- [mới] -->
+    <string name="secret_error_not_saved">Chưa lưu. OneDriveVibe vẫn dùng secret cũ.</string>
+    <string name="secret_saved">Đã cập nhật Client Secret</string>
+</resources>

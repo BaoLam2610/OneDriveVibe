@@ -134,3 +134,20 @@ enum class ProtectionSetupResult {
     /** Không bật được; config giữ nguyên ở chế độ thiết bị (BM-04). */
     Failed,
 }
+
+/**
+ * Thời gian chờ trước khi tự khóa khi rời app (CH-03, CD, mục Bảo mật). Tính từ lúc cả app xuống nền; quay lại trước mốc này thì
+ * không khóa. Mặc định [OneMinute] (đặc tả); [Immediately] là hành vi trước Lát 7c. Thứ tự khai báo là thứ tự trong bảng chọn;
+ * giá trị lưu bằng tên nên không đổi tên.
+ */
+enum class AutoLockDelay(val millis: Long) {
+    Immediately(0L),
+    TenSeconds(10_000L),
+    ThirtySeconds(30_000L),
+    OneMinute(60_000L),
+    FiveMinutes(5 * 60_000L),
+    FifteenMinutes(15 * 60_000L),
+}
+
+/** Máy có sinh trắc học mạnh dùng được và đã bật cho app chưa (CD-02): nhóm Bảo mật của Cài đặt dựa vào đây để hiện công tắc. */
+data class BiometricStatus(val available: Boolean, val enabled: Boolean)

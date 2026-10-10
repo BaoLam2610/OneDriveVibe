@@ -12,6 +12,8 @@ import kotlin.coroutines.CoroutineContext
 val databaseModule = module {
     single<OdvDatabase> { buildDatabase(androidContext(), get<DispatcherProvider>().io) }
     single<DriveDao> { get<OdvDatabase>().driveDao() }
+    // Thu gọn tệp sau khi xóa dữ liệu (SyncCoordinator.reset, CD-05).
+    single { DatabaseCompactor(get()) }
 }
 
 private fun buildDatabase(context: Context, queryContext: CoroutineContext): OdvDatabase {

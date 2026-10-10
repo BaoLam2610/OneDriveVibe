@@ -24,9 +24,12 @@ sealed interface AppRoute : NavKey {
     @Serializable
     data object Connect : AppRoute
 
-    /** Thiết lập bảo mật (BM). */
+    /**
+     * Thiết lập bảo mật (BM). [fromSettings] là mở từ Cài đặt (CD-02, công tắc Bảo vệ ứng dụng): xong hoặc Back thì quay về Cài đặt,
+     * không đặt lại back stack về Danh sách như khi đi từ hộp thoại KN-13.
+     */
     @Serializable
-    data object SecuritySetup : AppRoute
+    data class SecuritySetup(val fromSettings: Boolean = false) : AppRoute
 
     /** Màn Khóa (KH). */
     @Serializable
@@ -35,6 +38,21 @@ sealed interface AppRoute : NavKey {
     /** Danh sách: tab Thư mục và Thư viện. */
     @Serializable
     data object Home : AppRoute
+
+    /** Cài đặt (CD, Lát 7). Mở từ nút bánh răng ở AppBar Danh sách. */
+    @Serializable
+    data object Settings : AppRoute
+
+    /**
+     * Màn nhập PIN trong Cài đặt (P1 → P3). [purpose] là tên `PinPurpose` của `:feature:settings` (chuỗi để route lưu được qua process
+     * death mà không kéo kiểu của feature vào route).
+     */
+    @Serializable
+    data class SettingsPin(val purpose: String) : AppRoute
+
+    /** Form Cập nhật Client Secret (CD-04, Lát 7e). Mở từ Cài đặt (sau P1 nếu bảo vệ bật) và từ banner hết hạn ở Danh sách. */
+    @Serializable
+    data object UpdateSecret : AppRoute
 
     /**
      * Màn xem ảnh (AN). Chỉ mang tham số tối thiểu nên lưu được qua process death; màn tự nạp danh sách ảnh từ Room theo

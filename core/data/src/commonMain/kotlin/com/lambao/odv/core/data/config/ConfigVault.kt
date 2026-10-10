@@ -147,6 +147,39 @@ internal class ConfigVault(
         return written
     }
 
+    /**
+     * Thay nội dung config **giữ nguyên chế độ** (CD-04, đổi Client Secret). Chế độ thiết bị: ghi lại qua lớp Keystore. Chế độ PIN:
+     * mã hóa lại bằng khóa phiên đang giữ, cùng salt (`resealWithKey`) nên PIN không cần nhập lại và phần bọc sinh trắc học vẫn
+     * dùng được (ADR-0014). Ghi nguyên tử; thất bại thì tệp và bản trong bộ nhớ giữ nguyên. Đang khóa thì trả `AppLocked`.
+     */
+    suspend fun replace(config: ConnectionConfig): AppResult<Unit> {
+        val plain = encode(config)
+        var key: ByteArray? = null
+        // Thế hệ khóa lúc bắt đầu: nếu lock() chen vào thì không được gán lại bản giải mã vào bộ nhớ (CH-03).
+        val startEpoch = epoch.value
+        try {
+            val written = if (!pinMode) {
+                writeRaw(plain)
+            } else {
+                key = sessionKey?.copyOf() ?: return AppResult.Failure(AppError.AppLocked)
+                val current = readRaw().getOrElse { return AppResult.Failure(it) }
+                if (current == null || !codec.isEnvelope(current)) return AppResult.Failure(AppError.SecureStorage)
+                val sealed = codec.resealWithKey(key, current, plain, StorageNames.CONFIG).getOrElse { return AppResult.Failure(it) }
+                writeRaw(sealed)
+            }
+            // Chỉ cập nhật bản trong bộ nhớ nếu app chưa bị khóa giữa chừng (lock() đã xóa cache và khóa phiên).
+            if (written is AppResult.Success) {
+                cache = config
+                // Kiểm tra lại sau khi gán: lock() tăng epoch trước khi xóa, nên nếu nó chen vào thì ta tự xóa lại (cùng cách với adopt).
+                if (epoch.value != startEpoch && pinMode) cache = null
+            }
+            return written
+        } finally {
+            plain.fill(0)
+            key?.fill(0)
+        }
+    }
+
     /** Sau khi tệp đã ở chế độ thiết bị: giữ [config] trong bộ nhớ, bỏ khóa phiên, mở khóa. */
     fun setDeviceMode(config: ConnectionConfig) {
         cache = config

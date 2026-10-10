@@ -27,13 +27,22 @@
         tools:targetApi="33">
         <!--
             VD-19: xoay màn hình không được làm gián đoạn video. Tự xử lý các thay đổi cấu hình liên quan tới xoay/kích thước để
-            Activity không bị tạo lại (Compose tự thích ứng qua LocalConfiguration). Cố ý KHÔNG có `locale` và `uiMode`: đổi ngôn
-            ngữ trong app (ADR-0011, CD-10) và đổi giao diện Sáng/Tối vẫn cần tạo lại Activity.
+            Activity không bị tạo lại (Compose tự thích ứng qua LocalConfiguration).
+
+            CD-10: thêm `locale|layoutDirection` để đổi ngôn ngữ trong app (AppCompatDelegate.setApplicationLocales) KHÔNG tạo lại
+            Activity: AppCompat cập nhật Resources rồi gọi onConfigurationChanged, Compose dựng lại chữ qua LocalConfiguration. Nếu
+            tạo lại thì cửa sổ bị dựng lại từ đầu, màn hình chớp theme hệ thống trước khi theme đã chọn kịp áp dụng (lỗi 2026-10-07).
+            Cố ý KHÔNG có `uiMode`: đổi chế độ tối của hệ thống vẫn tạo lại Activity.
+
+            Toàn app chỉ hiển thị DỌC (`screenOrientation="portrait"`, quyết định 2026-10-07, không liên quan Cài đặt). Riêng màn xem
+            video được xoay ngang bằng nút xoay: PlayerOrientationEffect đặt `requestedOrientation` lúc chạy (ghi đè thuộc tính này)
+            và trả về PORTRAIT khi rời màn. Đừng trả về UNSPECIFIED vì như vậy cũng ghi đè khóa dọc ở đây.
         -->
         <activity
-            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|locale|layoutDirection"
             android:exported="true"
-            android:name=".MainActivity">
+            android:name=".MainActivity"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

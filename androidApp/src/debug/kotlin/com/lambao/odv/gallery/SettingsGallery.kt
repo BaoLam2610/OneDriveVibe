@@ -99,6 +99,8 @@ internal fun LazyListScope.settingsPage() {
         }
     }
 
+    sliderSection()
+
     item { SectionTitle("Hộp thoại xác nhận (mục 4.6)") }
     item { ConfirmLauncher() }
 }

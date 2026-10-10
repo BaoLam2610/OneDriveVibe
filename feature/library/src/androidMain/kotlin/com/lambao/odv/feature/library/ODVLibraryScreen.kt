@@ -13,13 +13,14 @@ import org.koin.compose.viewmodel.koinViewModel
 /**
  * Tab Thư viện (TV-01 → TV-06). [onOpenFile] chạy khi chạm một ô; màn xem làm ở Lát 5–6 nên nơi gọi có thể truyền hàm rỗng.
  * [onShowFolders] là lối tắt sang tab Thư mục ở banner "Đang lập chỉ mục" (TV-06). [tabs] là thanh Tabs Thư mục/Thư viện
- * do màn chứa (Home) dựng.
+ * do màn chứa (Home) dựng. [onOpenSettings] chạy khi bấm bánh răng ở AppBar (Lát 7).
  */
 @Composable
 fun ODVLibraryScreen(
     modifier: Modifier = Modifier,
     onOpenFile: (DriveItem, ViewerContext) -> Unit = { _, _ -> },
     onShowFolders: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     tabs: @Composable () -> Unit = {},
     viewModel: LibraryViewModel = koinViewModel(),
 ) {
@@ -37,6 +38,7 @@ fun ODVLibraryScreen(
         pages = pages,
         onIntent = viewModel::onIntent,
         onShowFolders = onShowFolders,
+        onOpenSettings = onOpenSettings,
         modifier = modifier,
         tabs = tabs,
     )

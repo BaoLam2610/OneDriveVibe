@@ -2,6 +2,7 @@ package com.lambao.odv.feature.browser
 
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.SearchResult
 import com.lambao.odv.core.domain.model.SortOrder
 import com.lambao.odv.core.domain.model.SyncStatus
@@ -38,6 +39,8 @@ data class BrowserState(
     val sync: SyncStatus = SyncStatus(),
     /** Máy không có mạng (DS-05). */
     val isOffline: Boolean = false,
+    /** Loại tệp được bật ở Cài đặt (CD-01, TM-03, DS-03); thay đổi áp dụng ngay cho danh sách và tìm kiếm. */
+    val enabledKinds: Set<MediaKind> = MediaKind.entries.toSet(),
 )
 
 sealed interface BrowserIntent {

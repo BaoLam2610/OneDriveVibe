@@ -15,4 +15,12 @@
     <string name="biometric_enroll_title">Bật mở khóa bằng sinh trắc học</string> <!-- [mới] -->
     <string name="biometric_enroll_subtitle">Xác nhận bằng sinh trắc học của bạn</string> <!-- [mới] -->
     <string name="biometric_use_pin">Dùng mã PIN</string> <!-- [mới] -->
+
+    <!-- Banner secret sắp hết hạn ở Danh sách (CD-06, Q4) -->
+    <plurals name="home_expiry_banner">
+        <item quantity="other">Client Secret hết hạn sau %1$d ngày</item>
+    </plurals>
+    <string name="home_expiry_banner_today">Client Secret hết hạn hôm nay</string> <!-- [mới] -->
+    <string name="home_expiry_banner_expired">Client Secret đã hết hạn</string> <!-- [mới] -->
+    <string name="home_expiry_banner_action">Cập nhật</string>
 </resources>

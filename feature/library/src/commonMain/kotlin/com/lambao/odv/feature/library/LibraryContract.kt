@@ -3,6 +3,7 @@ package com.lambao.odv.feature.library
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
+import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.SyncStatus
 import com.lambao.odv.core.domain.model.ViewerContext
 
@@ -21,7 +22,15 @@ data class LibraryState(
     val sync: SyncStatus = SyncStatus(),
     /** Máy không có mạng (DS-05). */
     val isOffline: Boolean = false,
-)
+    /** Loại tệp được bật ở Cài đặt (CD-01). Thư viện chỉ có ảnh và video; PDF không ảnh hưởng. */
+    val enabledKinds: Set<MediaKind> = MediaKind.entries.toSet(),
+) {
+    /**
+     * Chip lọc Tất cả / Ảnh / Video (TV-03) chỉ có nghĩa khi cả ảnh lẫn video đang bật; chỉ còn một loại thì "Tất cả" trùng với loại
+     * đó nên ẩn cả hàng chip.
+     */
+    val showFilters: Boolean get() = MediaKind.Image in enabledKinds && MediaKind.Video in enabledKinds
+}
 
 sealed interface LibraryIntent {
     /** Chạm chip Tất cả / Ảnh / Video (TV-03). */

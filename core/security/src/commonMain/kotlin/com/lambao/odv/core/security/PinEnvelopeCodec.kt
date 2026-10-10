@@ -50,6 +50,13 @@ interface PinEnvelopeCodec {
 
     /** Mở bằng khóa đã dẫn xuất sẵn (đường sinh trắc học, bỏ qua Argon2id). */
     suspend fun openWithKey(key: ByteArray, envelope: ByteArray, name: String): EnvelopeOpen
+
+    /**
+     * Mã hóa lại [plain] bằng **khóa đã dẫn xuất sẵn** [key], giữ nguyên header (salt, tham số Argon2) của [currentEnvelope] và
+     * chỉ đổi IV (ngẫu nhiên mới). Dùng khi nội dung đổi mà PIN không đổi (CD-04 cập nhật Client Secret): khóa phiên và phần bọc
+     * sinh trắc học (ADR-0014) vẫn mở được phong bì mới. [key] không bị xóa; người gọi tự xóa. Trả về byte phong bì mới.
+     */
+    suspend fun resealWithKey(key: ByteArray, currentEnvelope: ByteArray, plain: ByteArray, name: String): AppResult<ByteArray>
 }
 
 /**

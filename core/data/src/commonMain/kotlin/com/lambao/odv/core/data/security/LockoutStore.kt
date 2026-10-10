@@ -3,7 +3,7 @@ package com.lambao.odv.core.data.security
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.security.BootAwareClock
 import com.lambao.odv.core.security.SecretStore
-import com.lambao.odv.core.data.StorageNames
+import com.lambao.odv.core.security.SecretNames
 import com.lambao.odv.core.domain.model.LockoutPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -46,11 +46,11 @@ internal class LockoutStore(
     /** Hoàn tác [recordAttempt] khi lần thử không phải PIN sai (tệp hỏng): không phạt oan. */
     suspend fun rollback(previous: LockoutRecord) {
         mutex.withLock {
-            if (previous.failures == 0) secrets.delete(StorageNames.LOCKOUT) else save(previous)
+            if (previous.failures == 0) secrets.delete(SecretNames.LOCKOUT) else save(previous)
         }
     }
 
-    suspend fun clear() = mutex.withLock { secrets.delete(StorageNames.LOCKOUT) }
+    suspend fun clear() = mutex.withLock { secrets.delete(SecretNames.LOCKOUT) }
 
     /** Số lần sai liên tiếp hiện tại (KH-06). */
     suspend fun failures(): Int = mutex.withLock { load().failures }
@@ -74,7 +74,7 @@ internal class LockoutStore(
     }
 
     private suspend fun load(): LockoutRecord {
-        val bytes = (secrets.read(StorageNames.LOCKOUT) as? AppResult.Success)?.value ?: return LockoutRecord()
+        val bytes = (secrets.read(SecretNames.LOCKOUT) as? AppResult.Success)?.value ?: return LockoutRecord()
         return try {
             json.decodeFromString(LockoutRecord.serializer(), bytes.decodeToString())
         } catch (e: CancellationException) {
@@ -85,5 +85,5 @@ internal class LockoutStore(
     }
 
     private suspend fun save(record: LockoutRecord): Boolean =
-        secrets.write(StorageNames.LOCKOUT, json.encodeToString(LockoutRecord.serializer(), record).encodeToByteArray()) is AppResult.Success
+        secrets.write(SecretNames.LOCKOUT, json.encodeToString(LockoutRecord.serializer(), record).encodeToByteArray()) is AppResult.Success
 }

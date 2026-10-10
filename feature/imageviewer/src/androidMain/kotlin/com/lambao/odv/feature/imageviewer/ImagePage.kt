@@ -43,10 +43,10 @@ import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVDuration
 import com.lambao.odv.core.designsystem.theme.ODVMediaColors
 import com.lambao.odv.core.designsystem.theme.ODVTheme
+import com.lambao.odv.core.domain.model.CachedFileState
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.thumbnailSource
-import com.lambao.odv.core.domain.model.OriginalImageState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -79,14 +79,14 @@ private sealed interface ImageProbe {
 @Composable
 internal fun ImagePage(
     item: DriveItem,
-    originalOf: (DriveItem) -> Flow<OriginalImageState>,
+    originalOf: (DriveItem) -> Flow<CachedFileState>,
     onTap: () -> Unit,
     onZoomedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val original by remember(item.id, item.cTag) { originalOf(item) }
-        .collectAsStateWithLifecycle(initialValue = OriginalImageState.Downloading(0L, null))
-    val path = (original as? OriginalImageState.Ready)?.path
+        .collectAsStateWithLifecycle(initialValue = CachedFileState.Downloading(0L, null))
+    val path = (original as? CachedFileState.Ready)?.path
     val probe by produceState<ImageProbe?>(initialValue = null, path) {
         value = if (path == null) null else withContext(Dispatchers.IO) { probeImage(path) }
     }
@@ -147,10 +147,10 @@ internal fun ImagePage(
 }
 
 @Composable
-private fun StatusPill(state: OriginalImageState, modifier: Modifier) {
+private fun StatusPill(state: CachedFileState, modifier: Modifier) {
     when (state) {
-        is OriginalImageState.Downloading -> LoadingPill(stringResource(R.string.image_viewer_loading_original), modifier)
-        is OriginalImageState.Failed -> {
+        is CachedFileState.Downloading -> LoadingPill(stringResource(R.string.image_viewer_loading_original), modifier)
+        is CachedFileState.Failed -> {
             val offline = state.error is AppError.Network || state.error is AppError.Timeout
             ODVViewerPill(
                 text = stringResource(if (offline) R.string.image_viewer_offline else R.string.image_viewer_load_failed),
@@ -159,7 +159,7 @@ private fun StatusPill(state: OriginalImageState, modifier: Modifier) {
                 modifier = modifier,
             )
         }
-        is OriginalImageState.Ready -> Unit
+        is CachedFileState.Ready -> Unit
     }
 }
 

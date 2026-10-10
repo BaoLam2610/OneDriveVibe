@@ -38,15 +38,14 @@ import com.lambao.odv.core.designsystem.component.ODVAppBar
 import com.lambao.odv.core.designsystem.component.ODVButton
 import com.lambao.odv.core.designsystem.component.ODVButtonSize
 import com.lambao.odv.core.designsystem.component.ODVButtonStyle
+import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVDialog
 import com.lambao.odv.core.designsystem.component.ODVDialogTone
-import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVRadioRow
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSearchBar
-import com.lambao.odv.core.designsystem.component.ODVSecureMode
 import com.lambao.odv.core.designsystem.component.ODVSwitchRow
 import com.lambao.odv.core.designsystem.component.ODVTab
 import com.lambao.odv.core.designsystem.component.ODVTabs
@@ -534,33 +533,25 @@ private fun DeleteTableDialog(db: String, table: String, onDismiss: () -> Unit, 
 @Composable
 private fun OthersTab(padding: PaddingValues) {
     val context = LocalContext.current
-    val secureMode by DebugSettings.secureMode.collectAsState()
     val maskTraffic by DebugSettings.maskTraffic.collectAsState()
     val thumbnailScale by DebugSettings.thumbnailScalePercent.collectAsState()
     val scope = rememberCoroutineScope()
     var thumbnailCleared by remember { mutableStateOf(false) }
     val actions = DebugActions.items
     LazyColumn(contentPadding = padding) {
-        item { SectionTitle("FLAG_SECURE toàn app") }
-        item {
-            Column(Modifier.padding(horizontal = 16.dp)) {
-                ODVRadioRow(
-                    label = "Theo thiết kế",
-                    selected = secureMode == ODVSecureMode.ByDesign,
-                    onClick = { DebugSettings.setSecureMode(ODVSecureMode.ByDesign) },
-                    description = "Chỉ màn Kết nối, Khóa, nhập PIN, Cài đặt chặn chụp màn hình",
-                )
-                ODVRadioRow(
-                    label = "Luôn bật",
-                    selected = secureMode == ODVSecureMode.AlwaysOn,
-                    onClick = { DebugSettings.setSecureMode(ODVSecureMode.AlwaysOn) },
-                    description = "Mọi màn của app chặn chụp màn hình",
-                )
-                ODVRadioRow(
-                    label = "Luôn tắt",
-                    selected = secureMode == ODVSecureMode.AlwaysOff,
-                    onClick = { DebugSettings.setSecureMode(ODVSecureMode.AlwaysOff) },
-                    description = "Không màn nào chặn, kể cả màn nhạy cảm (để chụp/quay màn hình)",
+        // Công tắc điều khiển đúng cài đặt "Bảo vệ màn hình" của người dùng (ADR-0020), không có trạng thái riêng của Debug.
+        val screenProtectionFlow = DebugHooks.screenProtection
+        val setScreenProtection = DebugHooks.setScreenProtection
+        if (screenProtectionFlow != null && setScreenProtection != null) {
+            item { SectionTitle("FLAG_SECURE") }
+            item {
+                val protection by remember(screenProtectionFlow) { screenProtectionFlow() }.collectAsState(initial = true)
+                ODVSwitchRow(
+                    title = "Bảo vệ màn hình",
+                    checked = protection,
+                    onCheckedChange = { enabled -> scope.launch { setScreenProtection(enabled) } },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    description = "Cùng cài đặt với Cài đặt › Bảo mật. Bật thì mọi màn, kể cả màn Debug, chặn chụp màn hình; tắt để chụp ảnh báo lỗi.",
                 )
             }
         }

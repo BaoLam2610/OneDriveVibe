@@ -8,7 +8,6 @@ import com.lambao.odv.core.data.drive.FolderRepositoryImpl
 import com.lambao.odv.core.data.drive.LibraryRepositoryImpl
 import com.lambao.odv.core.data.drive.ViewerRepositoryImpl
 import com.lambao.odv.core.data.drive.VideoStreamRepositoryImpl
-import com.lambao.odv.core.data.security.DefaultSecuritySettings
 import com.lambao.odv.core.data.security.LockoutStore
 import com.lambao.odv.core.data.security.SecurityRepositoryImpl
 import com.lambao.odv.core.data.sync.SyncCoordinator
@@ -19,7 +18,6 @@ import com.lambao.odv.core.domain.repository.ConnectionRepository
 import com.lambao.odv.core.domain.repository.FolderRepository
 import com.lambao.odv.core.domain.repository.LibraryRepository
 import com.lambao.odv.core.domain.repository.SecurityRepository
-import com.lambao.odv.core.domain.settings.SecuritySettings
 import com.lambao.odv.core.domain.repository.SyncRepository
 import com.lambao.odv.core.domain.repository.VideoStreamRepository
 import com.lambao.odv.core.domain.repository.ViewerRepository
@@ -45,8 +43,7 @@ val dataModule = module {
     singleOf(::ConfigRepositoryImpl) bind ConfigRepository::class
     // Credentials cho GraphApi lấy từ config đã lưu, ở mỗi lời gọi (network chỉ biết interface GraphCredentialsSource).
     singleOf(::ConfigCredentialsSource) bind GraphCredentialsSource::class
-    // Tùy chọn bảo mật của Cài đặt: bản tạm luôn tắt cho tới Lát 9 (thay binding này bằng bản đọc DataStore).
-    singleOf(::DefaultSecuritySettings) bind SecuritySettings::class
+    // Tùy chọn bảo mật của Cài đặt (SecuritySettings): cần DataStore nên được cài ở androidDataModule (cùng tệp DataStore `settings`).
     // BiometricAuthenticator do :androidApp cung cấp (cần Activity để hiện BiometricPrompt).
     singleOf(::SecurityRepositoryImpl) bind SecurityRepository::class
     // Dữ liệu drive chia theo việc (R5a): kết nối thử, duyệt thư mục, tab Thư viện, các màn xem.

@@ -28,7 +28,7 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 - **Bảo mật config** (ADR-0008): AES-GCM, khóa dẫn xuất từ PIN bằng Argon2id + Android Keystore. **Không lưu PIN, không lưu hash PIN.** Access token chỉ giữ trong bộ nhớ.
 - **Không viết test tự động** (ADR-0009): không unit test, UI test, coverage. Đừng thêm junit, kotlin-test, MockK, Turbine, Kover.
 - **Đa ngôn ngữ VI + EN** (ADR-0011): chuỗi trong Android `res/values` (VI, mặc định) và `res/values-en`. `domain` và `data` không chứa chuỗi hiển thị; lỗi là kiểu có cấu trúc (`AppError` → `UiError`).
-- **Công cụ debug** (ADR-0012, 0013): module `:tools:debug` chỉ có trong bản debug (nút bọ nổi luôn nằm trên cùng → màn Debug: log API có màn chi tiết + tìm kiếm + sao chép, log local, lưu trữ, tùy chọn FLAG_SECURE toàn app). Log local dùng Kermit; log API đi qua `HttpTrafficRecorder`, hiển thị **đầy đủ không che** (có công tắc che), chỉ trong bộ nhớ, không dùng Ktor `Logging`. Release không ghi log nào và không có recorder.
+- **Công cụ debug** (ADR-0012, 0013, 0020): module `:tools:debug` chỉ có trong bản debug (nút bọ nổi luôn nằm trên cùng → màn Debug: log API có màn chi tiết + tìm kiếm + sao chép, log local, lưu trữ; FLAG_SECURE theo cài đặt Bảo vệ màn hình, ADR-0020). Log local dùng Kermit; log API đi qua `HttpTrafficRecorder`, hiển thị **đầy đủ không che** (có công tắc che), chỉ trong bộ nhớ, không dùng Ktor `Logging`. Release không ghi log nào và không có recorder.
 
 ## Cấu trúc module (ADR-0001, ADR-0010)
 
@@ -59,13 +59,14 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 ## Quy tắc bắt buộc
 
 - **Bí mật:** không ghi Client Secret, access token, header `Authorization` vào log (CH-06). Ktor Logging phải che bằng `sanitizeHeader`, không log body request lấy token.
-- **Riêng tư:** màn Kết nối, Khóa, nhập PIN, Cài đặt đặt `FLAG_SECURE` và ẩn nội dung ở danh sách app gần đây.
+- **Riêng tư:** màn Kết nối, Khóa, Thiết lập bảo mật, nhập PIN luôn đặt `FLAG_SECURE` và ẩn nội dung ở danh sách app gần đây; màn Cài đặt chỉ chặn khi bật "Bảo vệ màn hình" (ADR-0022).
 - **Chỉ đọc:** app không xóa, đổi tên hay upload tệp trên OneDrive. Quyền `Files.Read.All`.
-- **UI:** màu lấy từ token, không viết hex trong màn hình. Chỉ dùng icon bộ OneDriveVibe (không Material Icons, không emoji), font Be Vietnam Pro và JetBrains Mono. Vùng chạm ≥ 48dp. Màn xem video/ảnh/PDF luôn nền đen. Số và ngày theo vi-VN.
+- **UI:** màu lấy từ token, không viết hex trong màn hình. Chỉ dùng icon bộ OneDriveVibe (không Material Icons, không emoji), font Be Vietnam Pro và JetBrains Mono. Vùng chạm ≥ 48dp. Màn xem video/ảnh/PDF luôn nền đen. Số, ngày, giờ, dung lượng theo ngôn ngữ đang dùng (CD-10, `odvLocale()`; bản tiếng Việt ra `12.480`, `4,9 MB`, `23/05/2026`), không cố định vi-VN.
 - **Dữ liệu mẫu:** tài liệu trong `.claude/docs` có UPN, tenant và GUID thật của người dùng. Không đưa thêm giá trị thật vào code, log hay commit message.
 
 ## Cách làm việc
 
+- **Thêm hoặc đổi giá trị theo yêu cầu của người dùng thì sửa luôn tài liệu liên quan:** `dac-ta-nghiep-vu.md` nếu ở đó có nêu (bảng Cài đặt mục 3.8, các quy tắc CD/VD/CH...), `thiet-ke-ui.md` nếu là giao diện, `tech-stack.md` nếu là quy ước kỹ thuật. Rà lại bằng grep các chỗ nhắc cùng giá trị để không còn câu mâu thuẫn.
 - **Gradle và build do người dùng tự chạy thủ công.** Không chạy `./gradlew` hay lệnh build. Chỉ sửa file rồi báo lại.
 - Kiểm thử là thủ công trên thiết bị (ADR-0009). Các phần dễ hỏng âm thầm cần dặn người dùng kiểm tra tay: làm mới token, khóa PIN và mã hóa config, tua video, PDF nhiều trang.
 - Khi bỏ hoặc đổi thứ gì so với template/ADR, ghi comment trong code nói rõ lý do và ADR liên quan.

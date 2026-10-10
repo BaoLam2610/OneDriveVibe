@@ -2,6 +2,7 @@ package com.lambao.odv.core.domain.usecase.library
 
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
+import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.repository.LibraryRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -9,5 +10,6 @@ import kotlinx.coroutines.flow.Flow
 class ObserveLibraryDaysUseCase(
     private val library: LibraryRepository,
 ) {
-    operator fun invoke(filter: LibraryFilter, utcOffsetMs: Long): Flow<List<LibraryDay>> = library.libraryDays(filter, utcOffsetMs)
+    operator fun invoke(filter: LibraryFilter, enabledKinds: Set<MediaKind>, utcOffsetMs: Long): Flow<List<LibraryDay>> =
+        library.libraryDays(filter, enabledKinds, utcOffsetMs)
 }

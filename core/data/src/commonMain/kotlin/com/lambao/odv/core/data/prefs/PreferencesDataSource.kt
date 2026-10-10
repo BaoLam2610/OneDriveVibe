@@ -40,6 +40,9 @@ internal class PreferencesDataSource(
     suspend fun snapshot(): Map<String, String> =
         data.first().asMap().entries.sortedBy { it.key.name }.associate { it.key.name to it.value.toString() }
 
+    /** Xóa mọi tùy chọn của tệp này (ngắt kết nối, CD-05). Tệp còn lại nhưng rỗng. */
+    suspend fun clear() = edit { it.clear() }
+
     suspend fun edit(block: (MutablePreferences) -> Unit) {
         try {
             store.edit(block)

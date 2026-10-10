@@ -6,38 +6,38 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import com.lambao.odv.core.designsystem.findActivity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.WeakHashMap
-
-/** Chế độ FLAG_SECURE toàn app. Chỉ công cụ debug đổi khỏi [ByDesign] (ADR-0012). */
-enum class ODVSecureMode {
-    /** Theo thiết kế: chỉ các màn gọi [ODVSecureWindow] (Kết nối, Khóa, nhập PIN, Cài đặt) chặn chụp màn hình. */
-    ByDesign,
-
-    /** Mọi Activity của app chặn chụp màn hình. Dialog/BottomSheet mở sau kế thừa cờ của Activity (SecureFlagPolicy.Inherit). */
-    AlwaysOn,
-
-    /** Không cửa sổ nào chặn, kể cả màn nhạy cảm. Chỉ để chụp/quay màn hình khi phát triển. */
-    AlwaysOff,
-}
 
 /**
  * Nơi quyết định FLAG_SECURE của từng Window: đếm số màn đang yêu cầu chặn chụp màn hình trên cùng một Window. Khi chuyển
  * màn có animation, màn mới vào composition trước khi màn cũ rời đi; nếu không đếm thì màn cũ rời đi sẽ gỡ cờ đúng lúc
- * màn bảo mật mới đang hiện. Kết quả cuối cùng còn phụ thuộc [mode]. Chỉ gọi trên luồng chính.
+ * màn bảo mật mới đang hiện. Chỉ gọi trên luồng chính.
  */
 object ODVSecureWindowPolicy {
     private val counts = WeakHashMap<Window, Int>()
 
-    var mode: ODVSecureMode = ODVSecureMode.ByDesign
-        private set
+    private val _appWide = MutableStateFlow(false)
 
-    /** Đổi chế độ và áp dụng ngay cho mọi Window đã biết. */
-    fun setMode(newMode: ODVSecureMode) {
-        mode = newMode
+    /**
+     * "Bảo vệ màn hình" đang áp dụng toàn app (Cài đặt › Bảo mật, hoặc PIN bật trên Android 12 trở xuống, ADR-0014). Là trạng thái của
+     * cả process chứ không của một màn, nên Window nào được [track] sau cũng nhận (kể cả `DebugActivity`).
+     */
+    val appWide: StateFlow<Boolean> = _appWide.asStateFlow()
+
+    /** Đặt "Bảo vệ màn hình" toàn app và áp dụng ngay cho mọi Window đã biết. Gọi trên luồng chính. */
+    fun setAppWide(enabled: Boolean) {
+        if (_appWide.value == enabled) return
+        _appWide.value = enabled
         counts.keys.toList().forEach(::applyFlag)
     }
 
-    /** Đăng ký một Window để chế độ [ODVSecureMode.AlwaysOn]/[ODVSecureMode.AlwaysOff] áp dụng cả khi nó không có màn nào yêu cầu. */
+    /**
+     * Đăng ký một Window để [appWide] áp dụng cả khi nó không có màn nào
+     * yêu cầu. `MainActivity` gọi ở mọi bản dựng; công cụ debug gọi cho mọi Activity còn lại (bản debug).
+     */
     fun track(window: Window) {
         if (window !in counts) counts[window] = 0
         applyFlag(window)
@@ -55,11 +55,8 @@ object ODVSecureWindowPolicy {
     }
 
     private fun applyFlag(window: Window) {
-        val secure = when (mode) {
-            ODVSecureMode.ByDesign -> (counts[window] ?: 0) > 0
-            ODVSecureMode.AlwaysOn -> true
-            ODVSecureMode.AlwaysOff -> false
-        }
+        // Một nguồn sự thật: cài đặt "Bảo vệ màn hình" của người dùng (appWide), hoặc có màn nhạy cảm đang yêu cầu. Công cụ debug không ghi đè.
+        val secure = _appWide.value || (counts[window] ?: 0) > 0
         if (secure) {
             window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         } else {

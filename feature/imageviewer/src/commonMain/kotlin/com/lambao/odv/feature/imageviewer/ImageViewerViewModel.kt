@@ -3,11 +3,11 @@ package com.lambao.odv.feature.imageviewer
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.domain.model.CachedFileRef
+import com.lambao.odv.core.domain.model.CachedFileState
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.ViewerContext
-import com.lambao.odv.core.domain.model.OriginalImageRef
-import com.lambao.odv.core.domain.model.OriginalImageState
 import com.lambao.odv.core.domain.usecase.folder.GetFolderPathUseCase
 import com.lambao.odv.core.domain.usecase.viewer.GetImageInfoUseCase
 import com.lambao.odv.core.domain.usecase.viewer.ObserveViewerItemsUseCase
@@ -44,7 +44,7 @@ class ImageViewerViewModel(
      * Ảnh gốc của [item] (AN-01). Không phải Intent vì là luồng dữ liệu của từng trang chứ không phải hành động của người
      * dùng; tải gắn với vòng đời của trang nên hủy khi vuốt đi hoặc app xuống nền (phần đã tải được giữ, BN-03).
      */
-    fun originalOf(item: DriveItem): Flow<OriginalImageState> = openOriginalImage(OriginalImageRef(item.id, item.cTag))
+    fun originalOf(item: DriveItem): Flow<CachedFileState> = openOriginalImage(CachedFileRef(item.id, item.cTag))
 
     override fun onIntent(intent: ImageViewerIntent) {
         when (intent) {

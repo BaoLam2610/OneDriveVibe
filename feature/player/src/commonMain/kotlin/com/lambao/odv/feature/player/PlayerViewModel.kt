@@ -4,14 +4,17 @@ import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.PlayMode
+import com.lambao.odv.core.domain.model.VideoFit
 import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.platform.NetworkMonitor
 import com.lambao.odv.core.domain.settings.PlayerPreferences
+import com.lambao.odv.core.domain.settings.SettingsPreferences
 import com.lambao.odv.core.domain.usecase.folder.GetFolderPathUseCase
 import com.lambao.odv.core.domain.usecase.viewer.ObserveViewerItemsUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -26,6 +29,7 @@ class PlayerViewModel(
     private val getFolderPath: GetFolderPathUseCase,
     private val network: NetworkMonitor,
     private val prefs: PlayerPreferences,
+    private val settings: SettingsPreferences,
 ) : BaseMviViewModel<PlayerState, PlayerIntent, PlayerEffect>(PlayerState(currentId = startItemId)) {
 
     private var closed = false
@@ -33,6 +37,12 @@ class PlayerViewModel(
 
     /** Video được chạm đã xuất hiện trong danh sách phát chưa. Trước đó không chọn video thay thế (xem [observeVideos]). */
     private var startFound = false
+
+    /** Khung hình cố định từ Cài đặt; null là "nhớ lần gần nhất" (VD-06). Chỉ khi null thì nút Khung hình mới ghi nhớ lựa chọn. */
+    private var fixedFit: VideoFit? = null
+
+    /** Người xem đã tự chọn tốc độ trong màn này: không để tốc độ mặc định (đọc bất đồng bộ) ghi đè lên. */
+    private var speedTouched = false
 
     init {
         observeVideos()
@@ -49,7 +59,10 @@ class PlayerViewModel(
             is PlayerIntent.VideoFailed -> skipFailed(intent.itemId)
             PlayerIntent.ClearFailed -> setState { if (failedIds.isEmpty()) this else copy(failedIds = emptySet()) }
             is PlayerIntent.SavePosition -> setState { copy(resumePositionMs = intent.positionMs, autoPlay = intent.playing) }
-            is PlayerIntent.SetSpeed -> setState { copy(speed = intent.speed) }
+            is PlayerIntent.SetSpeed -> {
+                speedTouched = true
+                setState { copy(speed = intent.speed) }
+            }
             PlayerIntent.CyclePlayMode -> cyclePlayMode()
             PlayerIntent.CycleVideoFit -> cycleVideoFit()
             PlayerIntent.ShowInfo -> showInfo()
@@ -114,7 +127,7 @@ class PlayerViewModel(
         val next = currentState.videoFit.next()
         playerLog.i { "[VM] khung hình → $next" }
         setState { copy(videoFit = next) }
-        viewModelScope.launch { prefs.setVideoFit(next) }
+        if (fixedFit == null) viewModelScope.launch { prefs.setVideoFit(next) }
     }
 
     /** Mở bảng thông tin (VD-17): dòng từ Room hiện ngay, đường dẫn thư mục nạp thêm. Không gọi API nên dùng được khi offline. */
@@ -192,6 +205,24 @@ class PlayerViewModel(
 
     private fun observePreferences() {
         viewModelScope.launch { prefs.playMode.collect { mode -> setState { copy(playMode = mode) } } }
-        viewModelScope.launch { prefs.videoFit.collect { fit -> setState { copy(videoFit = fit) } } }
+        viewModelScope.launch {
+            fixedFit = settings.defaultVideoFit.first()
+            val fixed = fixedFit
+            if (fixed != null) {
+                setState { copy(videoFit = fixed) }
+            } else {
+                prefs.videoFit.collect { fit -> setState { copy(videoFit = fit) } }
+            }
+        }
+        // Tốc độ mặc định áp dụng khi mở video (VD-05), trừ khi người xem đã chọn tốc độ khác trước khi đọc xong.
+        viewModelScope.launch {
+            val speed = settings.defaultSpeed.first()
+            if (!speedTouched) setState { copy(speed = speed) }
+        }
+        viewModelScope.launch { settings.seekStepSeconds.collect { seconds -> setState { copy(seekStepSeconds = seconds) } } }
+        viewModelScope.launch {
+            val landscape = settings.openVideoLandscape.first()
+            setState { copy(openInLandscape = landscape) }
+        }
     }
 }

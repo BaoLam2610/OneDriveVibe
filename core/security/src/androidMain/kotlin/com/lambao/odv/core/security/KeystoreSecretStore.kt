@@ -81,7 +81,8 @@ internal class KeystoreSecretStore(
             mutex.withLock {
                 // Tệp trước, khóa sau (xem SecretStore.wipeAll). Lỗi xóa khóa bị bỏ qua: không còn tệp thì khóa vô dụng.
                 // `lock_state` xóa sau cùng: nếu bị dừng giữa chừng thì config còn mà bộ đếm sai không bị về 0 trước (KH-06).
-                directory.listFiles()?.sortedBy { it.name == KeystoreConstants.LAST_WIPED_FILE }?.forEach { it.delete() }
+                val lockoutFile = fileFor(SecretNames.LOCKOUT).name
+                directory.listFiles()?.sortedBy { it.name == lockoutFile }?.forEach { it.delete() }
                 try {
                     val keyStore = KeyStore.getInstance(KeystoreConstants.ANDROID_KEYSTORE).apply { load(null) }
                     for (alias in listOf(KeystoreConstants.KEY_ALIAS, KeystoreConstants.BIO_KEY_ALIAS)) {
@@ -109,7 +110,7 @@ internal class KeystoreSecretStore(
 
     private fun fileFor(name: String): File {
         require(KeystoreConstants.NAME_PATTERN.matches(name)) { "Tên bí mật không hợp lệ" }
-        return File(directory, "$name.bin")
+        return File(directory, "$name${KeystoreConstants.FILE_EXTENSION}")
     }
 
     private fun key(createIfMissing: Boolean): SecretKey? {

@@ -5,8 +5,10 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.domain.model.DriveItem
+import com.lambao.odv.core.domain.model.LibraryFilter
 import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.platform.UtcOffsetProvider
+import com.lambao.odv.core.domain.settings.SettingsPreferences
 import com.lambao.odv.core.domain.usecase.library.ObserveLibraryDaysUseCase
 import com.lambao.odv.core.domain.usecase.library.ObserveLibraryPagesUseCase
 import com.lambao.odv.core.domain.usecase.sync.ObserveOnlineAndSyncUseCase
@@ -16,6 +18,7 @@ import com.lambao.odv.core.domain.usecase.sync.SyncIfStaleUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -37,10 +40,14 @@ class LibraryViewModel(
     private val observeOnlineAndSync: ObserveOnlineAndSyncUseCase,
     private val syncIfStale: SyncIfStaleUseCase,
     private val refreshSync: RefreshSyncUseCase,
+    private val settings: SettingsPreferences,
     utcOffset: UtcOffsetProvider,
 ) : BaseMviViewModel<LibraryState, LibraryIntent, LibraryEffect>(LibraryState(utcOffsetMs = utcOffset.currentOffsetMs())) {
 
     private val filters = state.map { it.filter }.distinctUntilChanged()
+
+    /** Loại tệp được bật (CD-01); đổi ở Cài đặt thì lưới nạp lại ngay. */
+    private val kinds = settings.enabledKinds.distinctUntilChanged()
 
     /**
      * Ảnh và video theo bộ lọc hiện tại, mới nhất trước (TV-02). `cachedIn` giữ các trang đã nạp qua xoay màn hình và
@@ -48,12 +55,15 @@ class LibraryViewModel(
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     val pages: Flow<PagingData<DriveItem>> =
-        filters.flatMapLatest { observeLibraryPages(it) }.cachedIn(viewModelScope)
+        combine(filters, kinds) { filter, enabled -> filter to enabled }
+            .flatMapLatest { (filter, enabled) -> observeLibraryPages(filter, enabled) }
+            .cachedIn(viewModelScope)
 
     init {
         observeSync()
         observeNetwork()
         observeDays()
+        observeEnabledKinds()
         syncIfStale()
     }
 
@@ -72,14 +82,26 @@ class LibraryViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeDays() {
         viewModelScope.launch {
-            filters
-                .flatMapLatest { observeLibraryDays(it, currentState.utcOffsetMs) }
+            combine(filters, kinds) { filter, enabled -> filter to enabled }
+                .flatMapLatest { (filter, enabled) -> observeLibraryDays(filter, enabled, currentState.utcOffsetMs) }
                 .conflate()
                 .collect { days ->
                     setState { copy(days = days, daysLoaded = true) }
                     // Với conflate, thời gian chờ ở đây gom các lần phát dồn khi đang quét thành một.
                     delay(LibraryConstants.DAYS_MIN_INTERVAL_MS)
                 }
+        }
+    }
+
+    private fun observeEnabledKinds() {
+        viewModelScope.launch {
+            kinds.collect { enabled ->
+                // Bộ lọc đang chọn mà loại của nó vừa bị tắt hết (vd. đang ở "Ảnh" rồi tắt Ảnh) thì về "Tất cả".
+                setState {
+                    val valid = filter.kinds.any { it in enabled }
+                    copy(enabledKinds = enabled, filter = if (valid) filter else LibraryFilter.All, daysLoaded = if (valid) daysLoaded else false)
+                }
+            }
         }
     }
 

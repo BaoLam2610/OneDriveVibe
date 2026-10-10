@@ -36,7 +36,7 @@ Mở app
   └─ Có config + bảo mật TẮT ─────────────────────────────────────────────► [Danh sách]
 
 [Danh sách] (Thư mục / Thư viện)
-  ├─ chọn video ─► [Xem video]  (màn riêng, luôn vào ở hướng dọc)
+  ├─ chọn video ─► [Xem video]  (màn riêng, mặc định vào ở hướng dọc; chọn Ngang ở Cài đặt › Video thì vào ngang)
   ├─ chọn ảnh ───► [Xem ảnh]
   ├─ chọn PDF ───► [Xem PDF]
   └─ biểu tượng ⚙ ─► [Cài đặt]
@@ -131,7 +131,7 @@ Có 2 tab chế độ xem: **Thư mục** và **Thư viện**. App nhớ tab dù
 - **TM-01**: Duyệt theo cây thư mục OneDrive, bắt đầu từ thư mục gốc; thanh breadcrumb cho phép quay lại cấp bất kỳ; nút Back quay lên một cấp.
 - **TM-02**: Thư mục luôn hiển thị trước, sau đó đến tệp.
 - **TM-03**: Chỉ hiển thị tệp hỗ trợ thuộc loại tệp được bật. Tệp không hỗ trợ ẩn đi (hoặc hiện mờ, không mở được, nếu bật tùy chọn trong Cài đặt).
-- **TM-04**: Tùy chọn "Ẩn thư mục không có tệp phù hợp" (xét cả thư mục con) chỉ áp dụng sau khi đồng bộ lần đầu hoàn tất.
+- **TM-04**: ~~Tùy chọn "Ẩn thư mục không có tệp phù hợp" (xét cả thư mục con) chỉ áp dụng sau khi đồng bộ lần đầu hoàn tất.~~ **Không làm** (chốt 2026-10-07: tốn công, không cần thiết); thư mục luôn hiện đủ.
 - **TM-05**: Sắp xếp theo Tên / Ngày sửa / Dung lượng, tăng hoặc giảm; nhớ lựa chọn.
 - **TM-06**: Chuyển đổi hiển thị dạng lưới / danh sách.
 - **TM-07**: Trong khi đồng bộ lần đầu chưa xong, tab Thư mục vẫn duyệt được bằng cách gọi trực tiếp API liệt kê thư mục.
@@ -140,7 +140,7 @@ Có 2 tab chế độ xem: **Thư mục** và **Thư viện**. App nhớ tab dù
 
 - **TV-01**: Hiển thị toàn bộ **ảnh và video** trong drive (mọi thư mục), dạng lưới, nhóm theo ngày, mới nhất ở trên, có tiêu đề nhóm theo ngày/tháng (định dạng theo ngôn ngữ đang dùng, CD-10).
 - **TV-02**: Ngày dùng để xếp: ngày chụp (`photo.takenDateTime`) nếu có; nếu không có thì ngày tạo tệp gốc (`fileSystemInfo.createdDateTime`); cuối cùng là ngày tải lên OneDrive (`createdDateTime`).
-- **TV-03**: Chip lọc nhanh: Tất cả / Ảnh / Video (chỉ hiện các loại đang được bật trong Cài đặt).
+- **TV-03**: Chip lọc nhanh: Tất cả / Ảnh / Video. Hàng chip chỉ hiện khi **cả Ảnh và Video** đang bật trong Cài đặt (chỉ còn một loại thì không cần lọc). Bộ lọc đang chọn mà bị tắt ở Cài đặt thì tự về "Tất cả".
 - **TV-04**: Thanh cuộn nhanh có nhãn tháng/năm để nhảy nhanh trong thư viện lớn.
 - **TV-05**: PDF **không** xuất hiện trong Thư viện; PDF xem qua tab Thư mục và mục "Đọc tiếp".
 - **TV-06**: Khi đồng bộ lần đầu chưa xong: hiện trạng thái "Đang lập chỉ mục, đã quét N mục" và nội dung đã quét được đến thời điểm đó, kèm lối tắt sang tab Thư mục.
@@ -150,7 +150,7 @@ Có 2 tab chế độ xem: **Thư mục** và **Thư viện**. App nhớ tab dù
 - **DS-01**: Mỗi tệp hiển thị thumbnail, tên, dung lượng. Video có nhãn thời lượng; tệp đang xem/đọc dở có thanh tiến độ nhỏ.
 - **DS-02**: Dải "Xem tiếp / Đọc tiếp" ở đầu màn: tối đa 10 video và PDF xem dở gần nhất. Bấm vào mở đúng vị trí đã dừng. Có thể xóa từng mục khỏi dải.
 - **DS-03**: Tìm kiếm theo tên tệp/thư mục trên dữ liệu đã đồng bộ (không gọi API, dùng được khi offline), chỉ trả về loại tệp được bật.
-- **DS-04**: Kéo xuống để đồng bộ thay đổi mới nhất. App cũng tự đồng bộ khi mở (sau khi mở khóa) nếu lần đồng bộ trước đã quá 15 phút.
+- **DS-04**: Kéo xuống để đồng bộ thay đổi mới nhất. App cũng tự đồng bộ khi mở (sau khi mở khóa) nếu lần đồng bộ trước đã quá 15 phút. Quy tắc này cũng áp dụng khi **quay lại app từ nền** (kể cả ở chế độ thiết bị, không PIN, khi tiến trình app còn sống nhiều giờ ở nền).
 - **DS-05**: Không có mạng: vẫn hiển thị dữ liệu đã đồng bộ, có thanh báo "Đang offline"; tệp đã có trong cache vẫn mở được, tệp chưa có thì báo cần kết nối mạng.
 - **DS-06**: Tệp đã bị xóa trên OneDrive (phát hiện qua đồng bộ) bị gỡ khỏi danh sách, lịch sử xem và cache.
 
@@ -170,7 +170,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
   2. **Cắt đầy**: giữ tỉ lệ, phóng to cho đầy màn hình, phần thừa bị cắt.
   3. **Kéo giãn**: kéo cho đầy màn hình, hình có thể bị méo.
 
-  Nhớ chế độ dùng gần nhất cho các lần xem sau (Cài đặt có mục "Khung hình mặc định" để đặt lại).
+  Nhớ chế độ dùng gần nhất cho các lần xem sau (Cài đặt có mục "Khung hình mặc định" để đặt lại). Nếu Cài đặt đang chọn một khung hình cố định thì video mở theo khung đó và việc xoay vòng trong lúc xem **không** được ghi nhớ.
 - **VD-07**: Nút **xoay màn hình** trên thanh điều khiển, bấm để chuyển qua lại **Dọc ↔ Ngang**. Hướng màn hình chỉ đổi bằng nút này, **không** theo cảm biến xoay của máy. **Không có nút toàn màn hình riêng** vì đây đã là màn riêng: ở hướng ngang, thanh trạng thái và thanh điều hướng của hệ thống tự ẩn (vuốt từ cạnh để hiện tạm thời).
 - **VD-08**: Nút khóa thao tác: chặn mọi chạm cho tới khi mở khóa (tránh chạm nhầm).
 - **VD-09**: Giữ màn hình luôn sáng khi đang phát.
@@ -192,7 +192,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 
   Chọn thủ công Video trước/sau (VD-10) luôn chuyển video, không phụ thuộc chế độ.
 - **VD-14**: Link stream hết hạn giữa chừng (khoảng 1 giờ): app tự lấy link mới và phát tiếp ở đúng vị trí, người dùng không phải thao tác.
-- **VD-15**: Định dạng/codec không phát được: báo *"Thiết bị không hỗ trợ phát định dạng này"*, không để màn hình đen. Ở chế độ Tự phát tiếp hoặc Lặp danh sách, video lỗi bị bỏ qua và chuyển sang video sau (nếu cả danh sách đều lỗi thì dừng, tránh lặp vô hạn).
+- **VD-15**: Định dạng/codec không phát được: báo *"Thiết bị không hỗ trợ phát định dạng này"*, không để màn hình đen. Ở chế độ Tự phát tiếp hoặc Lặp danh sách, video lỗi **không nhảy ngay**: hiện thẻ lỗi kèm đếm ngược 5 giây và nút Hủy, hết đếm ngược thì bỏ qua và chuyển sang video sau (nếu cả danh sách đều lỗi thì dừng, tránh lặp vô hạn). Lỗi chỉ gắn với đúng video bị lỗi, không làm video kế tiếp bị bỏ qua oan.
 - **VD-16**: Mất mạng khi đang phát: phát hết phần đã buffer, sau đó tạm dừng và báo lỗi mạng; có mạng lại thì cho phép tiếp tục. Không tự chuyển video khi đang mất mạng.
 - **VD-17** (thông tin tệp): nút Thông tin (ⓘ) trên thanh điều khiển mở bảng trượt từ dưới lên (ở hướng ngang hiện dạng bảng bên phải), video **tạm dừng** trong lúc xem bảng. Dữ liệu lấy từ CSDL trên máy, không gọi API, dùng được khi offline. Gồm:
 
@@ -211,7 +211,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
   Trường nào không có dữ liệu thì ẩn dòng đó. Không dùng `photo.alternateTakenDateTime` làm ngày quay vì giá trị này có thể chỉ trùng ngày tải lên. OneDrive không có khái niệm "ngày đăng", nên app dùng ngày tải lên.
 - **VD-18** (zoom tự do): dùng hai ngón tay để zoom từ 1x đến 4x; khi đang zoom lớn hơn 1x thì một ngón kéo để di chuyển video, và hiện nút "Đặt lại zoom". Chạm đúp vẫn là tua (VD-03), không dùng để zoom. Zoom được đặt lại về 1x khi chuyển sang video khác hoặc khi đổi hướng màn hình.
 - **VD-19** (hướng màn hình):
-  - Mở video từ Danh sách luôn vào ở hướng **dọc**, bất kể tỉ lệ video hay hướng của lần xem trước (không nhớ hướng).
+  - Mở video từ Danh sách vào ở hướng theo Cài đặt › Video › "Hướng màn hình khi mở video" (mặc định **dọc**), bất kể tỉ lệ video hay hướng của lần xem trước (không nhớ hướng).
   - Chuyển video trước/sau hoặc tự phát video kế tiếp thì **giữ hướng hiện tại**.
   - Bấm Back để thoát màn Xem video (một lần bấm, kể cả khi đang ở hướng ngang), màn hình trở về hướng dọc.
   - Đổi hướng **không làm gián đoạn phát**: không tải lại video, không mất vị trí, giữ nguyên tốc độ, khung hình (VD-06) và trạng thái phát/tạm dừng.
@@ -243,24 +243,26 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 | Nhóm | Mục | Giá trị / mặc định |
 |---|---|---|
 | Hiển thị | Loại tệp hiển thị | Ảnh ✓, Video ✓, PDF ✓ (phải bật ít nhất 1 loại) |
-| | Ẩn thư mục không có tệp phù hợp | Tắt |
-| | Hiện tệp không hỗ trợ (dạng mờ) | Tắt |
+| | ~~Ẩn thư mục không có tệp phù hợp~~ | Không làm (TM-04, chốt 2026-10-07) |
+| | ~~Hiện tệp không hỗ trợ (dạng mờ)~~ | Không làm (chốt 2026-10-07, cùng lý do TM-04: tốn công, không cần thiết) |
 | | Giao diện | Theo hệ thống / Sáng / Tối |
 | | Ngôn ngữ | Theo hệ thống / Tiếng Việt / English (mặc định: Theo hệ thống) |
 | Bảo mật | Bảo vệ ứng dụng | Bật/Tắt. Mặc định **Tắt** cho tới khi người dùng thiết lập PIN (ở hộp thoại KN-13 hoặc tại đây) |
 | | Đổi mã PIN | Khi đang bật |
 | | Mở khóa bằng sinh trắc học | Khi đang bật |
-| | Tự khóa khi rời app | Ngay lập tức / 1 / 5 / 15 phút (mặc định 1 phút) |
+| | Bảo vệ màn hình | Bật/Tắt (mặc định Tắt): bật thì **mọi màn** của app chặn chụp và quay màn hình, ẩn nội dung ở danh sách app gần đây (FLAG_SECURE toàn app). Không phụ thuộc có bật PIN hay không. Thêm 2026-10-07 |
+| | Tự khóa khi rời app | Ngay lập tức / 10 giây / 30 giây / 1 / 5 / 15 phút (mặc định 1 phút; 10 giây và 30 giây thêm 2026-10-07) |
 | | Xóa dữ liệu khi nhập sai quá nhiều (10 lần) | Tắt; chỉ hiện khi đang bật bảo mật |
 | Video | Bước tua khi chạm đúp | 5 / 10 / 15 giây (mặc định 10) |
-| | Tốc độ mặc định | 1x |
+| | Tốc độ mặc định | 0.25x / 0.5x / 0.75x / 1x / 1.25x / 1.5x / 2x (mặc định 1x); áp dụng khi mở video, người xem vẫn đổi được trong lúc xem |
 | | Khung hình mặc định | Vừa khung / Cắt đầy / Kéo giãn (mặc định: nhớ lựa chọn gần nhất) |
 | | Hướng màn hình khi mở video | Dọc / Ngang (mặc định Dọc) |
 | | Chế độ phát | Không lặp / Tự phát tiếp / Lặp một video / Lặp danh sách (mặc định Tự phát tiếp). Cùng giá trị với nút Chế độ phát (VD-20) |
 | | Nhớ vị trí xem | Bật |
 | PDF | Kiểu đọc | Cuộn dọc / Lật trang ngang |
 | Bộ nhớ đệm | Dung lượng đang dùng | Hiển thị theo loại (thumbnail, ảnh, video, PDF) |
-| | Giới hạn tối đa | 1 / 2 / 5 / 10 GB (mặc định 2 GB) |
+| | Giới hạn tối đa | Tùy chỉnh từ 1 đến 10 GB (mặc định 2 GB); chốt 2026-10-07, thay cho 4 mốc 1/2/5/10 |
+| | Tỉ lệ chia theo loại | Thumbnail / Ảnh / Video / PDF: mỗi mốc 0 đến 100%, tổng luôn 100% (chỉnh một mốc thì phần còn lại tự tính lại). Mặc định 10% / 30% / 45% / 15%. Mỗi loại có trần riêng = giới hạn tối đa × tỉ lệ, dọn tệp lâu không dùng nhất trước. Chốt 2026-10-07 |
 | | Xóa bộ nhớ đệm | Có xác nhận |
 | Kết nối | Thông tin | UPN, Tenant ID và Client ID (che bớt, vd. `a1b2••••9f0e`), thời điểm đồng bộ gần nhất. Loại tài khoản: OneDrive for Business |
 | | Cập nhật Client Secret | |
@@ -271,13 +273,15 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 
 - **CD-01** (loại tệp): Thay đổi áp dụng ngay cho Thư mục, Thư viện, tìm kiếm và dải "Xem tiếp / Đọc tiếp". Tắt một loại **không** xóa lịch sử xem hay cache của loại đó; bật lại thì hiện lại như cũ. Không cho tắt cả 3 loại.
 - **CD-02** (bật bảo mật): đặt mã PIN 6 số (nhập 2 lần, áp dụng BM-05 đến BM-07), hỏi bật sinh trắc học, mã hóa lại config.
-- **CD-03** (tắt bảo mật): **bắt buộc nhập mã PIN hiện tại**, hiện cảnh báo như BM-03, mã hóa lại config ở chế độ thiết bị.
-- **CD-04** (cập nhật Client Secret): yêu cầu xác thực lại (mã PIN / sinh trắc học nếu bảo mật bật); kiểm tra kết nối với secret mới (như KN-07) thành công mới lưu, thất bại thì giữ secret cũ. Chỉ đổi Client Secret; Tenant ID, Client ID và UPN muốn đổi thì phải ngắt kết nối và kết nối lại (CD-05).
+- **CD-03** (tắt bảo mật): **bắt buộc nhập mã PIN hiện tại**, hiện cảnh báo như BM-03, mã hóa lại config ở chế độ thiết bị. Tùy chọn "Xóa dữ liệu khi nhập sai quá nhiều" (CD-08) cũng tự tắt.
+- **CD-04** (cập nhật Client Secret): yêu cầu xác thực lại (mã PIN / sinh trắc học nếu bảo mật bật); kiểm tra kết nối với secret mới (như KN-07) thành công mới lưu, thất bại thì giữ secret cũ. Chỉ đổi Client Secret; Tenant ID, Client ID và UPN muốn đổi thì phải ngắt kết nối và kết nối lại (CD-05). Chế độ bảo mật (thiết bị hay PIN) và sinh trắc học giữ nguyên: ở chế độ PIN, config được mã hóa lại bằng khóa phiên đang giữ, không cần dẫn xuất lại từ PIN. Cũng mở được từ nút "Cập nhật" của banner CD-06 và đi qua cùng bước xác thực lại.
 - **CD-05** (ngắt kết nối): xác nhận 2 bước, sau đó xóa config, khóa mã hóa, dữ liệu đồng bộ, lịch sử xem, cache và cài đặt, rồi quay về màn Kết nối.
-- **CD-06** (nhắc hết hạn secret): nếu có nhập ngày hết hạn, hiện thông báo trong app từ 14 ngày trước ngày đó.
-- **CD-07** (giảm giới hạn cache): nếu dung lượng hiện tại vượt giới hạn mới thì dọn ngay theo nguyên tắc tệp lâu không dùng bị xóa trước.
+- **CD-06** (nhắc hết hạn secret): nếu có nhập ngày hết hạn, hiện thông báo trong app từ 14 ngày trước ngày đó. Thông báo (banner) hiện ở **cả màn Cài đặt và màn Danh sách**, không chỉ ở Cài đặt (chốt 2026-10-07). Ngày hết hạn nhập theo định dạng ngày của ngôn ngữ đang dùng (CD-10), có nút chọn nhanh +6 tháng, +1 năm, +2 năm và nút Xóa ngày; chỉ chấp nhận năm 2000 đến 2099. Còn 0 ngày thì banner ghi "hết hạn hôm nay"; đã qua ngày thì ghi "đã hết hạn" và đổi sang tông lỗi. Ngày hết hạn không phải bí mật nên lưu cùng cài đặt và bị xóa khi Ngắt kết nối (CD-05).
+- **CD-07** (giảm giới hạn cache): nếu dung lượng hiện tại vượt giới hạn mới thì hỏi xác nhận (D6) rồi dọn ngay theo nguyên tắc tệp lâu không dùng bị xóa trước. Dọn theo **từng loại**: mỗi loại có trần riêng = giới hạn chung × tỉ lệ của loại đó, nên đổi tỉ lệ cũng dọn loại nào vượt trần mới (không hỏi). Riêng thumbnail không dọn chọn lọc được: vượt trần thì xóa hết thumbnail (tải lại khi cuộn tới), và trần mới của thumbnail có hiệu lực từ lần mở app sau (ADR-0021).
 - **CD-08** (xóa dữ liệu khi nhập sai quá nhiều): khi bật, hiện cảnh báo *"Sau 10 lần nhập sai liên tiếp, toàn bộ dữ liệu và kết nối sẽ bị xóa"*, yêu cầu xác nhận bằng mã PIN. Tùy chọn này chỉ chống đoán PIN qua giao diện app, không thay thế được việc khóa màn hình thiết bị.
-- **CD-09** (đổi mã PIN): nhập PIN hiện tại, rồi nhập PIN mới 2 lần (áp dụng BM-06); mã hóa lại config bằng PIN mới. Ghi ra tệp tạm rồi mới thay tệp cũ, để lỗi giữa chừng không làm mất config.
+- **CD-09** (đổi mã PIN): nhập PIN hiện tại, rồi nhập PIN mới 2 lần (áp dụng BM-06); mã hóa lại config bằng PIN mới. Ghi ra tệp tạm rồi mới thay tệp cũ, để lỗi giữa chừng không làm mất config. Sau khi đổi, mở khóa bằng sinh trắc học bị **tắt** (khóa dẫn xuất mới), người dùng bật lại ở Cài đặt.
+- **CD-11** (tự khóa khi rời app): chỉ có tác dụng khi bảo mật BẬT. Tính từ lúc **cả app** không còn màn nào hiển thị (xoay màn hình, hộp thoại sinh trắc học của hệ thống không tính). Quay lại trước mốc đã chọn thì không khóa; quá mốc thì khóa (CH-03). "Ngay lập tức" khóa ngay khi rời app. Hệ điều hành thu hồi app trong lúc chờ thì lần mở sau luôn vào màn Khóa. Trong thời gian chờ, ảnh app ở danh sách ứng dụng gần đây vẫn bị ẩn (CH-05).
+- **CD-12** (bảo vệ màn hình): bật thì mọi màn của app chặn chụp, quay màn hình và ẩn nội dung ở danh sách ứng dụng gần đây, kể cả hộp thoại. Tắt (mặc định) thì chỉ các màn luôn chặn ở CH-05 (Kết nối, Khóa, Thiết lập bảo mật, nhập PIN) chặn; màn Cài đặt chụp được. Không phụ thuộc có bật PIN hay không; bị xóa về mặc định khi Ngắt kết nối (CD-05).
 - **CD-10** (ngôn ngữ):
   - Hỗ trợ **Tiếng Việt** và **English**. "Theo hệ thống" dùng ngôn ngữ của máy; nếu máy dùng ngôn ngữ khác VI/EN thì dùng **Tiếng Việt** (ngôn ngữ mặc định của app).
   - Đổi ngôn ngữ áp dụng **ngay**, không cần khởi động lại app và không làm mất màn hình đang mở hay trạng thái đang xem.
@@ -299,7 +303,8 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **CH-02**: Không lưu mã PIN hay mã băm của mã PIN. PIN đúng hay sai được xác định bằng việc giải mã config thành công hay không.
 - **CH-03**: Access token chỉ giữ trong bộ nhớ, không ghi xuống đĩa; khi app bị khóa thì xóa token và config đã giải mã khỏi bộ nhớ.
 - **CH-04**: Dữ liệu app không được đưa vào sao lưu tự động của Android.
-- **CH-05**: Các màn Kết nối, Khóa, Cài đặt (nhóm Bảo mật và Kết nối) chặn chụp màn hình.
+- **CH-05**: Các màn Kết nối, Khóa, Thiết lập bảo mật và nhập PIN luôn chặn chụp màn hình. Màn Cài đặt **không** luôn chặn (đổi 2026-10-08, ADR-0022): chỉ chặn khi bật "Bảo vệ màn hình". Mục "Bảo vệ màn hình" ở Cài đặt › Bảo mật mở rộng việc chặn ra toàn app.
+- **Hướng màn hình (2026-10-07)**: toàn app chỉ hiển thị **dọc** (cấu hình toàn app, không có trong Cài đặt). Riêng màn xem video cho xoay ngang bằng nút xoay (VD-07), rời màn thì về dọc.
 - **CH-06**: Không ghi Client Secret, access token hay header `Authorization` vào log.
 - **CH-07**: Vì PIN chỉ có 1 triệu tổ hợp, việc chống đoán thử không dựa vào độ phức tạp của PIN mà dựa vào hai lớp: (1) khóa Keystore gắn với thiết bị nên không thể thử PIN ngoài máy; (2) dẫn xuất khóa chậm (Argon2id hoặc tương đương) để mỗi lần thử tốn thời gian.
 
@@ -318,12 +323,12 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **DB-01**: Lần đầu: quét toàn bộ drive bằng delta, lưu danh sách tệp và thư mục vào CSDL trên máy, lưu mốc `deltaLink`.
 - **DB-02**: Các lần sau: chỉ lấy thay đổi kể từ mốc trước (thêm, sửa, xóa).
 - **DB-03**: Nhận `410` (mốc không còn hợp lệ): bỏ mốc cũ và quét lại toàn bộ ở nền; danh sách hiện tại vẫn dùng được trong lúc quét.
-- **DB-04**: Đồng bộ lần đầu bị gián đoạn (tắt app, mất mạng): lần sau tiếp tục từ trang đang quét dở, không quét lại từ đầu.
+- **DB-04**: Đồng bộ lần đầu bị gián đoạn (tắt app, mất mạng): lần sau tiếp tục từ trang đang quét dở, không quét lại từ đầu. Nếu gián đoạn do **app bị khóa** (CH-03, config bị xóa khỏi bộ nhớ) thì đồng bộ tự chạy tiếp ngay khi mở khóa, người dùng không phải kéo làm mới.
 - **DB-05**: Màn hình luôn đọc từ CSDL trên máy (trừ TM-07), nên mở nhanh và dùng được khi offline.
 
 ### 4.4 Bộ nhớ đệm
 
-- **BN-01**: Cache gồm 4 phần: thumbnail, ảnh gốc, đoạn video đã xem, tệp PDF. Tổng dung lượng không vượt giới hạn trong Cài đặt; vượt thì xóa tệp lâu không dùng nhất trước.
+- **BN-01**: Cache gồm 4 phần: thumbnail, ảnh gốc, đoạn video đã xem, tệp PDF. Tổng dung lượng không vượt giới hạn trong Cài đặt. **Mỗi phần có trần riêng** = giới hạn chung × tỉ lệ của phần đó (Cài đặt › Bộ nhớ đệm › Tỉ lệ chia theo loại, mặc định 10% / 30% / 45% / 15%); phần nào vượt trần riêng thì xóa tệp lâu không dùng nhất **trong phần đó** trước, không lấy dung lượng của phần khác. Phần chưa dùng hết trần không nhường cho phần khác. Riêng thumbnail không dọn chọn lọc được (xem CD-07). Chốt 2026-10-07 (ADR-0021).
 - **BN-02**: Tệp trong cache được nhận diện theo mã tệp và phiên bản nội dung (`cTag`). Tệp đổi nội dung trên OneDrive thì bản cũ trong cache bị bỏ; đổi tên hay di chuyển thì vẫn dùng lại cache.
 - **BN-03**: Tải dở bị gián đoạn thì lần sau tải tiếp phần còn thiếu, không tải lại từ đầu; tệp chỉ được dùng sau khi tải đủ và đúng dung lượng.
 
@@ -338,7 +343,7 @@ Nhận diện theo `file.mimeType`; nếu không có thì theo đuôi tên tệp
 | Loại | Định dạng | Ghi chú |
 |---|---|---|
 | Ảnh | jpg, jpeg, png, webp, gif, bmp, heic, heif | HEIC/HEIF cần Android 9 trở lên |
-| Video | mp4, m4v, mkv, webm, mov, 3gp | Khả năng phát phụ thuộc codec phần cứng; AVI, WMV có thể không phát được |
+| Video | mp4, m4v, mkv, webm, mov, 3gp | Khả năng phát phụ thuộc codec phần cứng; AVI, WMV có thể không phát được. Máy không có bộ giải mã phần cứng cho định dạng đó (vd. HEVC 10-bit trên một số máy MediaTek) thì app dùng bộ giải mã phần mềm dự phòng (ADR-0018): phát được nhưng tốn pin và có thể rớt khung. Máy giải mã được bằng phần cứng thì không dùng bộ phần mềm. Dolby Vision profile 5 (không có lớp nền HEVC) có thể không phát được |
 | PDF | pdf | Không hỗ trợ PDF có mật khẩu |
 
 ---
@@ -356,7 +361,7 @@ Nhận diện theo `file.mimeType`; nếu không có thì theo đuôi tên tệp
 | Video: chế độ phát (Không lặp / Tự phát tiếp / Lặp một video / Lặp danh sách), nút Phát lại | ✓ | |
 | Video: phát ngẫu nhiên (shuffle) | | ✓ |
 | Video: 3 chế độ khung hình, zoom hai ngón, bảng thông tin tệp | ✓ | |
-| Video: nút xoay dọc/ngang, mặc định vào ở hướng dọc | ✓ | |
+| Video: nút xoay dọc/ngang, mặc định vào ở hướng dọc (đổi được ở Cài đặt) | ✓ | |
 | Video: tỉ lệ khung hình tùy chọn (16:9, 4:3, 21:9...) | | ✓ |
 | Xem ảnh: zoom, vuốt chuyển ảnh, thông tin ảnh | ✓ | |
 | Xem PDF: cuộn dọc, lật ngang, zoom, nhớ trang, bảng thông tin tệp | ✓ | |

@@ -40,8 +40,8 @@ import com.lambao.odv.core.designsystem.component.ODVViewerTopBar
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVDuration
 import com.lambao.odv.core.designsystem.theme.ODVMediaColors
+import com.lambao.odv.core.domain.model.CachedFileState
 import com.lambao.odv.core.domain.model.DriveItem
-import com.lambao.odv.core.domain.model.OriginalImageState
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -52,7 +52,7 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 internal fun ODVImageViewerContent(
     state: ImageViewerState,
-    originalOf: (DriveItem) -> Flow<OriginalImageState>,
+    originalOf: (DriveItem) -> Flow<CachedFileState>,
     onIntent: (ImageViewerIntent) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -78,7 +78,7 @@ internal fun ODVImageViewerContent(
 private fun androidx.compose.foundation.layout.BoxScope.ViewerPager(
     state: ImageViewerState,
     images: List<DriveItem>,
-    originalOf: (DriveItem) -> Flow<OriginalImageState>,
+    originalOf: (DriveItem) -> Flow<CachedFileState>,
     onIntent: (ImageViewerIntent) -> Unit,
     onBack: () -> Unit,
 ) {
