@@ -4,7 +4,7 @@
 > Lộ trình: **MVP1 Android** → **MVP2 KMP (thêm iOS)**. Nguyên tắc: **sẵn sàng KMP ngay từ MVP1**, code dùng chung không phụ thuộc API Android/Java.
 > **Tài khoản MVP1 (đã chốt):** chỉ OneDrive for Business, xác thực Client Credentials (app-only), nhập 4 trường `tenant_id`, `client_id`, `client_secret`, `UPN`. Không hỗ trợ OneDrive cá nhân, không MSAL. Chi tiết §5.1.
 
-- **Cập nhật:** 2026-10-02, Lát 0. Gộp từ bản tech stack ban đầu (trước khi có repo) với thực tế trong code.
+- **Cập nhật:** 2026-10-02, Lát 0. Gộp từ bản tech stack ban đầu (trước khi có repo) với thực tế trong code. 2026-10-10: đồng bộ số Lát (Cài đặt Lát 7, thanh điều hướng đáy và tab Short Lát 8, PDF Lát 9, Xem tiếp Lát 10) và bảng ADR đến 0024.
 - **Nguồn sự thật về phiên bản:** `gradle/libs.versions.toml`. Bảng §1 chỉ để tra nhanh; đổi phiên bản thì sửa cả hai.
 - **Quyết định kiến trúc:** `.claude/adr/`. **Kế hoạch và thứ tự làm:** `ke-hoach-mvp1.md`. Khi mâu thuẫn với file này thì ADR và kế hoạch thắng.
 
@@ -24,7 +24,7 @@ Cột **Trạng thái**: *đang dùng* = đã gắn vào module; *catalog* = đ�
 | UI | Compose Multiplatform (chỉ Android ở MVP1), Material3 | CMP 1.12.1, M3 1.12.0-alpha03 | Giao diện | Android (MVP2: CMP hay SwiftUI, §6) | đang dùng |
 | Kiến trúc | Clean Architecture + MVI | | State / Intent / Effect (ADR-0002) | Domain/Data: Common | đang dùng |
 | ViewModel | `org.jetbrains.androidx.lifecycle` (KMP) | 2.11.0 | Giữ state MVI | Common | đang dùng (`:core:common`) |
-| Điều hướng | Navigation 3 (`androidx.navigation3`) + `lifecycle-viewmodel-navigation3` | 1.2.0 / 2.11.0 | Back stack do app sở hữu (ADR-0003) | Android (kiểm tra CMP khi vào MVP2) | đang dùng (`:androidApp`) |
+| Điều hướng | Navigation 3 (`androidx.navigation3`) + `lifecycle-viewmodel-navigation3` | 1.2.0 / 2.11.0 | Back stack do app sở hữu (ADR-0003); Màn chính có thanh điều hướng đáy, mỗi tab giữ trạng thái riêng (ADR-0023, Lát 8) | Android (kiểm tra CMP khi vào MVP2) | đang dùng (`:androidApp`) |
 | DI | Koin (BOM) | 4.2.2 | ADR-0004 | Common | đang dùng (`:androidApp`) |
 | Async | Coroutines + Flow | 1.11.0 | | Common | đang dùng (`:core:common`, api) |
 | Serialization | kotlinx.serialization | 1.11.0 | JSON, route Navigation 3 | Common | đang dùng (`:androidApp`) |
@@ -33,13 +33,13 @@ Cột **Trạng thái**: *đang dùng* = đã gắn vào module; *catalog* = đ�
 | Cài đặt | DataStore Preferences (KMP) | 1.2.1 | Cài đặt không nhạy cảm | Common | catalog |
 | Lưu bí mật | Android Keystore (AES-GCM, khóa không xuất được) + Argon2id (`argon2kt`, dự phòng BouncyCastle) | | Mã hóa config 4 trường; token chỉ trong bộ nhớ (ADR-0008) | `expect/actual`, iOS: Keychain | Lát 1 (Keystore), Lát 2 (Argon2id) |
 | Ảnh | Coil 3 (`coil-core` trong `:core:data`, `coil-compose` trong `:core:designsystem`) | 3.6.3 | Tải và cache thumbnail. Không dùng `coil-network-ktor3`: Graph trả `302` sang URL đã ký còn client Graph đặt `followRedirects = false` (CH-06), nên `GraphThumbnailFetcher` tự gọi Graph rồi tải URL đã ký bằng client không bearer, và tự ghi/đọc `DiskCache` của Coil (200 MB, `cacheDir/thumbnails`, khóa = id + `cTag` + cỡ). Ảnh gốc ở Lát 5 cân nhắc lại | Common | Lát 4 |
-| Zoom ảnh | Telephoto `zoomable-image-coil3` (chốt 2026-10-04) + `coil-gif` cho GIF động | 0.19.0 / Coil 3.6.3 | Zoom/pan, chạm đúp, subsampling ảnh lớn (AN-02, AN-06). Ảnh gốc dùng `DiskCache` riêng (không gộp thumbnail vì thumbnail chất lượng thấp), tải tiếp bằng `Range` (BN-03). Trang PDF (Lát 7) cân nhắc lại | Android (kiểm tra KMP khi vào MVP2) | Lát 5 |
-| Video | Media3 ExoPlayer + `SimpleCache` + `media3-ui-compose` (`PlayerSurface`, TextureView) | 1.8.0 (chưa tra bản mới nhất, kiểm tra khi build) | Phát stream từ `downloadUrl` (VD-11). Khóa cache = `itemId:cTag`, **không** phải URL (URL chứa `tempauth` đổi mỗi giờ). ExoPlayer chỉ thấy địa chỉ ảo `odv-video://item/{id}`; `StreamDataSource` đổi sang link ký mỗi lần mở kết nối và tự lấy link mới khi 401/403 (VD-14), không gửi `Authorization`, và trả địa chỉ ảo ở `getUri()` để link thật không bị ghi vào chỉ mục cache. Cache 2 GB tạm cố định ở `cacheDir/video` (LRU), là `ConnectionResetter` | Android, iOS: AVPlayer | Lát 6 |
-| PDF | `android.graphics.pdf.PdfRenderer` | | Render trang thành bitmap | Android, iOS: PDFKit | Lát 7 |
+| Zoom ảnh | Telephoto `zoomable-image-coil3` (chốt 2026-10-04) + `coil-gif` cho GIF động | 0.19.0 / Coil 3.6.3 | Zoom/pan, chạm đúp, subsampling ảnh lớn (AN-02, AN-06). Ảnh gốc dùng `DiskCache` riêng (không gộp thumbnail vì thumbnail chất lượng thấp), tải tiếp bằng `Range` (BN-03). Trang PDF (Lát 9) cân nhắc lại | Android (kiểm tra KMP khi vào MVP2) | Lát 5 |
+| Video | Media3 ExoPlayer + `SimpleCache` + `media3-ui-compose` (`PlayerSurface`, TextureView) | 1.8.0 (chưa tra bản mới nhất, kiểm tra khi build) | Phát stream từ `downloadUrl` (VD-11). Khóa cache = `itemId:cTag`, **không** phải URL (URL chứa `tempauth` đổi mỗi giờ). ExoPlayer chỉ thấy địa chỉ ảo `odv-video://item/{id}`; `StreamDataSource` đổi sang link ký mỗi lần mở kết nối và tự lấy link mới khi 401/403 (VD-14), không gửi `Authorization`, và trả địa chỉ ảo ở `getUri()` để link thật không bị ghi vào chỉ mục cache. Cache 2 GB tạm cố định ở `cacheDir/video` (LRU), là `ConnectionResetter`. Tab Short (Lát 8) thêm `DefaultPreloadManager` của Media3, tải trước video ±1 qua cùng cache (ADR-0024; cần Media3 ≥ 1.4, kiểm phiên bản catalog khi làm) | Android, iOS: AVPlayer | Lát 6 |
+| PDF | `android.graphics.pdf.PdfRenderer` | | Render trang thành bitmap | Android, iOS: PDFKit | Lát 9 |
 | Phân trang | Paging 3 (`paging-common`, `paging-compose` KMP) + `room3-paging` | 3.5.1 / 3.0.3 | Danh sách lớn | Common | **Đã làm ở Lát 4** (tab Thư viện): `DriveDao.pagedLibrary` trả `PagingSource`, sắp xếp bằng SQL theo cột `sortDate` (index `mediaKind, sortDate`), `enablePlaceholders = true`. Lưới dựng từ số mục theo ngày (`libraryDays`) nên biết trước độ dài, không dùng `insertSeparators`. Tab Thư mục vẫn dùng `Flow<List>` (một thư mục), chuyển sang Paging nếu gặp thư mục rất lớn |
 | Chạy nền | Coroutine trong app (`SyncCoordinator`, scope riêng) | | Delta sync, tải | Android, iOS: BGTaskScheduler | Lát 3. **Chưa dùng WorkManager**: chế độ PIN xóa config và token khỏi bộ nhớ khi khóa (CH-03, ADR-0008) nên nền không gọi được Graph; đặc tả chỉ cần đồng bộ khi mở app và kéo làm mới (DS-04). Muốn đồng bộ lúc app đóng (chỉ chế độ thiết bị) thì viết ADR mới |
 | Ngày giờ | kotlinx-datetime | | Thư viện theo ngày, ngày chụp | Common | khi dùng tới (Lát 3–4) |
-| File I/O | kotlinx-io (hoặc Okio) | | Cache file, thay `java.io.File` trong code chung | Common | khi dùng tới (Lát 4, 7) |
+| File I/O | kotlinx-io (hoặc Okio) | | Cache file, thay `java.io.File` trong code chung | Common | khi dùng tới (Lát 4, 9) |
 | Log | Kermit | 2.2.0 | Log local; bản debug thêm LogWriter đẩy vào màn Debug, bản release gỡ hết writer (ADR-0012) | Common | đang dùng (`:core:common`, api) |
 | Đa ngôn ngữ | Android `res/` (`values` = VI mặc định, `values-en`) + AppCompat `setApplicationLocales` + `locales_config.xml` | AppCompat 1.8.0 | VI + EN (ADR-0011), §5.5 | Android (MVP2: §5.5) | đang dùng (`:androidApp`) |
 | Phân tích tĩnh | Ktlint (qua Spotless) + Detekt + compose-rules | | Chất lượng code | | chưa làm (§7) |
@@ -71,7 +71,7 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 ## 3. Cấu trúc module (Clean Architecture, sẵn sàng KMP)
 
 ```
-:androidApp                   Android app: Compose, Navigation 3, khởi động Koin (ADR-0010 gọi là :app; giữ tên template)
+:androidApp                   Android app: Compose, Navigation 3, khởi động Koin, Màn chính có thanh điều hướng đáy (ADR-0023) (ADR-0010 gọi là :app; giữ tên template)
 :build-logic                  convention plugin
 
 :core:common                  [KMP] AppResult/AppError, DispatcherProvider, BaseMviViewModel, Kermit (api)
@@ -85,10 +85,11 @@ Plugin `kotlinSerialization`, `ksp`, `room` đã khai báo `apply false` ở `bu
 :feature:auth                 Kết nối (4 trường), Thiết lập bảo mật, Khóa
 :feature:browser              tab Thư mục, tìm kiếm
 :feature:library              tab Thư viện theo ngày
+:feature:shorts               tab Short: video ngắn vuốt dọc, thứ tự ngẫu nhiên (Lát 8, ADR-0024)
 :feature:player               xem video
 :feature:imageviewer          xem ảnh, zoom
 :feature:pdfviewer            truyện PDF
-:feature:settings             cài đặt
+:feature:settings             tab Cài đặt (từ Lát 8 là tab trên thanh điều hướng đáy)
 
 :tools:debug                  [Android, chỉ bản debug] nút bọ nổi (luôn trên cùng, kể cả trên Dialog/BottomSheet), DebugActivity: log API (có màn chi tiết, tìm kiếm, sao chép), log local, lưu trữ, công cụ khác (ADR-0012, 0013); FLAG_SECURE theo cài đặt Bảo vệ màn hình (ADR-0020)
 ```
@@ -142,7 +143,7 @@ abstract class BaseMviViewModel<S : Any, I : Any, E : Any>(initialState: S) : Vi
 - **State hay Effect** (Android khuyến nghị đưa sự kiện UI vào state, vì Channel không bảo đảm effect được xử lý; ADR-0002 vẫn giữ kênh Effect):
 
   | Loại | Đặt ở | Ví dụ |
-  |---|---|---|
+    |---|---|---|
   | Không được mất, hoặc phải còn sau khi xoay màn hình / đổi ngôn ngữ | **State** + Intent báo "đã xử lý" để ViewModel xóa | Dialog lỗi KN-09, sheet "Đã kết nối" KN-08, cảnh báo KH-06 |
   | Mất cũng không hại | **Effect** | Chuyển màn, mở player, snackbar nhẹ |
 
@@ -159,10 +160,11 @@ abstract class BaseMviViewModel<S : Any, I : Any, E : Any>(initialState: S) : Vi
 - Không dùng `runCatching` trần: nó nuốt `CancellationException`. Nếu bắt lỗi rộng thì ném lại `CancellationException`.
 - `AppError` → `UiError` → chuỗi ở tầng UI; làm cùng màn đầu tiên cần đến (Lát 1).
 
-### Điều hướng (ADR-0003)
+### Điều hướng (ADR-0003, ADR-0023)
 - Route: `AppRoute` (sealed, `@Serializable`, `NavKey`) trong `:androidApp/navigation`.
 - `ODVNavDisplay`: `rememberNavBackStack(AppRoute.Splash)`, decorator `rememberSaveableStateHolderNavEntryDecorator` + `rememberViewModelStoreNavEntryDecorator` (ViewModel theo từng màn).
 - Màn nhận lambda (`onConnected`, `onOpenFile`), không nhận back stack.
+- **Từ Lát 8 (ADR-0023):** hai tầng. Tầng app (back stack trên) gồm Splash, Kết nối, Khóa, Thiết lập bảo mật, **Màn chính**, các màn xem và màn con của Cài đặt; màn nào đẩy lên tầng này thì che thanh điều hướng đáy. Tầng tab nằm trong Màn chính: Thư mục, Thư viện, Short, Cài đặt; ViewModel mỗi tab sống suốt vòng đời Màn chính, trạng thái giao diện giữ bằng `SaveableStateHolder` theo khóa tab. Route Cài đặt ở tầng app bị bỏ.
 
 ### DI (ADR-0004)
 - `startKoin` ở `MainApplication`, logger mức `ERROR`. Mỗi module core/feature có `xxxModule` riêng, ghép ở `MainApplication`.
@@ -199,6 +201,7 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 
 ### 5.3 Media
 - Video: `@microsoft.graph.downloadUrl` (đã ký sẵn, ngắn hạn) đưa thẳng vào ExoPlayer, tua bằng range request. URL hết hạn khi xem lâu hoặc xem tiếp thì lấy lại metadata để có URL mới (VD-14), **không** lấy lại access token.
+- Tab Short (Lát 8, ADR-0024): danh sách ID video lọc theo thời lượng lấy từ Room, xáo bằng seed lưu trong saved state; một ExoPlayer cho video đang hiện và `DefaultPreloadManager` tải trước đoạn đầu video ±1; khung hình chọn theo kích thước sau giải mã (đã tính cờ xoay).
 - Ảnh: endpoint `thumbnails/0/{size}/content` cho lưới (cỡ tùy chỉnh `c300x300_crop` và `c480x360_crop`, lỗi 400 thì rơi về `medium`), ảnh gốc khi mở màn xem. Thumbnail đi qua `Fetcher` riêng của Coil, không dùng chung client Graph (xem bảng thư viện).
 - PDF: `PdfRenderer` cần file seekable nên tải về cache trước (tải tiếp phần dở), render theo trang, giới hạn bộ nhớ bitmap.
 
@@ -210,7 +213,7 @@ Người dùng nhập đúng **4 trường** ở màn Kết nối:
 - **Access token chỉ trong bộ nhớ** (CH-03); khóa app thì xóa token và config đã giải mã khỏi bộ nhớ.
 - Thư viện Argon2id đặt sau interface (`PinKeyDeriver`) để thay được. Bản Android dùng `argon2kt` (`com.lambdapioneer.argon2kt`, khai báo `androidMain` của `:core:security`); phiên bản trong `libs.versions.toml` cần kiểm tra lại khi cập nhật (ABI, trang bộ nhớ 16 KB). Chi tiết phong bì PIN, bộ đếm sai, sinh trắc học, tự khóa: ADR-0014.
 - `androidx.biometric` và `androidx.lifecycle:lifecycle-process` đã khai báo trong catalog và đã gắn vào `:androidApp` (tự khóa ở bước 6, sinh trắc học `BiometricPrompt` ở bước 9).
-- `FLAG_SECURE` luôn bật cho màn Kết nối, Khóa, Thiết lập bảo mật, nhập PIN; màn Cài đặt chỉ chặn khi bật "Bảo vệ màn hình" (ADR-0022); ẩn nội dung ở danh sách app gần đây.
+- `FLAG_SECURE` luôn bật cho màn Kết nối, Khóa, Thiết lập bảo mật, nhập PIN; Cài đặt chỉ chặn khi bật "Bảo vệ màn hình" (ADR-0022), từ Lát 8 áp theo tab đang hiện (DH-08, ADR-0023); ẩn nội dung ở danh sách app gần đây.
 - **CH-04 (đã làm ở Lát 0):** `allowBackup="false"`, `fullBackupContent="false"`, `dataExtractionRules` loại trừ mọi miền cho cả `cloud-backup` và `device-transfer` (Android 12+ bỏ qua `allowBackup` khi chuyển máy).
 - **CH-06:** không cài Ktor `Logging`. Log API cho màn Debug đi qua `HttpTrafficRecorder` (chỉ bản debug, chỉ trong bộ nhớ). Từ ADR-0013 bản ghi là **đầy đủ, chưa che** (kể cả `Authorization`, `client_secret`, token, `downloadUrl`); màn Debug hiện đầy đủ mặc định và có công tắc che (`HttpTrafficEntry.masked()`). Bản release không có recorder. `followRedirects = false` để bearer không bị gửi sang máy chủ khác.
 
@@ -285,7 +288,7 @@ Bản tech stack đầu định nghĩa foundation 8 hạng mục. Kế hoạch M
 
 Quy ước đồng bộ (Lát 3a): mỗi trang delta ghi nguyên tử cùng `pendingNextLink`; quét đầy đủ mới (chưa có `deltaLink`) tăng `scanId`, trang cuối dọn mục có `scanId` khác trong cùng transaction với `deltaLink` mới (DB-03, DS-06). Tìm kiếm dùng `instr(nameKey, :key)`, không dùng `LIKE` (quét toàn bảng, ổn tới khoảng 100k mục; lớn hơn thì cân nhắc FTS). Delta lấy 500 mục mỗi trang (`DELTA_PAGE_SIZE`; đã đo 1000 mục ra 4 trang thay vì 16 nhưng gây crash `libsqliteJni` trên thiết bị thật nên chốt 500, xem KDoc của hằng số trong `GraphApi`; các trang nối đuôi nhau nên số trang quyết định thời gian quét). Delta dùng `$select` đúng các trường đang lưu (`DELTA_SELECT` trong `GraphApi`), chỉ gắn ở request đầu vì `nextLink`/`deltaLink` mang sẵn. Lỗi tạm thời (mạng, `429`, `5xx`) sau khi `HttpRequestRetry` đã thử: `SyncEngine` chờ `Retry-After` hoặc 2→32 giây rồi chạy tiếp từ trang dở, tối đa 5 lần liên tiếp không tiến triển. `observeChildren` có `conflate` + `distinctUntilChanged` để mỗi trang delta không làm thư mục đang mở sắp xếp và vẽ lại vô ích. Schema đổi lúc dev: `fallbackToDestructiveMigration` ở bản Android.
 
-Thêm theo feature: `playback_progress`, `reading_progress`, `cache_entry`. Mỗi lần đổi schema phải tăng `version` của `OdvDatabase` (ADR-0015, thay quy tắc "giữ `version = 1`" cũ); trước phát hành DB cũ bị xóa và quét lại nhờ `fallbackToDestructiveMigration`, từ bản phát hành đầu phải viết Migration.
+Thêm theo feature: `playback_progress`, `reading_progress`, `cache_entry`. Tab Short (Lát 8) có thể cần index theo `mediaKind` và thời lượng để lọc nhanh. Mỗi lần đổi schema phải tăng `version` của `OdvDatabase` (ADR-0015, thay quy tắc "giữ `version = 1`" cũ); trước phát hành DB cũ bị xóa và quét lại nhờ `fallbackToDestructiveMigration`, từ bản phát hành đầu phải viết Migration.
 
 ---
 
@@ -326,12 +329,12 @@ Tổng hợp từ rà soát skill `android-clean-architecture` và `compose-mult
 - **Hằng số:** mỗi module có một file `XxxConstants.kt` chứa `internal object` chia nhóm theo mục đích (vd. `GraphConstants`, `HttpConstants`, `AuthConstants` ở `:core:network`; mẫu là `PlayerConstants`). Không rải `const val` theo từng class dùng nó. Giữ KDoc giải thích lý do chọn giá trị. Không đưa vào đây: luật nghiệp vụ (đặt ở `domain`, vd. `PinPolicy`, chính sách khóa nhập KH-02) và token giao diện (`ODVDimens`, `ODVMotion`).
 - **Thời gian:** không dùng `() -> Long` để tiêm đồng hồ (không rõ đơn vị, không rõ giờ thực hay đơn điệu, Koin không phân biệt theo kiểu). Giờ thực: tiêm `kotlin.time.Clock`; đo khoảng: `TimeSource`; đồng hồ cần biết lần khởi động máy: `BootAwareClock`. **Ngoại lệ có chủ ý (Android):** thứ phải chạy qua lúc máy ngủ (link video sống khoảng 1 giờ, `StreamDataSource`) dùng `SystemClock.elapsedRealtime`, vì `TimeSource.Monotonic` trên Android dựa vào `nanoTime` không đếm lúc máy ngủ sâu nên hạn bị lệch. Trong `commonMain` hạn của thứ chạy dài (vd. token) nên tính bằng `Clock` giờ thực, không dùng `TimeSource.Monotonic`.
 - **Thoát sớm với `AppResult`:** dùng `getOrElse { return AppResult.Failure(it) }` (hoặc `return@withLock`) thay cho `when (val r = ...) { Failure -> return ...; Success -> r.value }`; ghép bước thất bại được bằng `flatMap`, đổi hai nhánh bằng `fold` (`:core:common`, R2).
-- **Cài đặt đọc lúc chạy:** không tiêm lambda (`() -> Int?`) cho giá trị người dùng sẽ đổi; tạo interface domain (vd. `SecuritySettings`) và để Cài đặt (Lát 9) cài đặt nó.
+- **Cài đặt đọc lúc chạy:** không tiêm lambda (`() -> Int?`) cho giá trị người dùng sẽ đổi; tạo interface domain (vd. `SecuritySettings`) và để Cài đặt (Lát 7) cài đặt nó.
 - **Nguồn xác thực của API:** `ApiService` (lớp cơ sở) không biết credentials của dịch vụ cụ thể; nó chỉ nhận một nguồn bearer token. Credentials thuộc về lớp con (`GraphApi`) và được cấp qua interface do tầng data cài.
 - **Resources trong Compose:** `LocalResources.current`, không `LocalContext.current.resources` (lý do ở §5.5).
 - **Locale trong Compose:** `LocalLocale.current.platformLocale` (qua `odvLocale()` ở `:core:designsystem`), **không dùng `Locale.getDefault()`** và không tự đọc `LocalConfiguration.locales`. Lý do: đổi ngôn ngữ trong app không tạo lại Activity (§5.5) nên chỉ composable đọc `LocalLocale` mới được dựng lại và nhận đúng locale; `Locale.getDefault()` là giá trị toàn process, không đảm bảo khớp ngôn ngữ app và không kích hoạt dựng lại. Hàm không phải composable nhận locale qua tham số (vd. `odvFormatFileSize(bytes, languageTag)`); dùng chung làm khóa cho `remember(locale)` của mọi bộ định dạng. Số, ngày, giờ, dung lượng theo ngôn ngữ đang dùng (CD-10), không cố định vi-VN.
-- **Hướng màn hình:** `MainActivity` khóa dọc ở manifest (`screenOrientation="portrait"`); chỉ màn xem video xoay ngang bằng `requestedOrientation` và **phải trả về `PORTRAIT`** khi rời màn, không phải `UNSPECIFIED` (đó là ghi đè khóa dọc, app sẽ xoay tự do). Từ Android 16, màn hình lớn (≥ 600dp) có thể bỏ qua khóa hướng của app.
-- **FLAG_SECURE:** hai nguồn, **không có ghi đè của Debug** (ADR-0020): (1) "Bảo vệ màn hình" của người dùng = `ODVSecureWindowPolicy.appWide`, trạng thái cấp **process** do `ODVApp` đặt (`SideEffect`) nên áp dụng cho mọi Window đã `track`, kể cả `DebugActivity`; (2) màn nhạy cảm tự yêu cầu bằng `ODVSecureWindow` (đếm theo Window; gồm Kết nối, Khóa, Thiết lập bảo mật, nhập PIN, **không** gồm Cài đặt, ADR-0022). Cờ = (1) hoặc (2). `MainActivity` gọi `ODVSecureWindowPolicy.track(window)` ở mọi bản dựng; công cụ debug track các Activity còn lại. Chưa đọc xong DataStore thì coi như bật. Đừng dùng `ODVSecureWindow` để bật toàn app: nó chỉ tác động lên Window của chính composable đó nên Activity khác (Debug) không theo. Màn Debug có công tắc Bảo vệ màn hình điều khiển đúng cài đặt thật (`DebugHooks.screenProtection/setScreenProtection`), ghi xong áp dụng ngay vì `MainActivity` đang dừng nên không tự dựng lại; hai nơi dùng chung `shouldSecureWholeWindow`. Muốn chụp màn hình (kể cả màn Debug và Cài đặt) thì tắt công tắc đó hoặc ở Cài đặt.
+- **Hướng màn hình:** `MainActivity` khóa dọc ở manifest (`screenOrientation="portrait"`); chỉ màn xem video xoay ngang bằng `requestedOrientation` và **phải trả về `PORTRAIT`** khi rời màn, không phải `UNSPECIFIED` (đó là ghi đè khóa dọc, app sẽ xoay tự do). Từ Android 16, màn hình lớn (≥ 600dp) có thể bỏ qua khóa hướng của app. Tab Short luôn dọc.
+- **FLAG_SECURE:** hai nguồn, **không có ghi đè của Debug** (ADR-0020): (1) "Bảo vệ màn hình" của người dùng = `ODVSecureWindowPolicy.appWide`, trạng thái cấp **process** do `ODVApp` đặt (`SideEffect`) nên áp dụng cho mọi Window đã `track`, kể cả `DebugActivity`; (2) màn nhạy cảm tự yêu cầu bằng `ODVSecureWindow` (đếm theo Window; gồm Kết nối, Khóa, Thiết lập bảo mật, nhập PIN, **không** gồm Cài đặt, ADR-0022). Cờ = (1) hoặc (2). `MainActivity` gọi `ODVSecureWindowPolicy.track(window)` ở mọi bản dựng; công cụ debug track các Activity còn lại. Chưa đọc xong DataStore thì coi như bật. Đừng dùng `ODVSecureWindow` để bật toàn app: nó chỉ tác động lên Window của chính composable đó nên Activity khác (Debug) không theo. Màn Debug có công tắc Bảo vệ màn hình điều khiển đúng cài đặt thật (`DebugHooks.screenProtection/setScreenProtection`), ghi xong áp dụng ngay vì `MainActivity` đang dừng nên không tự dựng lại; hai nơi dùng chung `shouldSecureWholeWindow`. Muốn chụp màn hình (kể cả màn Debug và Cài đặt) thì tắt công tắc đó hoặc ở Cài đặt. Từ Lát 8, Cài đặt là tab nên cờ được áp lại mỗi lần đổi tab (DH-08, ADR-0023).
 - **Bỏ hoặc đổi so với template/ADR:** ghi comment trong code nêu lý do và ADR liên quan.
 
 ---
@@ -359,3 +362,10 @@ ADR nằm ở **`.claude/adr/`** (có `README.md` làm mục lục và `template
 | 0015 | Tăng version Room mỗi lần đổi schema (thay phần "giữ `version = 1`" của ADR-0007) | accepted |
 | 0016 | UseCase bắt buộc giữa feature và data (thay phần UseCase của ADR-0002) | accepted |
 | 0017 | Giữ log debug khi app khóa (thay phần xóa log của ADR-0013/0014) | accepted |
+| 0018 | Decoder FFmpeg (NextLib, GPL-3.0) làm renderer dự phòng cho video máy không giải mã được, vd HEVC 10-bit | accepted |
+| 0019 | Tự khóa khi rời app có độ trễ do người dùng chọn (mặc định 1 phút) | accepted |
+| 0020 | Bỏ ghi đè FLAG_SECURE riêng của công cụ debug, màn Debug theo cài đặt Bảo vệ màn hình | accepted |
+| 0021 | Trần bộ nhớ đệm tùy chỉnh 1 đến 10 GB, chia theo loại, đọc lúc chạy, mỗi kho là `CacheStore` | accepted |
+| 0022 | Màn Cài đặt chụp được khi tắt "Bảo vệ màn hình" (thay phần Cài đặt luôn chặn của CH-05) | accepted |
+| 0023 | Thanh điều hướng đáy (Thư mục, Thư viện, Short, Cài đặt), mỗi tab giữ trạng thái riêng; Cài đặt thành tab (bổ sung ADR-0003) | accepted |
+| 0024 | Tab Short dùng một ExoPlayer và `DefaultPreloadManager` tải trước video ±1, chung cache video | accepted |

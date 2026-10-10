@@ -1,6 +1,6 @@
 # Kế hoạch triển khai MVP1 (Android)
 
-- **Trạng thái:** đã duyệt 2026-10-02
+- **Trạng thái:** đã duyệt 2026-10-02; đổi thứ tự Lát 2026-10-07 (Cài đặt lên trước PDF) và 2026-10-10 (thêm Lát 8 Short)
 - **Tiến độ thực tế:** xem [tien-do-mvp1.md](tien-do-mvp1.md) (file này chỉ đổi khi đổi kế hoạch)
 - **Điểm xuất phát:** Foundations (`:core:designsystem`) đã xong; các module `:core:*` khác đã tạo nhưng còn rỗng; chưa có `:feature:*`
 
@@ -11,8 +11,11 @@
 - **Kiểm tra bằng tay** (ADR-0009): mỗi lát kết thúc bằng danh sách kiểm tay trên thiết bị, không có test tự động.
 - **Người dùng tự build, commit và push.** Cuối mỗi lát Claude chạy `/ecc:kotlin-review` (thêm review bảo mật cho lát 1–2) và gợi ý tên commit.
 - Module `:feature:*` tạo khi bắt đầu lát dùng tới nó (ADR-0010).
+- **Tài liệu và thiết kế tách topic (chốt 2026-10-10):** topic tài liệu chỉ sửa các file `.md`; vẽ trên Claude Design làm ở topic riêng theo `thiet-ke-ui.md` mục 11.
 
 ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không làm gì).
+
+**Lịch sử đánh số:** ban đầu Lát 7 là PDF, Lát 8 Xem tiếp, Lát 9 Cài đặt. Ngày 2026-10-07 Cài đặt lên Lát 7 (PDF thành 8, Xem tiếp thành 9). Ngày 2026-10-10 thêm **Lát 8 Short** kèm thanh điều hướng đáy, nên **PDF thành Lát 9** và **Xem tiếp thành Lát 10**. Comment trong code hoặc tài liệu cũ ghi số Lát khác thì đọc theo bảng dưới.
 
 ## 2. Các lát
 
@@ -26,9 +29,10 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 | 4 | Thumbnail, bộ nhớ đệm, tab Thư viện | | data, feature:library |
 | 5 | Xem ảnh | | feature:imageviewer |
 | 6 | Xem video (6a: phát và điều khiển cơ bản; 6b: phần còn lại) | | feature:player |
-| 7 | Xem PDF | | feature:pdfviewer |
-| 8 | Xem tiếp / Đọc tiếp | | data, feature:browser, player, pdfviewer |
-| 9 | Cài đặt đầy đủ | | feature:settings |
+| 7 | Cài đặt đầy đủ | 0019, 0021, 0022 | feature:settings |
+| 8 | Thanh điều hướng đáy và tab Short | 0023, 0024 | androidApp, feature:shorts, feature:settings, data |
+| 9 | Xem PDF | | feature:pdfviewer |
+| 10 | Xem tiếp / Đọc tiếp | | data, feature:browser, player, pdfviewer |
 
 ### Lát 0: Bộ khung app
 
@@ -94,19 +98,29 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 - 6a: phát stream, tự lấy link mới (VD-14), Play/Pause, tua, chạm đúp tua, tốc độ, Back, giữ màn sáng, lỗi codec và mất mạng.
 - 6b: vuốt độ sáng/âm lượng, khung hình, xoay, khóa thao tác, trước/sau và chế độ phát, Phát lại, zoom, bảng thông tin.
 
-### Lát 7: Xem PDF
+### Lát 7: Cài đặt đầy đủ (đưa lên trước PDF, 2026-10-07)
 
-- PD-01 → PD-08 (tải có tiến trình và tải tiếp phần dở, cuộn dọc hoặc lật ngang, nhớ trang). **PD-05 làm ở lát này** (đổi 2026-10-07, trước đó ghi ở cả Lát 7 và Lát 8): bảng `reading_progress`. Chia 7a, 7b, 7c; chi tiết ở `tien-do-mvp1.md`.
+- CD-01 → CD-12; cập nhật Client Secret; ngắt kết nối và xóa sạch; giới hạn cache và tỉ lệ chia theo loại (ADR-0021); nhắc secret sắp hết hạn; tự khóa có độ trễ (ADR-0019); Bảo vệ màn hình (ADR-0022).
+- Nối `SecurityRepositoryImpl.wipeAfterFailures` với cài đặt CD-08. Đăng ký `ConnectionResetter` xóa cài đặt. Nút Ngắt kết nối gọi `DisconnectUseCase`.
+- Chia 7a đến 7e; chi tiết ở `tien-do-mvp1.md`.
 
-### Lát 8: Xem tiếp / Đọc tiếp
+### Lát 8: Thanh điều hướng đáy và tab Short (thêm 2026-10-10)
 
-- DS-02, VD-12 (PD-05 đã chuyển sang Lát 7).
+Làm sau khi review code Lát 7 xong. Đặc tả: mục 3.4 (DH-01 → DH-08) và 3.4.4 (SV-01 → SV-16), CD-13. Thiết kế giao diện: `thiet-ke-ui.md` mục 4.7 (thanh điều hướng đáy), 4.8 (Short), 5.2, 5.4, 5.5 **đã cập nhật mô tả (2026-10-10)**; artboard chưa có, vẽ ở topic Claude Design theo mục 11. Có thể bắt đầu 8a theo mô tả trong lúc chờ artboard, nhưng số liệu đánh dấu "đề xuất" ở mục 8 của tài liệu đó cần người dùng xác nhận.
+
+- **8a. Thanh điều hướng đáy** (ADR-0023): Màn chính với 4 mục Thư mục, Thư viện, Short, Cài đặt (DH-01); mỗi tab giữ trạng thái riêng, kể cả sau khi khóa và khi hệ điều hành thu hồi tiến trình (DH-02); Back theo DH-03; chạm lại tab (DH-04); thanh ẩn ở màn xem, màn khóa và màn con Cài đặt (DH-05); tab mở khi khởi động (DH-06); chấm nhắc secret (DH-07); `FLAG_SECURE` theo tab (DH-08). Cài đặt chuyển thành tab, bỏ nút bánh răng trên AppBar; các chỗ đang điều hướng tới route Cài đặt (banner CD-06) đổi thành chuyển tab. Bỏ `ODVHomeScreen` dạng Tabs. Thêm icon `short` và 4 token `nav-*` vào `:core:designsystem` khi thiết kế được duyệt.
+- **8b. Tab Short cơ bản** (`:feature:shorts` mới): danh sách ID video theo thời lượng tối đa lấy từ Room (SV-01; xem có cần index theo `mediaKind`, thời lượng không, nếu đổi schema thì tăng version theo ADR-0015); xáo bằng seed lưu trong saved state (SV-02); kéo để xáo lại ở video đầu (SV-03); vuốt dọc chuyển video (SV-04); tự phát có tiếng và tự lặp (SV-05); chạm tạm dừng (SV-06); thanh tiến độ (SV-07); khung hình theo kích thước sau giải mã (SV-08); tên tệp mờ (SV-09); nền tối (SV-10); danh sách rỗng (SV-15). Cài đặt › Video thêm "Thời lượng tối đa của Short" (CD-13).
+- **8c. Tải trước và vòng đời** (ADR-0024): `DefaultPreloadManager` cửa sổ ±1 qua cache video chung (SV-13); tạm dừng/phát tiếp khi đổi tab, xuống nền, khóa (SV-11); không lưu vị trí xem (SV-12); lỗi link, codec, mạng (SV-14); dữ liệu thay đổi (SV-16).
+- **Kiểm tay:** chuyển qua lại 4 tab ở giữa thư mục sâu và giữa danh sách Thư viện đã cuộn xa rồi kiểm vị trí; Back từ từng tab; bật "Don't keep activities" rồi mở lại; tab Short ẩn khi đang lập chỉ mục và khi tắt Video; vuốt nhanh 10 video liên tiếp (có mạng, mất mạng giữa chừng); video HEVC 10-bit qua decoder FFmpeg; video dọc quay bằng điện thoại (cờ xoay), video 3:4, video ngang; khóa app khi đang phát Short; đổi thời lượng tối đa rồi quay lại tab Short; chụp màn hình ở tab Cài đặt khi bật và tắt "Bảo vệ màn hình". Checklist giao diện ở `thiet-ke-ui.md` mục 10.
+
+### Lát 9: Xem PDF
+
+- PD-01 → PD-08 (tải có tiến trình và tải tiếp phần dở, cuộn dọc hoặc lật ngang, nhớ trang). **PD-05 làm ở lát này** (đổi 2026-10-07): bảng `reading_progress`. Chia 9a, 9b, 9c; chi tiết ở `tien-do-mvp1.md`.
+
+### Lát 10: Xem tiếp / Đọc tiếp
+
+- DS-02, VD-12 (PD-05 đã chuyển sang Lát 9).
 - Đăng ký `ConnectionResetter` xóa lịch sử xem khi ngắt kết nối.
-
-### Lát 9: Cài đặt đầy đủ
-
-- CD-01 → CD-10; cập nhật Client Secret; ngắt kết nối và xóa sạch; giới hạn cache; nhắc secret sắp hết hạn.
-- Nối `SecurityRepositoryImpl.wipeAfterFailures` với cài đặt CD-08 (hiện tắt). Đăng ký `ConnectionResetter` xóa cài đặt. Nút Ngắt kết nối gọi `DisconnectUseCase`.
 
 ## 3. Thư viện chưa có trong ADR (đã duyệt)
 
@@ -115,7 +129,7 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 | Argon2id | `argon2kt` | Native, nhanh. Phương án dự phòng: BouncyCastle (thuần Java, chậm hơn) |
 | Lưu cài đặt | DataStore Preferences | |
 | Tải ảnh, thumbnail | Coil 3 | |
-| Phát video | Media3 ExoPlayer + `SimpleCache` | |
+| Phát video | Media3 ExoPlayer + `SimpleCache` | Tab Short thêm `DefaultPreloadManager` của Media3 (ADR-0024) |
 | PDF | `PdfRenderer` của Android | |
 | Đồng bộ chạy nền | Coroutine trong app | Thêm WorkManager khi cần đồng bộ lúc app đã đóng |
 | Log local | Kermit 2.2.0 | Bản debug đẩy vào màn Debug; release không writer (ADR-0012) |

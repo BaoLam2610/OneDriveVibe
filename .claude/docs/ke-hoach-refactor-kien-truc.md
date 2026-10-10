@@ -3,8 +3,9 @@
 - **Trạng thái:** đã duyệt 2026-10-06
 - **Tiến độ:** xem mục "Đang làm" của [tien-do-mvp1.md](tien-do-mvp1.md)
 - **Quyết định đi kèm:** [ADR-0016](../adr/0016-usecase-bat-buoc-giua-feature-va-data.md)
-- **Phạm vi:** refactor thuần, **không đổi hành vi, không đổi schema Room** (không phải tăng `version`). Mục tiêu: dựng nền chung vững cho Lát 7 đến 9 và MVP2, không viết code theo kiểu "cho xong".
-- **Thứ tự đã chốt:** build và kiểm tay các bản sửa Lát 6 → R0 đến R5 (mỗi phase một commit) → Lát 7 kèm R6.
+- **Phạm vi:** refactor thuần, **không đổi hành vi, không đổi schema Room** (không phải tăng `version`). Mục tiêu: dựng nền chung vững cho Lát 7 đến 10 và MVP2, không viết code theo kiểu "cho xong".
+- **Thứ tự đã chốt:** build và kiểm tay các bản sửa Lát 6 → R0 đến R5 (mỗi phase một commit) → Lát 9 (PDF) kèm R6.
+- **Lưu ý đánh số Lát:** kế hoạch này viết khi PDF còn là "Lát 7". Thứ tự hiện hành (chốt 2026-10-10): Lát 7 Cài đặt, Lát 8 Thanh điều hướng đáy và tab Short, Lát 9 PDF, Lát 10 Xem tiếp. Các chỗ nhắc PDF bên dưới đã được sửa thành Lát 9.
 
 ## 1. Quy tắc làm việc
 
@@ -95,7 +96,7 @@ Quyết định đã chốt: chia 4 phase; `BrowserPreferences`, `PlayerPreferen
 - [x] Sửa `ConnectViewModel` (đổi tên hàm `connect()` thành `onConnect()` vì trùng tên tham số UseCase), `LockViewModel` (6 phụ thuộc UseCase; ngưỡng cảnh báo `WARN_WHEN_ATTEMPTS_LEFT` và nhịp `TICK_MS` ở lại ViewModel, dời sang Constants ở R5d), `SecuritySetupViewModel` (đổi tên hàm `enableBiometric()` thành `startBiometricEnrollment()` vì trùng tên tham số), `SplashViewModel` (thân chỉ còn gọi `ResolveStartDestinationUseCase`); app shell: `AppLockController`, `MainApplication`, `MainActivity`, `ODVNavDisplay`
 - [x] Sau R5b, `:feature:auth` và `:androidApp` không còn import `SecurityRepository` hay `ConfigRepository` (kiểm bằng `grep`); `AndroidBiometricAuthenticator` chỉ dùng `SecretStore` và `BiometricAuthenticator`
 - Điểm bất biến đã giữ: `LockAppUseCase` không suspend; `ObserveLockStateUseCase` trả đúng `StateFlow` của repository (không bọc lại) vì cổng khóa đọc `.value` đồng bộ và thu bằng `collectAsState`; Splash vẫn chờ `Unlocked` trước khi quyết định; `Wiped → Disconnect` vẫn chạy trong coroutine của ViewModel (`DisconnectUseCase` có `NonCancellable`); PIN vẫn do ViewModel sở hữu và tự xóa.
-- Hạn chế kiểm thử: nhánh `Wiped` (KH-06) **không kiểm tay được** vì tùy chọn "Xóa dữ liệu khi nhập sai quá nhiều" chưa có UI (`DefaultSecuritySettings` luôn tắt, tới Lát 9); chỉ kiểm bằng đọc code.
+- Hạn chế kiểm thử: nhánh `Wiped` (KH-06) **không kiểm tay được** vì tùy chọn "Xóa dữ liệu khi nhập sai quá nhiều" chưa có UI (`DefaultSecuritySettings` luôn tắt, tới Lát 7c); chỉ kiểm bằng đọc code.
 - Kiểm tay: khởi động nguội (chưa có config → Kết nối; có config chế độ thiết bị → Thư mục; bật PIN → màn Khóa rồi Thư mục); kết nối secret đúng và sai; K6; đặt PIN B1 đến B6 (PIN yếu, nhập lại sai, hỏi sinh trắc học, "Để sau"); khôi phục sau khi hệ điều hành thu hồi tiến trình khi K6 hoặc màn Thiết lập đang mở (vào thẳng Thư mục); bật PIN rồi bấm Home → mở lại thấy màn Khóa, Back không vào nội dung, ảnh ở danh sách app gần đây bị ẩn; sai PIN (lần 5 chờ 30 giây, thoát app giữa lúc chờ rồi mở lại vẫn còn đồng hồ, sinh trắc học không né được); sinh trắc học tự hiện, hủy thì về PIN; bấm Home ngay sau khi nhập đủ PIN (không được vào nội dung); Quên PIN 2 bước; nút bọ debug vẫn hiện ở màn Khóa; "Xóa dữ liệu local" vẫn chạy.
 
 #### R5c. Đồng bộ, thư mục, thư viện
@@ -113,10 +114,10 @@ Quyết định đã chốt: chia 4 phase; `BrowserPreferences`, `PlayerPreferen
 - [x] **Kiểm quy tắc ADR-0016 đạt:** `grep -rn "^import com.lambao.odv.core.domain.repository" feature androidApp/src` không còn kết quả. Phần còn lại feature/app dùng trực tiếp chỉ là interface được phép: `platform` (`NetworkMonitor`, `UtcOffsetProvider`, `BiometricAuthenticator`), `settings` (`BrowserPreferences`, `PlayerPreferences`), `hook` (`ConnectionResetter` ở `VideoCache`, `ThumbnailCache`/`ThumbnailQuality` ở công cụ debug)
 - Kiểm tay: mở ảnh từ Thư mục và từ Thư viện, vuốt ảnh trước/sau, ảnh gốc (tải tiếp khi ngắt giữa chừng), bảng thông tin ảnh (đường dẫn thư mục, kích thước, thiết bị chụp), zoom (viên thuốc %, ngưỡng); phát video, chuyển video, đổi chế độ phát và khung hình rồi mở lại (còn nhớ), bảng thông tin video (đường dẫn thư mục), video lỗi/đã xóa, hết hạn link giữa chừng (VD-14, chờ trên 45 phút hoặc đổi giờ máy), vuốt độ sáng và âm lượng (VD-04), xoay màn hình; Thư viện: bấm ngày hôm nay/hôm qua (MS_PER_DAY dùng chung); tìm kiếm Thư mục (SEARCH_LIMIT dùng chung); sai PIN (cảnh báo còn ≤ 2 lần không bật được nên chỉ kiểm bằng đọc code).
 
-### Giai đoạn tiếp theo trước Lát 7 (chốt 2026-10-07)
-Thứ tự: A1, A2, A3 (nợ kỹ thuật, commit nhỏ độc lập) → R6 (`ResumableFileStore`) → R7 (tách `ODVPlayerContent`) → Lát 7 (PDF). **Đổi thứ tự 2026-10-07:** R6 trước R7 vì hai phase không đụng chung file (R6: domain, data, imageviewer; R7: player) và Lát 7a dựng `FilePdfRepository` trên `ResumableFileStore`, nên làm R6 sát Lát 7. Mỗi bước build, kiểm tay, review, commit riêng.
+### Giai đoạn tiếp theo trước Lát 9 (PDF) (chốt 2026-10-07)
+Thứ tự: A1, A2, A3 (nợ kỹ thuật, commit nhỏ độc lập) → R6 (`ResumableFileStore`) → R7 (tách `ODVPlayerContent`) → Lát 9 (PDF). **Đổi thứ tự 2026-10-07:** R6 trước R7 vì hai phase không đụng chung file (R6: domain, data, imageviewer; R7: player) và Lát 9 dựng `FilePdfRepository` trên `ResumableFileStore`, nên làm R6 sát PDF. Mỗi bước build, kiểm tay, review, commit riêng. (Từ 2026-10-07 Lát 7 Cài đặt và từ 2026-10-10 Lát 8 Short chen trước PDF; A1 đến A3, R6, R7 đều đã xong.)
 
-#### A. Nợ kỹ thuật trước Lát 7
+#### A. Nợ kỹ thuật trước Lát 9
 - [x] **A1. Xóa sạch dữ liệu khi Ngắt kết nối và Quên PIN (CD-05, KH-03, KH-06).** `VideoCache.reset()`: trong `mutex.withLock` thì `release()` cache và đặt `cache = null`, xóa đệ quy `cacheDir/video`, gọi `context.deleteDatabase(StandaloneDatabaseProvider.DATABASE_NAME)` (xóa cả `-journal`/`-wal`/`-shm`); một bước lỗi vẫn chạy các bước còn lại, log chỉ ghi tên loại ngoại lệ (CH-06). Cần quyết định riêng cho `odv.db` (xóa hẳn tệp cần đóng Room trước) và DataStore (`browser`/`player` chưa xóa; CD-05 yêu cầu xóa cả cài đặt). Chi tiết ở mục "Nợ kỹ thuật cần sửa riêng" của `tien-do-mvp1.md`
 - [x] **A2. DS-04 ở chế độ không PIN:** process vào foreground thì `syncIfStale()`. Làm bằng một UseCase gọi từ app shell (kiểu `AppLockController`, quan sát `ProcessLifecycleOwner` ON_START), không đặt vào ViewModel của từng tab. Lần chạy lại sau mở khóa đã nằm trong `SyncCoordinator`, không làm lại
 - [x] **A3. Bỏ ràng buộc chỉ bằng comment** giữa `KeystoreConstants.LAST_WIPED_FILE` (`lock_state.bin`) ở `:core:security` và `StorageNames.LOCKOUT` (`lock_state`) ở `:core:data`: `:core:security` lộ một hằng số tên bí mật dùng chung

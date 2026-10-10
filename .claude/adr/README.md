@@ -30,6 +30,8 @@ Mỗi ADR ghi **một quyết định kiến trúc**: bối cảnh, quyết đ�
 | [0020](0020-bo-ghi-de-flag-secure-rieng-cua-debug.md) | Bỏ ghi đè FLAG_SECURE riêng của công cụ debug, màn Debug theo cài đặt Bảo vệ màn hình | accepted | 2026-10-07 |
 | [0021](0021-tran-bo-nho-dem-tuy-chinh-chia-theo-loai.md) | Trần bộ nhớ đệm tùy chỉnh 1 đến 10 GB, chia theo loại, đọc lúc chạy, mỗi kho là CacheStore | accepted | 2026-10-07 |
 | [0022](0022-man-cai-dat-theo-bao-ve-man-hinh.md) | Màn Cài đặt chụp được khi tắt "Bảo vệ màn hình" (thay phần Cài đặt luôn chặn của CH-05) | accepted | 2026-10-08 |
+| [0023](0023-thanh-dieu-huong-day-nhieu-ngan-xep.md) | Thanh điều hướng đáy (Thư mục, Thư viện, Short, Cài đặt), mỗi tab giữ trạng thái riêng; Cài đặt thành tab; bổ sung ADR-0003 | accepted | 2026-10-10 |
+| [0024](0024-tai-truoc-video-tab-short.md) | Tab Short dùng một ExoPlayer và `DefaultPreloadManager` tải trước video ±1, chung cache video | accepted | 2026-10-10 |
 
 ## Quy ước
 - Đánh số tăng dần, không dùng lại số. Tên file: `NNNN-tieu-de-khong-dau.md`.

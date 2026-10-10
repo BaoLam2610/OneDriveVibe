@@ -21,6 +21,9 @@
 | Loại tệp được bật | Các loại tệp (Ảnh / Video / PDF) mà người dùng chọn hiển thị trong Cài đặt |
 | Tệp hỗ trợ | Tệp thuộc một trong các định dạng ở mục 5.1 |
 | Danh sách phát | Các video mà nút Trước/Sau và chế độ phát đi qua (xem VD-10) |
+| Màn chính | Màn có **thanh điều hướng đáy** với các tab Thư mục, Thư viện, Short, Cài đặt (mục 3.4). Thêm 2026-10-10 |
+| Danh sách | Cách gọi chung tab **Thư mục** và tab **Thư viện** (mục 3.4.1 đến 3.4.3) |
+| Short | Tab xem video ngắn theo kiểu vuốt dọc, thứ tự ngẫu nhiên (mục 3.4.4) |
 
 ---
 
@@ -29,17 +32,18 @@
 ```
 Mở app
   ├─ Chưa có config ──► [Kết nối] ──(thành công: lưu config, chế độ thiết bị)──► Hộp thoại "Thiết lập mã PIN?" (KN-13)
-  │                                                                               ├─ Thiết lập mã PIN ─► [Thiết lập bảo mật] ─► [Danh sách]
+  │                                                                               ├─ Thiết lập mã PIN ─► [Thiết lập bảo mật] ─► [Màn chính]
   │                                                                               │                         └─ Back ─► quay lại hộp thoại
-  │                                                                               └─ Để sau ──────────────────────────► [Danh sách]
-  ├─ Có config + bảo mật BẬT ─────► [Khóa] ─────────────────────────────► [Danh sách]
-  └─ Có config + bảo mật TẮT ─────────────────────────────────────────────► [Danh sách]
+  │                                                                               └─ Để sau ──────────────────────────► [Màn chính]
+  ├─ Có config + bảo mật BẬT ─────► [Khóa] ─────────────────────────────► [Màn chính]
+  └─ Có config + bảo mật TẮT ─────────────────────────────────────────────► [Màn chính]
 
-[Danh sách] (Thư mục / Thư viện)
-  ├─ chọn video ─► [Xem video]  (màn riêng, mặc định vào ở hướng dọc; chọn Ngang ở Cài đặt › Video thì vào ngang)
-  ├─ chọn ảnh ───► [Xem ảnh]
-  ├─ chọn PDF ───► [Xem PDF]
-  └─ biểu tượng ⚙ ─► [Cài đặt]
+[Màn chính] (thanh điều hướng đáy: Thư mục / Thư viện / Short / Cài đặt)
+  ├─ Thư mục, Thư viện: chọn video ─► [Xem video]  (màn riêng, mặc định vào ở hướng dọc; chọn Ngang ở Cài đặt › Video thì vào ngang)
+  │                     chọn ảnh ───► [Xem ảnh]
+  │                     chọn PDF ───► [Xem PDF]
+  ├─ Short: xem video ngắn vuốt dọc ngay trong tab (không mở màn riêng)
+  └─ Cài đặt: các màn con (đổi PIN, cập nhật secret...) mở đè lên, Ngắt kết nối ─► [Kết nối]
 
 App ở nền quá thời gian tự khóa (khi bảo mật BẬT) ─► [Khóa]
 ```
@@ -80,9 +84,9 @@ Nút **Kết nối**, biểu tượng ẩn/hiện ký tự (hình con mắt) ở
 - **KN-12** (không hiển thị dung lượng): App **không** đọc, không lưu và không hiển thị `quota` ở bất kỳ màn nào (kể cả `used`, `total`, `state`). Vì vậy `used` lớn hơn `total` (`state = exceeded`) không ảnh hưởng đến kết nối hay bất kỳ thao tác nào của app.
 - **KN-13** (hộp thoại thiết lập mã PIN): hiện ngay sau KN-08, gồm tiêu đề, một đoạn giải thích, **cảnh báo** như BM-03 (không đặt PIN thì bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn) và **hai nút**:
   - **Thiết lập mã PIN**: mở màn Thiết lập bảo mật (mục 3.2).
-  - **Để sau**: giữ bảo mật **tắt**, vào màn Danh sách và bắt đầu đồng bộ lần đầu (DB-01). Người dùng bật lại ở Cài đặt › Bảo mật (CD-02).
+  - **Để sau**: giữ bảo mật **tắt**, vào Màn chính (tab Thư mục) và bắt đầu đồng bộ lần đầu (DB-01). Người dùng bật lại ở Cài đặt › Bảo mật (CD-02).
 
-  Hộp thoại **bắt buộc chọn một trong hai nút**: chạm ra ngoài hoặc bấm Back của hệ thống không đóng được. Hộp thoại chỉ hiện **một lần cho mỗi lần kết nối mới** (kết nối lại sau khi Ngắt kết nối thì hiện lại). Nếu app bị đóng khi hộp thoại đang hiện, config đã được lưu (KN-08), lần mở sau vào thẳng Danh sách ở chế độ thiết bị và hộp thoại **không** hiện lại.
+  Hộp thoại **bắt buộc chọn một trong hai nút**: chạm ra ngoài hoặc bấm Back của hệ thống không đóng được. Hộp thoại chỉ hiện **một lần cho mỗi lần kết nối mới** (kết nối lại sau khi Ngắt kết nối thì hiện lại). Nếu app bị đóng khi hộp thoại đang hiện, config đã được lưu (KN-08), lần mở sau vào thẳng Màn chính ở chế độ thiết bị và hộp thoại **không** hiện lại.
 - **KN-09**: Thất bại: hiện thông báo theo bảng dưới, giữ nguyên giá trị đã nhập để sửa; **không lưu config**. Thông báo được chọn theo **mã lỗi** và hiển thị theo ngôn ngữ đang dùng (CD-10), không hiển thị nguyên văn thông báo lỗi của máy chủ.
 - **KN-10**: Màn này chặn chụp màn hình và ẩn nội dung trong danh sách ứng dụng gần đây.
 - **KN-11** (phạm vi tài khoản): UPN phải là tài khoản **work/school** thuộc đúng tenant đã nhập. App không hỗ trợ tài khoản Microsoft cá nhân; nếu nhập UPN cá nhân (vd. `@outlook.com`) thì kết nối sẽ thất bại theo bảng lỗi dưới (thường là Graph `404`).
@@ -107,11 +111,11 @@ Màn này chỉ mở khi người dùng chọn **Thiết lập mã PIN** ở h�
 - **BM-01**: Màn vào thẳng bước đặt mã PIN. **Không có công tắc "Bảo vệ ứng dụng"**, vì lựa chọn dùng hay không dùng PIN đã nằm ở hộp thoại KN-13. Bật/tắt bảo vệ về sau thực hiện ở Cài đặt (CD-02, CD-03).
 - **BM-02**: Đặt **mã PIN 6 chữ số**, nhập 2 lần và hai lần phải khớp; tùy chọn bật mở khóa bằng sinh trắc học nếu máy hỗ trợ.
 - **BM-03** (cảnh báo khi không dùng PIN): *"Bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn"*. Hiện trong hộp thoại KN-13 và khi tắt bảo vệ ở Cài đặt (CD-03).
-- **BM-04**: Bấm Hoàn tất: **mã hóa lại config** (đã được lưu ở chế độ thiết bị theo KN-08) bằng khóa dẫn xuất từ PIN kết hợp Keystore (mục 4.1), ghi ra tệp tạm rồi mới thay tệp cũ như CD-09; xong vào màn Danh sách và bắt đầu đồng bộ lần đầu. Lỗi giữa chừng thì config giữ nguyên ở chế độ thiết bị.
+- **BM-04**: Bấm Hoàn tất: **mã hóa lại config** (đã được lưu ở chế độ thiết bị theo KN-08) bằng khóa dẫn xuất từ PIN kết hợp Keystore (mục 4.1), ghi ra tệp tạm rồi mới thay tệp cũ như CD-09; xong vào Màn chính (tab Thư mục) và bắt đầu đồng bộ lần đầu. Lỗi giữa chừng thì config giữ nguyên ở chế độ thiết bị.
 - **BM-05**: Ô nhập PIN hiển thị 6 chấm tròn; nhập đủ 6 số thì tự chuyển bước, không cần bấm nút.
 - **BM-06**: Chặn PIN dễ đoán và báo *"Mã PIN quá dễ đoán, hãy chọn mã khác"*. Gồm: 6 số giống nhau (`000000`, `111111`...), dãy tăng hoặc giảm liên tiếp (`123456`, `654321`...), và dạng lặp 2 số hoặc 3 số (`121212`, `123123`...).
 - **BM-07**: Nhập bằng **bàn phím số tự vẽ trong app**, không dùng bàn phím hệ thống, để bàn phím bên thứ ba không ghi nhận được PIN.
-- **BM-08** (nút Back): Back ở màn này **quay lại hộp thoại KN-13** (hiện lại trên màn Kết nối). PIN đã nhập bị bỏ, config vẫn ở chế độ thiết bị. Nếu app bị đóng giữa chừng khi đang đặt PIN thì lần mở sau vào thẳng Danh sách ở chế độ thiết bị.
+- **BM-08** (nút Back): Back ở màn này **quay lại hộp thoại KN-13** (hiện lại trên màn Kết nối). PIN đã nhập bị bỏ, config vẫn ở chế độ thiết bị. Nếu app bị đóng giữa chừng khi đang đặt PIN thì lần mở sau vào thẳng Màn chính ở chế độ thiết bị.
 
 ### 3.3 Màn Khóa (khi bảo mật bật)
 
@@ -121,10 +125,37 @@ Màn này chỉ mở khi người dùng chọn **Thiết lập mã PIN** ở h�
 - **KH-04**: Màn chặn chụp màn hình.
 - **KH-05**: Dùng bàn phím số tự vẽ như BM-07. Vị trí các phím cố định, không xáo trộn.
 - **KH-06**: Nếu bật tùy chọn "Xóa dữ liệu khi nhập sai quá nhiều" (CD-08): đạt 10 lần sai liên tiếp thì thực hiện như ngắt kết nối (CD-05). Từ lần sai thứ 8 trở đi, hiện cảnh báo số lần còn lại.
+- **KH-07** (mở khóa xong): quay lại đúng tab và đúng trạng thái trước khi khóa (DH-02). Khóa không xóa trạng thái các tab, chỉ xóa token và config đã giải mã (CH-03).
 
-### 3.4 Màn Danh sách
+### 3.4 Màn chính và thanh điều hướng đáy
 
-Có 2 tab chế độ xem: **Thư mục** và **Thư viện**. App nhớ tab dùng gần nhất.
+Màn chính dùng **thanh điều hướng đáy** thay cho 2 tab Thư mục / Thư viện trước đây (đổi 2026-10-10, ADR-0023). Cài đặt cũng là một tab trên thanh này, không còn nút bánh răng trên AppBar.
+
+- **DH-01** (các mục): thanh có tối đa 4 mục theo thứ tự **Thư mục, Thư viện, Short, Cài đặt**.
+  - Mục **Short** chỉ hiện khi **cả hai** điều kiện đúng: loại **Video** đang bật (CD-01) và **đồng bộ lần đầu đã xong** (DB-01). Thiếu một trong hai thì mục Short ẩn và thanh còn 3 mục. Quét lại toàn bộ do `410` (DB-03) **không** làm ẩn lại Short, vì danh sách cũ vẫn dùng được trong lúc quét.
+  - Tắt loại Video ở Cài đặt thì mục Short biến mất ngay và trạng thái của tab Short (DH-02) bị bỏ; bật lại thì Short xáo danh sách mới (SV-02).
+- **DH-02** (mỗi tab giữ trạng thái riêng): chuyển tab rồi quay lại, hoặc mở một màn xem rồi Back về, thì tab hiện **đúng trạng thái và vị trí** trước đó:
+
+  | Tab | Trạng thái được giữ |
+    |---|---|
+  | Thư mục | Thư mục đang mở (cả chuỗi thư mục cha để Back), vị trí cuộn, chế độ tìm kiếm và từ khóa đang nhập |
+  | Thư viện | Bộ lọc chip, vị trí cuộn |
+  | Short | Thứ tự đã xáo, video đang xem, vị trí phát |
+  | Cài đặt | Vị trí cuộn |
+
+  Trạng thái này cũng được giữ khi app bị khóa rồi mở khóa (KH-07) và khi hệ điều hành thu hồi tiến trình lúc app ở nền rồi mở lại. Chỉ bị xóa khi Ngắt kết nối (CD-05) hoặc khi tắt hẳn app (vuốt bỏ khỏi danh sách gần đây).
+- **DH-03** (nút Back):
+  1. Trong một tab, Back lùi trong chính tab đó trước: Thư mục lên một cấp (TM-01), thoát chế độ tìm kiếm; đóng bảng hoặc hộp thoại đang mở.
+  2. Ở gốc của tab Thư viện, Short hoặc Cài đặt: Back chuyển về tab **Thư mục** (giữ nguyên trạng thái của Thư mục).
+  3. Ở gốc tab Thư mục: Back thoát app.
+- **DH-04** (chạm lại tab đang chọn):
+  - Thư mục: cuộn lên đầu; nếu đã ở đầu thì về thư mục gốc.
+  - Thư viện, Cài đặt: cuộn lên đầu.
+  - Short: không làm gì (xáo lại bằng kéo xuống, SV-03).
+- **DH-05** (khi nào thanh ẩn): thanh chỉ hiện ở Màn chính. Thanh **ẩn** ở các màn Xem video, Xem ảnh, Xem PDF, màn Khóa, Kết nối, Thiết lập bảo mật, các màn con mở từ Cài đặt (đổi PIN, nhập PIN để tắt bảo mật, cập nhật Client Secret...) và khi bàn phím đang mở để tìm kiếm.
+- **DH-06** (mở app): vào tab **Thư mục hoặc Thư viện**, tùy tab nào dùng gần nhất trong hai tab này. App **không** mở thẳng vào Short (tránh video tự phát có tiếng ngay khi mở) hay Cài đặt. Khôi phục sau khi hệ điều hành thu hồi tiến trình thì theo DH-02 (quay lại đúng tab đang mở, kể cả Short, nhưng Short ở trạng thái **tạm dừng**).
+- **DH-07** (chấm nhắc trên Cài đặt): khi banner nhắc hết hạn secret đang hiện (CD-06), mục Cài đặt trên thanh có một chấm nhỏ tông cảnh báo; đã hết hạn thì chấm tông lỗi.
+- **DH-08** (chặn chụp màn hình): chính sách CH-05 và CD-12 áp theo **tab đang hiện**: chuyển sang tab Cài đặt hay rời tab đó thì app áp lại chế độ chặn tương ứng ngay.
 
 #### 3.4.1 Tab Thư mục
 
@@ -145,7 +176,7 @@ Có 2 tab chế độ xem: **Thư mục** và **Thư viện**. App nhớ tab dù
 - **TV-05**: PDF **không** xuất hiện trong Thư viện; PDF xem qua tab Thư mục và mục "Đọc tiếp".
 - **TV-06**: Khi đồng bộ lần đầu chưa xong: hiện trạng thái "Đang lập chỉ mục, đã quét N mục" và nội dung đã quét được đến thời điểm đó, kèm lối tắt sang tab Thư mục.
 
-#### 3.4.3 Thành phần chung của màn Danh sách
+#### 3.4.3 Thành phần chung của Danh sách (tab Thư mục và Thư viện)
 
 - **DS-01**: Mỗi tệp hiển thị thumbnail, tên, dung lượng. Video có nhãn thời lượng; tệp đang xem/đọc dở có thanh tiến độ nhỏ.
 - **DS-02**: Dải "Xem tiếp / Đọc tiếp" ở đầu màn: tối đa 10 video và PDF xem dở gần nhất. Bấm vào mở đúng vị trí đã dừng. Có thể xóa từng mục khỏi dải.
@@ -154,9 +185,49 @@ Có 2 tab chế độ xem: **Thư mục** và **Thư viện**. App nhớ tab dù
 - **DS-05**: Không có mạng: vẫn hiển thị dữ liệu đã đồng bộ, có thanh báo "Đang offline"; tệp đã có trong cache vẫn mở được, tệp chưa có thì báo cần kết nối mạng.
 - **DS-06**: Tệp đã bị xóa trên OneDrive (phát hiện qua đồng bộ) bị gỡ khỏi danh sách, lịch sử xem và cache.
 
+#### 3.4.4 Tab Short (thêm 2026-10-10)
+
+Xem video ngắn theo kiểu vuốt dọc (giống TikTok, YouTube Shorts) **ngay trong tab**, không mở màn Xem video riêng. Chỉ hiển thị video: **không** có nút tương tác (thích, bình luận, chia sẻ...).
+
+**Nguồn và thứ tự**
+
+- **SV-01** (nguồn video): **toàn bộ video trong drive** (mọi thư mục) thuộc định dạng hỗ trợ (5.1) và có thời lượng **nhỏ hơn hoặc bằng** "Thời lượng tối đa của Short" (Cài đặt › Video, 3 đến 10 phút, mặc định 3 phút). Video không có thời lượng trong dữ liệu đồng bộ (`video.duration` trống) bị loại. Danh sách lấy từ CSDL trên máy (DB-05), không gọi API để liệt kê.
+- **SV-02** (thứ tự ngẫu nhiên): danh sách được **xáo ngẫu nhiên một lần** khi mở tab Short lần đầu sau khi app khởi động. Thứ tự giữ nguyên khi chuyển tab, mở màn khác, khóa/mở khóa và khi hệ điều hành thu hồi tiến trình rồi khôi phục (DH-02). Tắt hẳn app rồi mở lại thì xáo mới.
+- **SV-03** (kéo để xáo lại): **chỉ khi đang ở video đầu tiên**, kéo xuống thì xáo lại **toàn bộ** danh sách và phát từ đầu một video ngẫu nhiên mới; video đầu mới phải **khác** video đang xem (khi danh sách có từ 2 video). Ở video khác video đầu, vuốt xuống là về video trước (SV-04).
+- **SV-04** (chuyển video): vuốt lên sang video sau, vuốt xuống về video trước. Ở video cuối danh sách, vuốt lên không chuyển (không quay vòng).
+
+**Phát và hiển thị**
+
+- **SV-05** (phát): video hiện trên màn thì tự phát **có tiếng**, chạy hết thì **tự lặp lại** từ đầu. Tốc độ luôn 1x. Giữ màn hình sáng khi đang phát (như VD-09). Âm lượng chỉnh bằng phím âm lượng của máy.
+- **SV-06** (chạm): chạm một lần để **tạm dừng / phát tiếp**, hiện biểu tượng ngắn ở giữa màn. Không có tua, chạm đúp, chỉnh tốc độ, zoom, khóa thao tác, vuốt chỉnh độ sáng/âm lượng hay nút xoay màn hình.
+- **SV-07** (thanh tiến độ): thanh mỏng ở mép trên thanh điều hướng đáy, chỉ để xem, không kéo để tua.
+- **SV-08** (khung hình): xác định theo **tỉ lệ thật của hình sau khi giải mã** (đã tính hướng xoay ghi trong tệp), không chỉ dựa vào `video.width`/`height` của OneDrive:
+  - Video **dọc** có tỉ lệ gần tỉ lệ vùng hiển thị (phần bị cắt không quá khoảng 20% mỗi chiều; ngưỡng chốt lại khi thử máy): **Cắt đầy**, lấp kín vùng phía trên thanh điều hướng đáy.
+  - Video dọc lệch tỉ lệ nhiều (vd. 3:4): **Vừa khung**.
+  - Video **ngang** hoặc vuông: **Vừa khung**, nằm giữa theo chiều dọc như hiển thị thông thường.
+
+  Không theo cài đặt "Khung hình mặc định" của màn Xem video (VD-06). Tab Short luôn ở hướng dọc.
+- **SV-09** (tên tệp): góc dưới bên trái luôn hiện **tên tệp** và **thư mục chứa tệp** bằng chữ mờ, một dòng mỗi thứ, cắt "…" khi dài. Không phải nút bấm.
+- **SV-10** (nền): tab Short dùng nền đen của màn xem, thanh điều hướng đáy chuyển sang **nền tối** khi đang ở tab này, không phụ thuộc giao diện Sáng/Tối.
+
+**Vòng đời và dữ liệu**
+
+- **SV-11** (tạm dừng và phát tiếp): video **tạm dừng** khi chuyển sang tab khác, app xuống nền hoặc app bị khóa. Quay lại tab Short thì phát tiếp **đúng video và đúng vị trí** đã dừng (DH-02); riêng trường hợp khôi phục sau khi hệ điều hành thu hồi tiến trình thì ở trạng thái tạm dừng (DH-06).
+- **SV-12** (không tính là xem): video xem ở Short **không** lưu vị trí xem (VD-12), không vào dải "Xem tiếp" và không đổi các lựa chọn của màn Xem video (chế độ phát, tốc độ, khung hình).
+- **SV-13** (tải trước): app tải trước phần đầu của video kế tiếp (và video trước) để vuốt sang là phát gần như ngay (ADR-0024). Phần tải trước dùng chung cache video (BN-01, phần video). Không tải trước khi không có mạng.
+- **SV-14** (lỗi):
+  - Link stream hết hạn giữa chừng: như VD-14.
+  - Định dạng/codec không phát được: hiện thẻ lỗi như VD-15 nhưng **không** đếm ngược và **không** tự chuyển; người dùng vuốt sang video khác.
+  - Mất mạng: như VD-16 (phát hết phần đã tải trước, tạm dừng và báo lỗi mạng, có mạng lại thì cho phát tiếp). Video đã có trong cache vẫn phát được khi offline.
+- **SV-15** (danh sách rỗng): không có video nào thỏa SV-01 thì hiện trạng thái trống *"Không có video dài tối đa N phút"* kèm gợi ý tăng "Thời lượng tối đa của Short" ở Cài đặt.
+- **SV-16** (dữ liệu thay đổi):
+  - Đổi "Thời lượng tối đa của Short": lần quay lại tab Short kế tiếp thì lọc lại theo giá trị mới và **xáo mới**.
+  - Đồng bộ thêm video mới trong lúc dùng app: **không** chèn vào danh sách đang xáo; video mới xuất hiện từ lần xáo sau (SV-02, SV-03).
+  - Video bị xóa trên OneDrive (DS-06): gỡ khỏi danh sách; nếu đang hiện thì chuyển sang video kế tiếp.
+
 ### 3.5 Màn Xem video
 
-Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem tiếp") sẽ chuyển sang **màn Xem video riêng**.
+Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem tiếp") sẽ chuyển sang **màn Xem video riêng**. Video xem ở tab Short **không** dùng màn này (mục 3.4.4).
 
 **Điều khiển** (lấy cảm hứng từ YouTube):
 
@@ -184,7 +255,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **VD-13** (khi video chạy hết, theo Chế độ phát):
 
   | Chế độ | Khi video chạy hết |
-  |---|---|
+    |---|---|
   | **Không lặp** | Dừng ở cuối, hiện nút Phát lại (VD-21) |
   | **Tự phát tiếp** (mặc định) | Đếm ngược 5 giây rồi tự chuyển sang video sau, có nút Hủy. Hết video cuối danh sách thì dừng, hiện nút Phát lại |
   | **Lặp một video** | Phát lại từ đầu ngay, không đếm ngược |
@@ -197,7 +268,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **VD-17** (thông tin tệp): nút Thông tin (ⓘ) trên thanh điều khiển mở bảng trượt từ dưới lên (ở hướng ngang hiện dạng bảng bên phải), video **tạm dừng** trong lúc xem bảng. Dữ liệu lấy từ CSDL trên máy, không gọi API, dùng được khi offline. Gồm:
 
   | Mục | Nguồn dữ liệu |
-  |---|---|
+    |---|---|
   | Tên tệp | `name` |
   | Dung lượng | `size` |
   | Ngày tải lên OneDrive | `createdDateTime` |
@@ -238,7 +309,9 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **PD-07**: PDF có mật khẩu hoặc bị hỏng: báo *"Không mở được tệp PDF này"*.
 - **PD-08** (thông tin tệp): nút Thông tin (ⓘ) mở bảng trượt từ dưới lên gồm: tên tệp, dung lượng, số trang (chỉ có sau khi tệp đã mở được), ngày tải lên, ngày sửa gần nhất, thư mục chứa tệp. Các trường từ OneDrive lấy từ CSDL trên máy như VD-17.
 
-### 3.8 Màn Cài đặt
+### 3.8 Tab Cài đặt
+
+Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 2026-10-10), không còn mở từ nút bánh răng trên AppBar. Các màn con (đổi PIN, nhập PIN để tắt bảo mật, cập nhật Client Secret...) mở đè lên Màn chính và ẩn thanh điều hướng (DH-05).
 
 | Nhóm | Mục | Giá trị / mặc định |
 |---|---|---|
@@ -259,6 +332,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 | | Hướng màn hình khi mở video | Dọc / Ngang (mặc định Dọc) |
 | | Chế độ phát | Không lặp / Tự phát tiếp / Lặp một video / Lặp danh sách (mặc định Tự phát tiếp). Cùng giá trị với nút Chế độ phát (VD-20) |
 | | Nhớ vị trí xem | Bật |
+| | Thời lượng tối đa của Short | 3 đến 10 phút, bước 1 phút (mặc định 3 phút). Chỉ video dài tối đa bằng giá trị này mới vào tab Short (SV-01). Chỉ hiện khi loại Video đang bật. Thêm 2026-10-10 |
 | PDF | Kiểu đọc | Cuộn dọc / Lật trang ngang |
 | Bộ nhớ đệm | Dung lượng đang dùng | Hiển thị theo loại (thumbnail, ảnh, video, PDF) |
 | | Giới hạn tối đa | Tùy chỉnh từ 1 đến 10 GB (mặc định 2 GB); chốt 2026-10-07, thay cho 4 mốc 1/2/5/10 |
@@ -271,21 +345,22 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 
 **Quy tắc nghiệp vụ**
 
-- **CD-01** (loại tệp): Thay đổi áp dụng ngay cho Thư mục, Thư viện, tìm kiếm và dải "Xem tiếp / Đọc tiếp". Tắt một loại **không** xóa lịch sử xem hay cache của loại đó; bật lại thì hiện lại như cũ. Không cho tắt cả 3 loại.
+- **CD-01** (loại tệp): Thay đổi áp dụng ngay cho Thư mục, Thư viện, Short, tìm kiếm và dải "Xem tiếp / Đọc tiếp". Tắt loại Video thì ẩn mục Short trên thanh điều hướng đáy (DH-01). Tắt một loại **không** xóa lịch sử xem hay cache của loại đó; bật lại thì hiện lại như cũ. Không cho tắt cả 3 loại.
 - **CD-02** (bật bảo mật): đặt mã PIN 6 số (nhập 2 lần, áp dụng BM-05 đến BM-07), hỏi bật sinh trắc học, mã hóa lại config.
 - **CD-03** (tắt bảo mật): **bắt buộc nhập mã PIN hiện tại**, hiện cảnh báo như BM-03, mã hóa lại config ở chế độ thiết bị. Tùy chọn "Xóa dữ liệu khi nhập sai quá nhiều" (CD-08) cũng tự tắt.
 - **CD-04** (cập nhật Client Secret): yêu cầu xác thực lại (mã PIN / sinh trắc học nếu bảo mật bật); kiểm tra kết nối với secret mới (như KN-07) thành công mới lưu, thất bại thì giữ secret cũ. Chỉ đổi Client Secret; Tenant ID, Client ID và UPN muốn đổi thì phải ngắt kết nối và kết nối lại (CD-05). Chế độ bảo mật (thiết bị hay PIN) và sinh trắc học giữ nguyên: ở chế độ PIN, config được mã hóa lại bằng khóa phiên đang giữ, không cần dẫn xuất lại từ PIN. Cũng mở được từ nút "Cập nhật" của banner CD-06 và đi qua cùng bước xác thực lại.
-- **CD-05** (ngắt kết nối): xác nhận 2 bước, sau đó xóa config, khóa mã hóa, dữ liệu đồng bộ, lịch sử xem, cache và cài đặt, rồi quay về màn Kết nối.
-- **CD-06** (nhắc hết hạn secret): nếu có nhập ngày hết hạn, hiện thông báo trong app từ 14 ngày trước ngày đó. Thông báo (banner) hiện ở **cả màn Cài đặt và màn Danh sách**, không chỉ ở Cài đặt (chốt 2026-10-07). Ngày hết hạn nhập theo định dạng ngày của ngôn ngữ đang dùng (CD-10), có nút chọn nhanh +6 tháng, +1 năm, +2 năm và nút Xóa ngày; chỉ chấp nhận năm 2000 đến 2099. Còn 0 ngày thì banner ghi "hết hạn hôm nay"; đã qua ngày thì ghi "đã hết hạn" và đổi sang tông lỗi. Ngày hết hạn không phải bí mật nên lưu cùng cài đặt và bị xóa khi Ngắt kết nối (CD-05).
+- **CD-05** (ngắt kết nối): xác nhận 2 bước, sau đó xóa config, khóa mã hóa, dữ liệu đồng bộ, lịch sử xem, cache và cài đặt, bỏ trạng thái của mọi tab (DH-02), rồi quay về màn Kết nối.
+- **CD-06** (nhắc hết hạn secret): nếu có nhập ngày hết hạn, hiện thông báo trong app từ 14 ngày trước ngày đó. Thông báo (banner) hiện ở **cả tab Cài đặt và Danh sách (tab Thư mục, Thư viện)**, không chỉ ở Cài đặt (chốt 2026-10-07); mục Cài đặt trên thanh điều hướng đáy có chấm nhắc (DH-07). Ngày hết hạn nhập theo định dạng ngày của ngôn ngữ đang dùng (CD-10), có nút chọn nhanh +6 tháng, +1 năm, +2 năm và nút Xóa ngày; chỉ chấp nhận năm 2000 đến 2099. Còn 0 ngày thì banner ghi "hết hạn hôm nay"; đã qua ngày thì ghi "đã hết hạn" và đổi sang tông lỗi. Ngày hết hạn không phải bí mật nên lưu cùng cài đặt và bị xóa khi Ngắt kết nối (CD-05).
 - **CD-07** (giảm giới hạn cache): nếu dung lượng hiện tại vượt giới hạn mới thì hỏi xác nhận (D6) rồi dọn ngay theo nguyên tắc tệp lâu không dùng bị xóa trước. Dọn theo **từng loại**: mỗi loại có trần riêng = giới hạn chung × tỉ lệ của loại đó, nên đổi tỉ lệ cũng dọn loại nào vượt trần mới (không hỏi). Riêng thumbnail không dọn chọn lọc được: vượt trần thì xóa hết thumbnail (tải lại khi cuộn tới), và trần mới của thumbnail có hiệu lực từ lần mở app sau (ADR-0021).
 - **CD-08** (xóa dữ liệu khi nhập sai quá nhiều): khi bật, hiện cảnh báo *"Sau 10 lần nhập sai liên tiếp, toàn bộ dữ liệu và kết nối sẽ bị xóa"*, yêu cầu xác nhận bằng mã PIN. Tùy chọn này chỉ chống đoán PIN qua giao diện app, không thay thế được việc khóa màn hình thiết bị.
 - **CD-09** (đổi mã PIN): nhập PIN hiện tại, rồi nhập PIN mới 2 lần (áp dụng BM-06); mã hóa lại config bằng PIN mới. Ghi ra tệp tạm rồi mới thay tệp cũ, để lỗi giữa chừng không làm mất config. Sau khi đổi, mở khóa bằng sinh trắc học bị **tắt** (khóa dẫn xuất mới), người dùng bật lại ở Cài đặt.
 - **CD-11** (tự khóa khi rời app): chỉ có tác dụng khi bảo mật BẬT. Tính từ lúc **cả app** không còn màn nào hiển thị (xoay màn hình, hộp thoại sinh trắc học của hệ thống không tính). Quay lại trước mốc đã chọn thì không khóa; quá mốc thì khóa (CH-03). "Ngay lập tức" khóa ngay khi rời app. Hệ điều hành thu hồi app trong lúc chờ thì lần mở sau luôn vào màn Khóa. Trong thời gian chờ, ảnh app ở danh sách ứng dụng gần đây vẫn bị ẩn (CH-05).
-- **CD-12** (bảo vệ màn hình): bật thì mọi màn của app chặn chụp, quay màn hình và ẩn nội dung ở danh sách ứng dụng gần đây, kể cả hộp thoại. Tắt (mặc định) thì chỉ các màn luôn chặn ở CH-05 (Kết nối, Khóa, Thiết lập bảo mật, nhập PIN) chặn; màn Cài đặt chụp được. Không phụ thuộc có bật PIN hay không; bị xóa về mặc định khi Ngắt kết nối (CD-05).
+- **CD-12** (bảo vệ màn hình): bật thì mọi màn của app chặn chụp, quay màn hình và ẩn nội dung ở danh sách ứng dụng gần đây, kể cả hộp thoại. Tắt (mặc định) thì chỉ các màn luôn chặn ở CH-05 (Kết nối, Khóa, Thiết lập bảo mật, nhập PIN) chặn; tab Cài đặt chụp được. Không phụ thuộc có bật PIN hay không; bị xóa về mặc định khi Ngắt kết nối (CD-05). Áp theo tab đang hiện (DH-08).
+- **CD-13** (thời lượng tối đa của Short): thanh trượt 3 đến 10 phút, bước 1 phút, mặc định 3 phút. Đổi giá trị áp dụng theo SV-16 (lọc lại và xáo mới khi quay lại tab Short). Thuộc nhóm cài đặt nên bị xóa về mặc định khi Ngắt kết nối (CD-05). Thêm 2026-10-10.
 - **CD-10** (ngôn ngữ):
   - Hỗ trợ **Tiếng Việt** và **English**. "Theo hệ thống" dùng ngôn ngữ của máy; nếu máy dùng ngôn ngữ khác VI/EN thì dùng **Tiếng Việt** (ngôn ngữ mặc định của app).
-  - Đổi ngôn ngữ áp dụng **ngay**, không cần khởi động lại app và không làm mất màn hình đang mở hay trạng thái đang xem.
-  - Áp dụng cho **mọi văn bản** trong app, gồm cả thông báo lỗi (bảng lỗi ở 3.1), cảnh báo, nhãn và các hộp thoại. Thông báo lỗi chọn theo mã lỗi, không hiển thị nguyên văn của máy chủ.
+  - Đổi ngôn ngữ áp dụng **ngay**, không cần khởi động lại app và không làm mất màn hình đang mở hay trạng thái đang xem (kể cả trạng thái các tab, DH-02).
+  - Áp dụng cho **mọi văn bản** trong app, gồm cả thông báo lỗi (bảng lỗi ở 3.1), cảnh báo, nhãn, các hộp thoại và nhãn trên thanh điều hướng đáy. Thông báo lỗi chọn theo mã lỗi, không hiển thị nguyên văn của máy chủ.
   - **Ngày, giờ, dung lượng, thời lượng và số** hiển thị theo quy ước của ngôn ngữ đang dùng (vd. tiêu đề nhóm ngày trong Thư viện, TV-01).
   - **Tên tệp và tên thư mục** lấy từ OneDrive, hiển thị nguyên văn, không dịch.
   - Lựa chọn ngôn ngữ thuộc nhóm cài đặt nên bị xóa khi Ngắt kết nối (CD-05); khi đó app quay về "Theo hệ thống". Màn Kết nối, hộp thoại KN-13 và màn Thiết lập bảo mật lần đầu luôn dùng "Theo hệ thống".
@@ -303,8 +378,8 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **CH-02**: Không lưu mã PIN hay mã băm của mã PIN. PIN đúng hay sai được xác định bằng việc giải mã config thành công hay không.
 - **CH-03**: Access token chỉ giữ trong bộ nhớ, không ghi xuống đĩa; khi app bị khóa thì xóa token và config đã giải mã khỏi bộ nhớ.
 - **CH-04**: Dữ liệu app không được đưa vào sao lưu tự động của Android.
-- **CH-05**: Các màn Kết nối, Khóa, Thiết lập bảo mật và nhập PIN luôn chặn chụp màn hình. Màn Cài đặt **không** luôn chặn (đổi 2026-10-08, ADR-0022): chỉ chặn khi bật "Bảo vệ màn hình". Mục "Bảo vệ màn hình" ở Cài đặt › Bảo mật mở rộng việc chặn ra toàn app.
-- **Hướng màn hình (2026-10-07)**: toàn app chỉ hiển thị **dọc** (cấu hình toàn app, không có trong Cài đặt). Riêng màn xem video cho xoay ngang bằng nút xoay (VD-07), rời màn thì về dọc.
+- **CH-05**: Các màn Kết nối, Khóa, Thiết lập bảo mật và nhập PIN luôn chặn chụp màn hình. Tab Cài đặt **không** luôn chặn (đổi 2026-10-08, ADR-0022): chỉ chặn khi bật "Bảo vệ màn hình". Mục "Bảo vệ màn hình" ở Cài đặt › Bảo mật mở rộng việc chặn ra toàn app.
+- **Hướng màn hình (2026-10-07)**: toàn app chỉ hiển thị **dọc** (cấu hình toàn app, không có trong Cài đặt). Riêng màn xem video cho xoay ngang bằng nút xoay (VD-07), rời màn thì về dọc. Tab Short luôn dọc (SV-08).
 - **CH-06**: Không ghi Client Secret, access token hay header `Authorization` vào log.
 - **CH-07**: Vì PIN chỉ có 1 triệu tổ hợp, việc chống đoán thử không dựa vào độ phức tạp của PIN mà dựa vào hai lớp: (1) khóa Keystore gắn với thiết bị nên không thể thử PIN ngoài máy; (2) dẫn xuất khóa chậm (Argon2id hoặc tương đương) để mỗi lần thử tốn thời gian.
 
@@ -320,7 +395,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 
 ### 4.3 Đồng bộ dữ liệu
 
-- **DB-01**: Lần đầu: quét toàn bộ drive bằng delta, lưu danh sách tệp và thư mục vào CSDL trên máy, lưu mốc `deltaLink`.
+- **DB-01**: Lần đầu: quét toàn bộ drive bằng delta, lưu danh sách tệp và thư mục vào CSDL trên máy, lưu mốc `deltaLink`. Quét xong lần đầu thì mục Short mới hiện trên thanh điều hướng đáy (DH-01).
 - **DB-02**: Các lần sau: chỉ lấy thay đổi kể từ mốc trước (thêm, sửa, xóa).
 - **DB-03**: Nhận `410` (mốc không còn hợp lệ): bỏ mốc cũ và quét lại toàn bộ ở nền; danh sách hiện tại vẫn dùng được trong lúc quét.
 - **DB-04**: Đồng bộ lần đầu bị gián đoạn (tắt app, mất mạng): lần sau tiếp tục từ trang đang quét dở, không quét lại từ đầu. Nếu gián đoạn do **app bị khóa** (CH-03, config bị xóa khỏi bộ nhớ) thì đồng bộ tự chạy tiếp ngay khi mở khóa, người dùng không phải kéo làm mới.
@@ -328,7 +403,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 
 ### 4.4 Bộ nhớ đệm
 
-- **BN-01**: Cache gồm 4 phần: thumbnail, ảnh gốc, đoạn video đã xem, tệp PDF. Tổng dung lượng không vượt giới hạn trong Cài đặt. **Mỗi phần có trần riêng** = giới hạn chung × tỉ lệ của phần đó (Cài đặt › Bộ nhớ đệm › Tỉ lệ chia theo loại, mặc định 10% / 30% / 45% / 15%); phần nào vượt trần riêng thì xóa tệp lâu không dùng nhất **trong phần đó** trước, không lấy dung lượng của phần khác. Phần chưa dùng hết trần không nhường cho phần khác. Riêng thumbnail không dọn chọn lọc được (xem CD-07). Chốt 2026-10-07 (ADR-0021).
+- **BN-01**: Cache gồm 4 phần: thumbnail, ảnh gốc, đoạn video đã xem (kể cả phần tải trước ở tab Short, SV-13), tệp PDF. Tổng dung lượng không vượt giới hạn trong Cài đặt. **Mỗi phần có trần riêng** = giới hạn chung × tỉ lệ của phần đó (Cài đặt › Bộ nhớ đệm › Tỉ lệ chia theo loại, mặc định 10% / 30% / 45% / 15%); phần nào vượt trần riêng thì xóa tệp lâu không dùng nhất **trong phần đó** trước, không lấy dung lượng của phần khác. Phần chưa dùng hết trần không nhường cho phần khác. Riêng thumbnail không dọn chọn lọc được (xem CD-07). Chốt 2026-10-07 (ADR-0021).
 - **BN-02**: Tệp trong cache được nhận diện theo mã tệp và phiên bản nội dung (`cTag`). Tệp đổi nội dung trên OneDrive thì bản cũ trong cache bị bỏ; đổi tên hay di chuyển thì vẫn dùng lại cache.
 - **BN-03**: Tải dở bị gián đoạn thì lần sau tải tiếp phần còn thiếu, không tải lại từ đầu; tệp chỉ được dùng sau khi tải đủ và đúng dung lượng.
 
@@ -355,11 +430,13 @@ Nhận diện theo `file.mimeType`; nếu không có thì theo đuôi tên tệp
 | Kết nối **OneDrive for Business** bằng Tenant ID / Client ID / Client Secret / UPN (Client Credentials) | ✓ | |
 | Đa ngôn ngữ **Tiếng Việt + English**, chọn trong Cài đặt (CD-10) | ✓ | |
 | Hộp thoại hỏi thiết lập PIN sau kết nối (KN-13), thiết lập bảo mật (mã PIN 6 số), màn Khóa | ✓ | |
+| Thanh điều hướng đáy: Thư mục, Thư viện, Short, Cài đặt; mỗi tab giữ trạng thái riêng (mục 3.4) | ✓ | |
 | Danh sách: tab Thư mục, tab Thư viện, tìm kiếm, sắp xếp | ✓ | |
+| Tab Short: video ngắn vuốt dọc, thứ tự ngẫu nhiên, lọc theo thời lượng tối đa (mục 3.4.4) | ✓ | |
 | Dải Xem tiếp / Đọc tiếp | ✓ | |
 | Xem video: điều khiển ở mục 3.5, nhớ vị trí | ✓ | |
 | Video: chế độ phát (Không lặp / Tự phát tiếp / Lặp một video / Lặp danh sách), nút Phát lại | ✓ | |
-| Video: phát ngẫu nhiên (shuffle) | | ✓ |
+| Video: phát ngẫu nhiên (shuffle) trong màn Xem video (khác với thứ tự ngẫu nhiên của tab Short) | | ✓ |
 | Video: 3 chế độ khung hình, zoom hai ngón, bảng thông tin tệp | ✓ | |
 | Video: nút xoay dọc/ngang, mặc định vào ở hướng dọc (đổi được ở Cài đặt) | ✓ | |
 | Video: tỉ lệ khung hình tùy chọn (16:9, 4:3, 21:9...) | | ✓ |
@@ -380,3 +457,4 @@ Nhận diện theo `file.mimeType`; nếu không có thì theo đuôi tên tệp
 
 - Có cần "Kệ truyện" (danh sách mọi PDF trong drive, giống tab Thư viện cho ảnh/video) không, hay chỉ duyệt PDF qua Thư mục?
 - Có cho phép mở tệp không hỗ trợ bằng ứng dụng khác trên máy không (cần tải tệp về trước).
+- Ngưỡng "tỉ lệ gần" để video dọc ở tab Short dùng Cắt đầy (SV-08, đang đề xuất phần bị cắt không quá khoảng 20% mỗi chiều): chốt khi thử máy ở Lát 8.
