@@ -34,6 +34,14 @@ internal object ShortsConstants {
     /** Kéo xuống ở video đầu quá chừng này (dp) rồi thả thì xáo lại (SV-03). */
     const val RESHUFFLE_PULL_DP = 96
 
+    /** Cuộn về đầu khi chạm lại tab Short: 320ms + 90ms × ln(1 + số trang), tối đa 900ms (DH-04, 2026-10-11). */
+    const val SCROLL_TOP_BASE_MS = 320f
+    const val SCROLL_TOP_LOG_MS = 90f
+    const val SCROLL_TOP_MAX_MS = 900
+
+    /** Chờ chừng này mới hiện spinner tải: video đã được tải trước thường lên hình trong vài trăm ms, hiện spinner ngay chỉ gây nháy. */
+    const val SPINNER_DELAY_MS = 400L
+
     /** Vòng tạm dừng mờ vào/ra (`duration.fast`, SV-06). */
     const val PAUSE_FADE_MS = 150
 

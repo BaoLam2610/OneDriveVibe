@@ -3,7 +3,12 @@
 package com.lambao.odv.feature.shorts
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.pager.PagerState
+import com.lambao.odv.core.designsystem.component.ODVReselectEffect
+import kotlin.math.ln
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -66,7 +71,6 @@ import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.component.ODVViewerBufferSpinner
 import com.lambao.odv.core.designsystem.component.ODVViewerButton
 import com.lambao.odv.core.designsystem.component.ODVViewerError
-import com.lambao.odv.core.designsystem.component.ODVViewerMiniProgress
 import com.lambao.odv.core.designsystem.component.ODVViewerNetworkNotice
 import com.lambao.odv.core.designsystem.component.ODVViewerPill
 import com.lambao.odv.core.designsystem.icon.ODVIcon
@@ -75,6 +79,7 @@ import com.lambao.odv.core.designsystem.theme.ODVSize
 import com.lambao.odv.core.designsystem.theme.ODVTheme
 import com.lambao.odv.core.domain.model.ShortVideo
 import com.lambao.odv.core.media.PlayerFailure
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -93,6 +98,7 @@ internal fun ShortsContent(
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
     onPreload: (List<ShortVideo>) -> Unit,
+    reselectSignal: Int,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -112,7 +118,7 @@ internal fun ShortsContent(
             )
             // Dựng lại Pager từ đầu mỗi lần danh sách được xây hoặc xáo lại (generation đổi).
             ShortsPhase.Ready -> key(state.generation) {
-                ShortsPager(state, controller, reshuffledShown, onIntent, onPositionChanged, onPreload)
+                ShortsPager(state, controller, reshuffledShown, onIntent, onPositionChanged, onPreload, reselectSignal)
             }
         }
     }
@@ -126,6 +132,7 @@ private fun BoxScope.ShortsPager(
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
     onPreload: (List<ShortVideo>) -> Unit,
+    reselectSignal: Int,
 ) {
     val ids = state.ids
     val currentOnIntent by rememberUpdatedState(onIntent)
@@ -133,6 +140,31 @@ private fun BoxScope.ShortsPager(
     val currentOnPreload by rememberUpdatedState(onPreload)
     val pagerState = rememberPagerState(initialPage = state.index.coerceIn(0, (ids.size - 1).coerceAtLeast(0))) { ids.size }
     val settled = pagerState.settledPage
+
+    // Đang tự cuộn về đầu rồi xáo lại (chạm lại tab Short): không nạp video, không gắn bề mặt phát vào trang nào đi qua. Cờ này sống tới khi xáo lại
+    // dựng Pager mới (key theo generation) nên không cần đặt lại.
+    var autoScrolling by remember { mutableStateOf(false) }
+    // DH-04 (2026-10-11): chạm lại tab Short khi đang ở video không phải đầu thì cuộn mượt về đầu rồi xáo lại; đang ở video đầu thì không làm gì
+    // (xáo lại bằng kéo xuống, SV-03).
+    ODVReselectEffect(reselectSignal) {
+        if (pagerState.currentPage <= 0 && pagerState.currentPageOffsetFraction == 0f) {
+            shortsLog.d { "[Short][UI] chạm lại tab Short: đang ở video đầu, bỏ qua" }
+            return@ODVReselectEffect
+        }
+        shortsLog.i { "[Short][UI] chạm lại tab Short: cuộn về đầu từ trang ${pagerState.currentPage} rồi xáo lại" }
+        autoScrolling = true
+        controller?.pause()
+        try {
+            pagerState.scrollToFirstSmoothly()
+        } catch (e: CancellationException) {
+            // Người dùng chạm vào màn giữa lúc đang cuộn (Pager hủy hoạt ảnh) hoặc màn bị bỏ: trả quyền cho lần vuốt của họ, đừng để cờ kẹt làm
+            // video không được nạp. Không xáo lại.
+            autoScrolling = false
+            shortsLog.i { "[Short][UI] cuộn về đầu bị ngắt giữa chừng, hủy việc xáo lại" }
+            throw e
+        }
+        currentOnIntent(ShortsIntent.ReshuffleFromTab)
+    }
 
     LaunchedEffect(Unit) {
         shortsLog.i { "[Short][UI] dựng Pager gen=${state.generation} index=${state.index} ${ids.size} video, player=${if (controller != null) "sẵn sàng" else "chưa có"}" }
@@ -148,8 +180,9 @@ private fun BoxScope.ShortsPager(
     val currentVideo = currentId?.let { state.videos[it] }
     // Lưu ý: sau khi app bị khóa, controller.loadedId về null nhưng không phải key của effect này; nạp lại chạy được vì màn Khóa đẩy Màn chính ra
     // khỏi composition nên effect khởi động lại khi mở khóa. Nếu sau này Màn chính được giữ dưới màn Khóa thì phải thêm loadedId vào key.
-    LaunchedEffect(controller, currentVideo?.item?.id, state.generation) {
+    LaunchedEffect(controller, currentVideo?.item?.id, state.generation, autoScrolling) {
         val player = controller ?: return@LaunchedEffect
+        if (autoScrolling) return@LaunchedEffect
         val video = currentVideo
         if (video == null) {
             // Chi tiết trang mới chưa có (hoặc bản ghi vừa bị xóa): trang vẽ đen, nên đừng để video trước còn phát tiếng ở phía sau.
@@ -259,7 +292,7 @@ private fun BoxScope.ShortsPager(
             ShortPage(
                 video = state.videos[ids[page]],
                 controller = controller,
-                isCurrent = page == settled,
+                isCurrent = page == settled && !autoScrolling,
             )
         }
 
@@ -359,7 +392,18 @@ private fun ShortPage(
             // Cố ý KHÔNG phủ thumbnail của OneDrive trước khung hình đầu (kiểm tay 2026-10-11): thumbnail không phải khung hình đầu của video nên
             // khi khung hình thật hiện ra, hình bị nháy từ ảnh này sang ảnh khác. Nền đen cộng spinner cho tới khi có khung hình đầu thật.
             // Việc dùng đúng khung hình đầu làm poster (như các app Short khác) cần tải trước và giải mã sẵn, ghi ở kế hoạch 8c.
-            if (isCurrent && !rendered && failure == null) {
+            // Chỉ hiện spinner khi phải chờ quá SPINNER_DELAY_MS: video đã được tải trước thường lên hình sau vài trăm ms, hiện spinner ngay chỉ gây
+            // nháy (kiểm tay 2026-10-11). Trong lúc chờ là nền đen.
+            val waiting = isCurrent && !rendered && failure == null
+            var spinnerVisible by remember(item.id) { mutableStateOf(false) }
+            LaunchedEffect(waiting, item.id) {
+                spinnerVisible = false
+                if (waiting) {
+                    delay(ShortsConstants.SPINNER_DELAY_MS)
+                    spinnerVisible = true
+                }
+            }
+            if (waiting && spinnerVisible) {
                 ODVSpinner(
                     size = 36.dp,
                     color = ODVMediaColors.onMedia,
@@ -467,8 +511,8 @@ private fun ShortInfo(name: String, folder: String, modifier: Modifier = Modifie
 }
 
 /**
- * Thanh tiến độ kiêm thanh tua của Short (SV-07). Luôn có thanh mảnh [ODVViewerMiniProgress]; **chạm vào vùng thanh** hoặc **khi người dùng
- * đang tạm dừng** thì thay bằng [ShortSeekBar] (rãnh 4, núm 16, vùng chạm 24, rãnh sát đường tiếp xúc với thanh đáy). Khi đang chạm còn hiện viên thời gian
+ * Thanh tiến độ kiêm thanh tua của Short (SV-07): một [ShortSeekBar] duy nhất, dạng thanh mảnh khi đang phát; **chạm vào vùng thanh** hoặc **khi
+ * người dùng đang tạm dừng** thì nở ra thành thanh tua (rãnh 4, núm 16, vùng chạm 48, rãnh sát đường tiếp xúc với thanh đáy). Khi đang chạm còn hiện viên thời gian
  * "đang kéo / tổng" phía trên. Kéo hoặc chạm chỉ đổi vị trí hiển thị; tua thật khi **nhả tay** ([ShortPlayerController.seekTo]), và không đổi
  * trạng thái phát/dừng. Thanh nằm trên Pager nên cú vuốt bắt đầu ở đây không làm đổi video.
  */
@@ -480,10 +524,11 @@ private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Mo
     val duration = controller.durationMs
     val played = scrub ?: fraction(controller.positionMs, duration)
     val seekVisible = touching || controller.userPaused
-    val seekAlpha by animateFloatAsState(
+    // 0 = thanh mảnh, 1 = thanh tua có núm; hoạt ảnh liên tục của cùng một thanh (xem ShortSeekBar), không còn hai thanh mờ dần chéo nhau.
+    val expanded by animateFloatAsState(
         targetValue = if (seekVisible) 1f else 0f,
         animationSpec = tween(ShortsConstants.PAUSE_FADE_MS),
-        label = "shortSeekAlpha",
+        label = "shortSeekExpanded",
     )
     val description = stringResource(R.string.shorts_seek_description)
     val valueDescription = stringResource(
@@ -492,25 +537,24 @@ private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Mo
         odvFormatDuration(duration),
     )
     Box(modifier.fillMaxWidth()) {
-        ODVViewerMiniProgress(
-            position = fraction(controller.positionMs, duration),
-            buffered = fraction(controller.bufferedPositionMs, duration),
-            modifier = Modifier.align(Alignment.BottomCenter).graphicsLayer { alpha = 1f - seekAlpha },
-        )
-        if (touching && duration > 0L) {
+        // Viên thời gian hiện/ẩn bằng fade thay vì bật tắt đột ngột (kiểm tay 2026-10-11: chạm vào thanh tua thấy nháy).
+        AnimatedVisibility(
+            visible = touching && duration > 0L,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = ODVSize.seekTouch + 8.dp),
+            enter = fadeIn(tween(ShortsConstants.PAUSE_FADE_MS)),
+            exit = fadeOut(tween(ShortsConstants.PAUSE_FADE_MS)),
+        ) {
             ODVViewerPill(
                 text = "${odvFormatDuration((played * duration).toLong())} / ${odvFormatDuration(duration)}",
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = ODVSize.seekTouch + 8.dp),
                 mono = true,
             )
         }
-        // alpha 0 vẫn nhận chạm, nên chạm vào vùng này khi thanh tua đang ẩn sẽ hiện nó ngay. Không chừa lề trái phải: thanh phẳng, liền hai mép
-        // màn như thanh mảnh (kiểm tay 2026-10-11).
+        // Thanh luôn có mặt (dạng mảnh khi không chạm) nên vùng chạm 48 luôn nhận chạm và thanh tự nở ra. Không chừa lề trái phải: thanh phẳng,
+        // liền hai mép màn (kiểm tay 2026-10-11).
         Box(
             Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .graphicsLayer { alpha = seekAlpha }
                 .observeTouch { isTouching ->
                     touching = isTouching
                     shortsLog.d { "[Short][Seek] ${if (isTouching) "chạm vào thanh tua" else "nhả tay khỏi thanh tua"}" }
@@ -526,6 +570,7 @@ private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Mo
                     scrub?.let { controller.seekTo((it * duration).toLong()) }
                     scrub = null
                 },
+                expanded = expanded,
             )
         }
     }
@@ -554,3 +599,23 @@ private val INFO_HEIGHT = 96.dp
 
 /** Id Graph dài; log chỉ ghi chừng này ký tự cuối (cùng quy ước với `:core:media`, CH-06). */
 private const val ID_LOG_LENGTH = 8
+
+/**
+ * Cuộn mượt về video đầu bằng **một** hoạt ảnh liên tục theo quãng đường thật (số trang × chiều cao trang), thay cho `animateScrollToPage`: hàm đó với
+ * trang ở xa sẽ nhảy tức thì tới gần đích rồi mới trượt nên thấy giật. Thời gian tăng theo logarit của số trang (320ms + 90ms × ln(1 + số trang), tối đa
+ * 900ms) và giảm tốc cuối (FastOutSlowIn), nên chỉ số rất cao vẫn nhanh mà không xô cứng. Pager chỉ dựng các trang đang hiện nên quãng dài không tốn kém.
+ */
+private suspend fun PagerState.scrollToFirstSmoothly() {
+    val pageSize = layoutInfo.pageSize + layoutInfo.pageSpacing
+    val pages = currentPage + currentPageOffsetFraction
+    if (pageSize <= 0 || pages <= 0f) {
+        scrollToPage(0)
+        return
+    }
+    val duration = (ShortsConstants.SCROLL_TOP_BASE_MS + ShortsConstants.SCROLL_TOP_LOG_MS * ln(1f + pages))
+        .toInt()
+        .coerceAtMost(ShortsConstants.SCROLL_TOP_MAX_MS)
+    animateScrollBy(value = -pages * pageSize, animationSpec = tween(durationMillis = duration, easing = FastOutSlowInEasing))
+    // Phòng sai số số thực: bảo đảm dừng đúng đầu trang 0.
+    if (currentPage != 0 || currentPageOffsetFraction != 0f) scrollToPage(0)
+}

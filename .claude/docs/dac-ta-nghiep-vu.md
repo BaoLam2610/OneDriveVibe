@@ -151,7 +151,7 @@ Màn chính dùng **thanh điều hướng đáy** thay cho 2 tab Thư mục / T
 - **DH-04** (chạm lại tab đang chọn):
   - Thư mục: cuộn lên đầu; nếu đã ở đầu thì về thư mục gốc.
   - Thư viện, Cài đặt: cuộn lên đầu.
-  - Short: không làm gì (xáo lại bằng kéo xuống, SV-03).
+  - Short (sửa 2026-10-11): đang ở video **không phải đầu** thì cuộn mượt về video đầu rồi xáo lại toàn bộ danh sách (như SV-03; video đầu mới khác video đang xem). Hoạt ảnh cuộn là một đường liên tục theo quãng thật, thời gian tăng chậm theo chỉ số (320ms + 90ms × ln(1 + số video), tối đa 900ms) nên chỉ số rất cao vẫn mượt; chạm vào màn giữa chừng thì dừng và không xáo lại. Đang ở video đầu thì không làm gì (xáo lại bằng kéo xuống).
 - **DH-05** (khi nào thanh ẩn): thanh chỉ hiện ở Màn chính. Thanh **ẩn** ở các màn Xem video, Xem ảnh, Xem PDF, màn Khóa, Kết nối, Thiết lập bảo mật, các màn con mở từ Cài đặt (đổi PIN, nhập PIN để tắt bảo mật, cập nhật Client Secret...) và khi bàn phím đang mở để tìm kiếm.
 - **DH-06** (mở app): vào tab **Thư mục hoặc Thư viện**, tùy tab nào dùng gần nhất trong hai tab này. App **không** mở thẳng vào Short (tránh video tự phát có tiếng ngay khi mở) hay Cài đặt. Khôi phục sau khi hệ điều hành thu hồi tiến trình thì theo DH-02 (quay lại đúng tab đang mở, kể cả Short, nhưng Short ở trạng thái **tạm dừng**).
 - **DH-07** (chấm nhắc trên Cài đặt): khi banner nhắc hết hạn secret đang hiện (CD-06), mục Cài đặt trên thanh có một chấm nhỏ tông cảnh báo; đã hết hạn thì chấm tông lỗi.

@@ -54,7 +54,8 @@ class ShortsViewModel(
                 setState { copy(index = intent.index) }
                 loadAround(intent.index)
             }
-            ShortsIntent.Reshuffle -> reshuffle()
+            ShortsIntent.Reshuffle -> reshuffle(requireFirst = true)
+            ShortsIntent.ReshuffleFromTab -> reshuffle(requireFirst = false)
             ShortsIntent.RestoreConsumed -> {
                 shortsLog.d { "[Short][VM] đã dùng xong vị trí/trạng thái khôi phục" }
                 setState { copy(resumePositionMs = 0L, startPaused = false) }
@@ -138,9 +139,9 @@ class ShortsViewModel(
     }
 
     /** SV-03: chỉ ở video đầu tiên; xáo toàn bộ và chọn seed sao cho video đầu mới khác video đang xem (khi có từ 2 video). */
-    private fun reshuffle() {
+    private fun reshuffle(requireFirst: Boolean) {
         val state = currentState
-        if (state.phase != ShortsPhase.Ready || state.index != 0) {
+        if (state.phase != ShortsPhase.Ready || (requireFirst && state.index != 0)) {
             shortsLog.w { "[Short][VM] bỏ qua yêu cầu xáo lại: phase=${state.phase} index=${state.index}" }
             return
         }

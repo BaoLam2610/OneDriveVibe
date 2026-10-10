@@ -108,6 +108,7 @@ private fun HomeContent(
     var foldersReselect by rememberSaveable { mutableIntStateOf(0) }
     var libraryReselect by rememberSaveable { mutableIntStateOf(0) }
     var settingsReselect by rememberSaveable { mutableIntStateOf(0) }
+    var shortReselect by rememberSaveable { mutableIntStateOf(0) }
     val stateHolder = rememberSaveableStateHolder()
 
     // DH-06: nhớ tab danh sách dùng gần nhất (Short và Cài đặt bị bỏ qua trong ViewModel).
@@ -172,7 +173,10 @@ private fun HomeContent(
                             reselectSignal = settingsReselect,
                         )
                         // SH9: nút "Mở Cài đặt" ở trạng thái trống chuyển sang tab Cài đặt để tăng thời lượng tối đa (SV-15).
-                        HomeTab.Short -> ODVShortsScreen(onOpenSettings = { selected = HomeTab.Settings })
+                        HomeTab.Short -> ODVShortsScreen(
+                            onOpenSettings = { selected = HomeTab.Settings },
+                            reselectSignal = shortReselect,
+                        )
                     }
                 }
             }
@@ -193,7 +197,8 @@ private fun HomeContent(
                             HomeTab.Folders -> foldersReselect++
                             HomeTab.Library -> libraryReselect++
                             HomeTab.Settings -> settingsReselect++
-                            HomeTab.Short -> Unit
+                            // DH-04: Short cuộn mượt về video đầu rồi xáo lại khi đang ở video không phải đầu.
+                            HomeTab.Short -> shortReselect++
                         }
                     } else {
                         selected = tab

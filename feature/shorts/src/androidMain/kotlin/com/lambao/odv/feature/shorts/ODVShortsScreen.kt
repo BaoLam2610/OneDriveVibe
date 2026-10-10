@@ -25,6 +25,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ODVShortsScreen(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    reselectSignal: Int = 0,
     viewModel: ShortsViewModel = koinViewModel(),
 ) {
     val holder: ShortPlayerHolder = koinViewModel()
@@ -68,6 +69,7 @@ fun ODVShortsScreen(
         onIntent = viewModel::onIntent,
         onPositionChanged = { savedPosition = it },
         onPreload = holder::preload,
+        reselectSignal = reselectSignal,
         onOpenSettings = onOpenSettings,
         modifier = modifier,
     )

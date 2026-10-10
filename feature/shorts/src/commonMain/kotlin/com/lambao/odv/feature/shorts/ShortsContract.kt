@@ -49,6 +49,12 @@ sealed interface ShortsIntent {
     /** Kéo xuống ở video đầu tiên để xáo lại toàn bộ danh sách (SV-03); ở video khác thì không làm gì. */
     data object Reshuffle : ShortsIntent
 
+    /**
+     * Chạm lại tab Short khi đang ở video không phải đầu (DH-04, 2026-10-11): màn đã cuộn mượt về đầu, giờ xáo lại toàn bộ danh sách. Khác
+     * [Reshuffle] ở chỗ không đòi chỉ số hiện tại bằng 0 (ViewModel chưa kịp nhận `PageSettled(0)` từ lần cuộn đó).
+     */
+    data object ReshuffleFromTab : ShortsIntent
+
     /** Đã dùng xong [ShortsState.resumePositionMs] và [ShortsState.startPaused] cho lần nạp đầu. */
     data object RestoreConsumed : ShortsIntent
 }
