@@ -1,0 +1,35 @@
+<resources>
+    <!-- ADR-0011: values/ là Tiếng Việt (ngôn ngữ mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai. -->
+    <!-- Tab Short (thiet-ke-ui.md mục 4.8, 5.5). Mục đánh dấu [mới] chưa có trong thiết kế, chờ duyệt. -->
+    <string name="shorts_loading">Đang tải video</string>
+    <string name="shorts_root">Tài liệu</string>
+
+    <!-- SH6: viên thuốc sau khi xáo lại (SV-03) -->
+    <string name="shorts_reshuffled">Đã xáo lại</string> <!-- [mới] -->
+
+    <!-- SH9: danh sách rỗng (SV-15) -->
+    <string name="shorts_empty_title">Chưa có video ngắn</string> <!-- [mới] -->
+    <string name="shorts_empty_body">Không có video nào dài tối đa %1$d phút. Tăng thời lượng trong Cài đặt › Video.</string> <!-- [mới] -->
+    <string name="shorts_open_settings">Mở Cài đặt</string> <!-- [mới] -->
+
+    <!-- Lỗi phát (SH7, SH8; SV-14), cùng câu chữ với màn Xem video -->
+    <string name="shorts_error_unsupported_title">Thiết bị không hỗ trợ phát định dạng này</string>
+    <string name="shorts_error_unsupported_body">Máy chưa có bộ giải mã cho tệp này.</string>
+    <string name="shorts_error_removed_title">Video này không còn trên OneDrive</string> <!-- [mới] -->
+    <string name="shorts_error_removed_body">Tệp có thể đã bị xóa. Vuốt sang video khác.</string> <!-- [mới] -->
+    <string name="shorts_error_other_title">Không phát được video này</string> <!-- [mới] -->
+    <string name="shorts_error_other_body">Đã có lỗi khi tải video. Hãy thử lại.</string> <!-- [mới] -->
+    <string name="shorts_error_network_title">Mất kết nối mạng</string>
+    <string name="shorts_error_network_body">Đã phát hết phần đã tải trước. Kiểm tra mạng rồi nhấn Tiếp tục.</string>
+    <string name="shorts_retry">Thử lại</string>
+    <string name="shorts_resume">Tiếp tục</string>
+
+    <!-- Nhãn TalkBack (thiet-ke-ui.md mục 4.8) -->
+    <string name="shorts_state_playing">đang phát</string> <!-- [mới] -->
+    <string name="shorts_state_paused">đã tạm dừng</string> <!-- [mới] -->
+    <string name="shorts_action_pause">Tạm dừng</string>
+    <string name="shorts_action_play">Phát</string>
+    <string name="shorts_action_next">Video kế tiếp</string>
+    <string name="shorts_action_previous">Video trước</string>
+    <string name="shorts_action_reshuffle">Xáo lại danh sách</string>
+</resources>

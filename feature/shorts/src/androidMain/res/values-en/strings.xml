@@ -1,0 +1,34 @@
+<resources>
+    <!-- Short tab (thiet-ke-ui.md sections 4.8, 5.5). -->
+    <string name="shorts_loading">Loading video</string>
+    <string name="shorts_root">Documents</string>
+
+    <!-- SH6: pill shown after reshuffling (SV-03) -->
+    <string name="shorts_reshuffled">Reshuffled</string>
+
+    <!-- SH9: empty list (SV-15) -->
+    <string name="shorts_empty_title">No short videos yet</string>
+    <string name="shorts_empty_body">No video is %1$d minutes or shorter. Raise the limit in Settings › Video.</string>
+    <string name="shorts_open_settings">Open Settings</string>
+
+    <!-- Playback errors (SH7, SH8; SV-14), same wording as the video viewer -->
+    <string name="shorts_error_unsupported_title">This device can\'t play this format</string>
+    <string name="shorts_error_unsupported_body">This device has no decoder for this file.</string>
+    <string name="shorts_error_removed_title">This video is no longer on OneDrive</string>
+    <string name="shorts_error_removed_body">The file may have been deleted. Swipe to another video.</string>
+    <string name="shorts_error_other_title">Can\'t play this video</string>
+    <string name="shorts_error_other_body">Something went wrong while loading the video. Try again.</string>
+    <string name="shorts_error_network_title">No internet connection</string>
+    <string name="shorts_error_network_body">Everything that was buffered has played. Check your connection, then tap Resume.</string>
+    <string name="shorts_retry">Try again</string>
+    <string name="shorts_resume">Resume</string>
+
+    <!-- TalkBack labels (thiet-ke-ui.md section 4.8) -->
+    <string name="shorts_state_playing">playing</string>
+    <string name="shorts_state_paused">paused</string>
+    <string name="shorts_action_pause">Pause</string>
+    <string name="shorts_action_play">Play</string>
+    <string name="shorts_action_next">Next video</string>
+    <string name="shorts_action_previous">Previous video</string>
+    <string name="shorts_action_reshuffle">Reshuffle list</string>
+</resources>

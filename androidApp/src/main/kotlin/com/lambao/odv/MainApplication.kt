@@ -11,6 +11,7 @@ import com.lambao.odv.core.domain.usecase.security.LockAppUseCase
 import com.lambao.odv.core.domain.usecase.security.ObserveLockStateUseCase
 import com.lambao.odv.core.domain.usecase.sync.SyncOnForegroundUseCase
 import com.lambao.odv.debug.DebugTools
+import com.lambao.odv.core.media.androidMediaModule
 import com.lambao.odv.di.appModule
 import com.lambao.odv.feature.auth.authModule
 import com.lambao.odv.feature.browser.browserModule
@@ -19,6 +20,8 @@ import com.lambao.odv.feature.library.libraryModule
 import com.lambao.odv.feature.player.androidPlayerModule
 import com.lambao.odv.feature.player.playerModule
 import com.lambao.odv.feature.settings.settingsModule
+import com.lambao.odv.feature.shorts.androidShortsModule
+import com.lambao.odv.feature.shorts.shortsModule
 import com.lambao.odv.security.AppLockController
 import com.lambao.odv.security.CurrentActivityHolder
 import com.lambao.odv.sync.ForegroundSyncObserver
@@ -47,7 +50,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
             modules(
                 // Debug đứng cuối để ghi đè binding của bản phát hành (vd. ThumbnailQuality).
                 listOf(appModule) + coreModules + listOf(
-                    authModule, browserModule, libraryModule, imageViewerModule, playerModule, androidPlayerModule, settingsModule,
+                    androidMediaModule, authModule, browserModule, libraryModule, imageViewerModule, playerModule, androidPlayerModule,
+                    settingsModule, shortsModule, androidShortsModule,
                 ) + DebugTools.koinModules,
             )
         }

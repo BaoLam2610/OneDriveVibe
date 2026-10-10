@@ -46,6 +46,17 @@ internal class DataStoreSettingsPreferences(
         prefs.edit { it[PreferenceKeys.SEEK_STEP_SECONDS] = seconds }
     }
 
+    override val shortMaxMinutes: Flow<Int> = prefs.observe { p ->
+        p[PreferenceKeys.SHORT_MAX_MINUTES]
+            ?.takeIf { it in VideoSettingOptions.SHORT_MIN_MINUTES..VideoSettingOptions.SHORT_MAX_MINUTES }
+            ?: VideoSettingOptions.DEFAULT_SHORT_MINUTES
+    }
+
+    override suspend fun setShortMaxMinutes(minutes: Int) {
+        if (minutes !in VideoSettingOptions.SHORT_MIN_MINUTES..VideoSettingOptions.SHORT_MAX_MINUTES) return
+        prefs.edit { it[PreferenceKeys.SHORT_MAX_MINUTES] = minutes }
+    }
+
     override val defaultSpeed: Flow<Float> = prefs.observe { p ->
         p[PreferenceKeys.DEFAULT_SPEED]?.takeIf { it in VideoSettingOptions.SPEEDS } ?: VideoSettingOptions.DEFAULT_SPEED
     }

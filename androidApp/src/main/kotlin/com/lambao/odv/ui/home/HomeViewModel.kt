@@ -8,6 +8,7 @@ import com.lambao.odv.core.domain.usecase.security.ObserveProtectionUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveLastListTabUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveSecretExpiryNoticeUseCase
 import com.lambao.odv.core.domain.usecase.settings.SetLastListTabUseCase
+import com.lambao.odv.core.domain.usecase.shorts.ObserveShortTabAvailableUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -27,7 +28,15 @@ class HomeViewModel(
     observeProtection: ObserveProtectionUseCase,
     observeLastListTab: ObserveLastListTabUseCase,
     private val setLastListTab: SetLastListTabUseCase,
+    observeShortAvailable: ObserveShortTabAvailableUseCase,
 ) : ViewModel() {
+    /**
+     * Mục Short có hiện trên thanh đáy không (DH-01): loại Video bật và đồng bộ lần đầu xong. `null` là chưa biết (đang đọc cài đặt), để
+     * khôi phục tab Short sau khi tiến trình bị thu hồi không bị đẩy về Thư mục oan trước khi luồng này kịp phát giá trị đầu.
+     */
+    val shortAvailable: StateFlow<Boolean?> =
+        observeShortAvailable().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
+
     val notice: StateFlow<SecretExpiryNotice?> =
         observeNotice().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), null)
 

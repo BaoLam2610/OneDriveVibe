@@ -73,6 +73,7 @@ class SettingsViewModel(
         viewModelScope.launch { settings.defaultVideoFit.collect { value -> setState { copy(defaultVideoFit = value) } } }
         viewModelScope.launch { settings.openVideoLandscape.collect { value -> setState { copy(openVideoLandscape = value) } } }
         viewModelScope.launch { settings.rememberVideoPosition.collect { value -> setState { copy(rememberVideoPosition = value) } } }
+        viewModelScope.launch { settings.shortMaxMinutes.collect { value -> setState { copy(shortMaxMinutes = value) } } }
         viewModelScope.launch { settings.pdfReadingStyle.collect { value -> setState { copy(pdfReadingStyle = value) } } }
         viewModelScope.launch { player.playMode.collect { value -> setState { copy(playMode = value) } } }
         viewModelScope.launch { security.autoLockDelay.collect { value -> setState { copy(autoLockDelay = value) } } }
@@ -111,6 +112,8 @@ class SettingsViewModel(
                 // Luật "không tắt loại cuối" nằm ở UseCase; bị từ chối thì State không đổi và chip vẫn bật.
                 viewModelScope.launch { toggleFileKind(intent.kind, intent.kind !in currentState.enabledKinds) }
             is SettingsIntent.SelectSeekStep -> choose { settings.setSeekStepSeconds(intent.seconds) }
+            // O6: nháp nằm trong bảng, chỉ ghi khi bấm "Áp dụng" (cùng kiểu bảng Giới hạn tối đa).
+            is SettingsIntent.ApplyShortMax -> choose { settings.setShortMaxMinutes(intent.minutes) }
             is SettingsIntent.SelectSpeed -> choose { settings.setDefaultSpeed(intent.speed) }
             is SettingsIntent.SelectVideoFit -> choose { settings.setDefaultVideoFit(intent.fit) }
             is SettingsIntent.SelectOrientation -> choose { settings.setOpenVideoLandscape(intent.landscape) }

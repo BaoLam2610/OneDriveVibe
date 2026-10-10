@@ -6,6 +6,7 @@ import com.lambao.odv.core.data.config.ConfigVault
 import com.lambao.odv.core.data.drive.ConnectionRepositoryImpl
 import com.lambao.odv.core.data.drive.FolderRepositoryImpl
 import com.lambao.odv.core.data.drive.LibraryRepositoryImpl
+import com.lambao.odv.core.data.drive.ShortRepositoryImpl
 import com.lambao.odv.core.data.drive.ViewerRepositoryImpl
 import com.lambao.odv.core.data.drive.VideoStreamRepositoryImpl
 import com.lambao.odv.core.data.security.LockoutStore
@@ -20,6 +21,7 @@ import com.lambao.odv.core.domain.repository.LibraryRepository
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.domain.repository.SyncRepository
 import com.lambao.odv.core.domain.repository.VideoStreamRepository
+import com.lambao.odv.core.domain.repository.ShortRepository
 import com.lambao.odv.core.domain.repository.ViewerRepository
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
 import com.lambao.odv.core.network.graph.GraphCredentialsSource
@@ -51,6 +53,8 @@ val dataModule = module {
     singleOf(::FolderRepositoryImpl) bind FolderRepository::class
     singleOf(::LibraryRepositoryImpl) bind LibraryRepository::class
     singleOf(::ViewerRepositoryImpl) bind ViewerRepository::class
+    // Danh sách video của tab Short (SV-01): đọc id từ Room.
+    singleOf(::ShortRepositoryImpl) bind ShortRepository::class
     // Link phát video (Lát 6, VD-14): trình phát hỏi lại mỗi lần mở kết nối vì link chỉ sống khoảng 1 giờ.
     singleOf(::VideoStreamRepositoryImpl) bind VideoStreamRepository::class
     // Đồng bộ delta về Room (ADR-0007). SyncCoordinator vừa là SyncRepository vừa là ConnectionResetter của Room nên

@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import com.lambao.odv.core.designsystem.component.ODVBottomSheet
+import com.lambao.odv.core.media.PlayerFailure
 import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVMediaDefaults
 import com.lambao.odv.core.designsystem.component.ODVPlayState

@@ -1,6 +1,6 @@
 @file:androidx.annotation.OptIn(UnstableApi::class)
 
-package com.lambao.odv.feature.player
+package com.lambao.odv.core.media
 
 import android.content.Context
 import androidx.media3.common.util.UnstableApi
@@ -23,7 +23,7 @@ import java.io.File
  * thì mỗi lần xem là một lần miss và phần đã xem (VD-11) không bao giờ dùng lại. Đổi tên hay di chuyển tệp giữ nguyên id nên
  * vẫn dùng lại cache; đổi nội dung thì `cTag` đổi và khóa mới tách khỏi bản cũ.
  */
-internal fun videoCacheKey(itemId: String, cTag: String?): String = "$itemId:${cTag ?: "0"}"
+fun videoCacheKey(itemId: String, cTag: String?): String = "$itemId:${cTag ?: "0"}"
 
 /**
  * Cache các đoạn video đã xem (BN-01, VD-11) bằng `SimpleCache` của Media3: tự giữ từng đoạn theo khoảng byte nên xem lại hoặc
@@ -34,7 +34,7 @@ internal fun videoCacheKey(itemId: String, cTag: String?): String = "$itemId:${c
  * thư mục tốn đĩa nên chạy ngoài luồng chính). Cũng là [ConnectionResetter] để ngắt kết nối xóa sạch (CD-05) và [CacheStore] loại video
  * để Cài đặt đo, xóa và dọn theo giới hạn (CD-07).
  */
-internal class VideoCache(
+class VideoCache(
     private val context: Context,
     private val dispatchers: DispatcherProvider,
     private val budget: CacheBudgetProvider,
@@ -58,17 +58,17 @@ internal class VideoCache(
             try {
                 val newEvictor = BudgetCacheEvictor { budget.bytesFor(CacheKind.Video) }
                 SimpleCache(
-                    File(context.cacheDir, PlayerConstants.CACHE_DIR_NAME),
+                    File(context.cacheDir, MediaConstants.CACHE_DIR_NAME),
                     newEvictor,
                     db,
                 ).also {
                     provider = db
                     evictor = newEvictor
-                    playerLog.i { "[Cache] mở xong sau ${System.currentTimeMillis() - startedAt}ms, đang giữ ${it.cacheSpace} byte, ${it.keys.size} video" }
+                    mediaLog.i { "[Cache] mở xong sau ${System.currentTimeMillis() - startedAt}ms, đang giữ ${it.cacheSpace} byte, ${it.keys.size} video" }
                 }
             } catch (e: Exception) {
                 // Chỉ ghi tên lớp: message có thể chứa đường dẫn. Để ngoại lệ đi tiếp cho giao diện báo lỗi.
-                playerLog.e { "[Cache] mở thất bại: ${e.javaClass.simpleName}" }
+                mediaLog.e { "[Cache] mở thất bại: ${e.javaClass.simpleName}" }
                 runCatching { db.close() }
                 throw e
             }
@@ -83,8 +83,8 @@ internal class VideoCache(
                 val prefix = "$itemId:"
                 val stale = store.keys.filter { it.startsWith(prefix) && it != keepKey }
                 stale.forEach { store.removeResource(it) }
-                if (stale.isNotEmpty()) playerLog.i { "[Cache] id=${itemId.shortId()} bỏ ${stale.size} bản cũ (cTag đổi)" }
-            }.onFailure { playerLog.w { "[Cache] không dọn được bản cũ: ${it.javaClass.simpleName}" } }
+                if (stale.isNotEmpty()) mediaLog.i { "[Cache] id=${itemId.shortId()} bỏ ${stale.size} bản cũ (cTag đổi)" }
+            }.onFailure { mediaLog.w { "[Cache] không dọn được bản cũ: ${it.javaClass.simpleName}" } }
         }
     }
 
@@ -103,21 +103,21 @@ internal class VideoCache(
                 step("đóng DB") { provider?.close() }
                 provider = null
                 step("xóa thư mục video") {
-                    val dir = File(context.cacheDir, PlayerConstants.CACHE_DIR_NAME)
+                    val dir = File(context.cacheDir, MediaConstants.CACHE_DIR_NAME)
                     if (dir.exists() && !dir.deleteRecursively()) error("deleteRecursively trả về false")
                 }
                 step("xóa DB") {
                     // false cũng là "không có tệp để xóa" nên không coi là lỗi.
                     context.deleteDatabase(StandaloneDatabaseProvider.DATABASE_NAME)
                 }
-                playerLog.i { "[Cache] đã xóa sạch (ngắt kết nối), trước đó ${videos ?: "chưa mở"} video" }
+                mediaLog.i { "[Cache] đã xóa sạch (ngắt kết nối), trước đó ${videos ?: "chưa mở"} video" }
             }
         }
     }
 
     /** Dung lượng đang giữ. Chưa mở cache thì đo thư mục (tệp đoạn) thay vì mở chỉ để đếm, vì mở tốn đĩa. */
     override suspend fun usedBytes(): Long = withContext(dispatchers.io) {
-        cache?.cacheSpace ?: runCatching { File(context.cacheDir, PlayerConstants.CACHE_DIR_NAME).walkTopDown().filter { it.isFile }.sumOf { it.length() } }
+        cache?.cacheSpace ?: runCatching { File(context.cacheDir, MediaConstants.CACHE_DIR_NAME).walkTopDown().filter { it.isFile }.sumOf { it.length() } }
             .getOrDefault(0L)
     }
 
@@ -132,7 +132,7 @@ internal class VideoCache(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            playerLog.w { "[Cache] không dọn được theo giới hạn: ${e.javaClass.simpleName}" }
+            mediaLog.w { "[Cache] không dọn được theo giới hạn: ${e.javaClass.simpleName}" }
         }
     }
 
@@ -140,7 +140,7 @@ internal class VideoCache(
         try {
             block()
         } catch (e: Exception) {
-            playerLog.w { "[Cache] không $name được: ${e.javaClass.simpleName}" }
+            mediaLog.w { "[Cache] không $name được: ${e.javaClass.simpleName}" }
         }
     }
 }

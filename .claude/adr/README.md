@@ -32,6 +32,7 @@ Mỗi ADR ghi **một quyết định kiến trúc**: bối cảnh, quyết đ�
 | [0022](0022-man-cai-dat-theo-bao-ve-man-hinh.md) | Màn Cài đặt chụp được khi tắt "Bảo vệ màn hình" (thay phần Cài đặt luôn chặn của CH-05) | accepted | 2026-10-08 |
 | [0023](0023-thanh-dieu-huong-day-nhieu-ngan-xep.md) | Thanh điều hướng đáy (Thư mục, Thư viện, Short, Cài đặt), mỗi tab giữ trạng thái riêng; Cài đặt thành tab; bổ sung ADR-0003 | accepted | 2026-10-10 |
 | [0024](0024-tai-truoc-video-tab-short.md) | Tab Short dùng một ExoPlayer và `DefaultPreloadManager` tải trước video ±1, chung cache video | accepted | 2026-10-10 |
+| [0025](0025-module-core-media-dung-chung-cho-player-va-short.md) | Module `:core:media` dùng chung nền phát video (cache, nguồn dữ liệu, decoder, ExoPlayerFactory) cho Xem video và Short | accepted | 2026-10-10 |
 
 ## Quy ước
 - Đánh số tăng dần, không dùng lại số. Tên file: `NNNN-tieu-de-khong-dau.md`.

@@ -38,6 +38,7 @@ include(":core:network")
 include(":core:database")
 include(":core:security")
 include(":core:designsystem")
+include(":core:media")
 
 // Module feature tạo khi bắt đầu lát dùng tới nó (ADR-0010).
 include(":feature:auth")
@@ -46,6 +47,7 @@ include(":feature:library")
 include(":feature:imageviewer")
 include(":feature:player")
 include(":feature:settings")
+include(":feature:shorts")
 
 // Công cụ chỉ cho bản debug (ADR-0012). androidApp gắn bằng debugImplementation.
 include(":tools:debug")

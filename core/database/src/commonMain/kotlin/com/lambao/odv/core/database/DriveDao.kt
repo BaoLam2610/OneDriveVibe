@@ -68,6 +68,17 @@ abstract class DriveDao {
     @Query("SELECT id, parentId, name FROM drive_item WHERE id IN (:ids)")
     abstract suspend fun refs(ids: List<String>): List<ItemRef>
 
+    /**
+     * Id mọi video có thời lượng nhỏ hơn hoặc bằng [maxDurationMs] (SV-01, tab Short). Video không có thời lượng bị loại. Sắp theo id để
+     * thứ tự gốc cố định: xáo bằng seed (SV-02) cho cùng kết quả khi khôi phục. Chỉ đọc id, không nạp cả bản ghi. Dùng chỉ mục
+     * `(mediaKind, sortDate)`, không cần đổi schema.
+     */
+    @Query("SELECT id FROM drive_item WHERE mediaKind = 'Video' AND durationMs IS NOT NULL AND durationMs <= :maxDurationMs ORDER BY id")
+    abstract fun observeShortVideoIds(maxDurationMs: Long): Flow<List<String>>
+
+    @Query("SELECT * FROM drive_item WHERE id = :id")
+    abstract suspend fun getItem(id: String): DriveItemEntity?
+
     @Upsert
     abstract suspend fun upsertItems(items: List<DriveItemEntity>)
 

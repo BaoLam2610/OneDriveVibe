@@ -1,6 +1,6 @@
 @file:androidx.annotation.OptIn(UnstableApi::class)
 
-package com.lambao.odv.feature.player
+package com.lambao.odv.core.media
 
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi

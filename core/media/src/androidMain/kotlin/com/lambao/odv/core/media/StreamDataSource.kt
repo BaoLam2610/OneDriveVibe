@@ -1,6 +1,6 @@
 @file:androidx.annotation.OptIn(UnstableApi::class)
 
-package com.lambao.odv.feature.player
+package com.lambao.odv.core.media
 
 import android.net.Uri
 import android.os.SystemClock
@@ -22,23 +22,23 @@ import java.util.concurrent.ConcurrentHashMap
  * Địa chỉ mà ExoPlayer thấy: `odv-video://item/{itemId}`, không phải link thật. Nhờ vậy link ký (đổi mỗi giờ, chứa `tempauth`)
  * không bao giờ lọt vào khóa cache hay bị ghi lại; [StreamDataSource] đổi sang link thật ngay lúc mở kết nối.
  */
-internal fun streamUri(itemId: String): Uri =
-    Uri.Builder().scheme(PlayerConstants.STREAM_SCHEME).authority(PlayerConstants.STREAM_AUTHORITY).appendPath(itemId).build()
+fun streamUri(itemId: String): Uri =
+    Uri.Builder().scheme(MediaConstants.STREAM_SCHEME).authority(MediaConstants.STREAM_AUTHORITY).appendPath(itemId).build()
 
 /** Video không còn trên OneDrive. Là `FileNotFoundException` nên ExoPlayer không thử lại vô ích. */
-internal class VideoRemovedException : FileNotFoundException("video removed")
+class VideoRemovedException : FileNotFoundException("video removed")
 
 /**
  * Không lấy được link phát (mất mạng, bị khóa PIN...). [error] giữ loại lỗi để phân loại ở [toFailure]; không đưa chi tiết
  * lỗi vào message vì có thể chứa URL (CH-06).
  */
-internal class StreamUrlException(val error: AppError) : IOException("stream url unavailable")
+class StreamUrlException(val error: AppError) : IOException("stream url unavailable")
 
 /**
  * Giữ link phát trong bộ nhớ theo từng video và lấy link mới khi cần. Mỗi phiên phát có một bản riêng, nên link ký chết
  * theo màn xem (không sống tiếp khi app bị khóa PIN, CH-03) và không bao giờ ghi ra đĩa. Không ghi link vào log.
  */
-internal class StreamUrlProvider(
+class StreamUrlProvider(
     private val getStreamUrl: GetStreamUrlUseCase,
     private val now: () -> Long = SystemClock::elapsedRealtime,
 ) {
@@ -53,31 +53,31 @@ internal class StreamUrlProvider(
     fun urlFor(itemId: String, refresh: Boolean): String {
         val id = itemId.shortId()
         if (!refresh) {
-            entries[itemId]?.takeIf { now() - it.fetchedAt < PlayerConstants.URL_TTL_MS }?.let {
-                playerLog.d { "[Url] dùng lại link đã giữ id=$id tuổi=${(now() - it.fetchedAt) / 1000}s" }
+            entries[itemId]?.takeIf { now() - it.fetchedAt < MediaConstants.URL_TTL_MS }?.let {
+                mediaLog.d { "[Url] dùng lại link đã giữ id=$id tuổi=${(now() - it.fetchedAt) / 1000}s" }
                 return it.url
             }
         }
-        playerLog.i { "[Url] lấy link id=$id refresh=$refresh" }
+        mediaLog.i { "[Url] lấy link id=$id refresh=$refresh" }
         val startedAt = now()
         // Có thời hạn: Graph bị throttle thì retry có thể chờ rất lâu và giữ luồng tải của ExoPlayer. Hết hạn thì coi như mất mạng
         // (AppError.Timeout → PlayerFailure.Network, có nút Tiếp tục) thay vì treo.
-        val fetched = runBlocking { withTimeoutOrNull(PlayerConstants.URL_FETCH_TIMEOUT_MS) { getStreamUrl(itemId) } }
+        val fetched = runBlocking { withTimeoutOrNull(MediaConstants.URL_FETCH_TIMEOUT_MS) { getStreamUrl(itemId) } }
             ?: AppResult.Failure(AppError.Timeout)
         return when (val result = fetched) {
             is AppResult.Success -> {
-                playerLog.i { "[Url] có link id=$id sau ${now() - startedAt}ms (độ dài ${result.value.length})" }
+                mediaLog.i { "[Url] có link id=$id sau ${now() - startedAt}ms (độ dài ${result.value.length})" }
                 result.value.also { entries[itemId] = Entry(it, now()) }
             }
             is AppResult.Failure -> {
-                playerLog.w { "[Url] lỗi lấy link id=$id sau ${now() - startedAt}ms: ${result.error.describe()}" }
+                mediaLog.w { "[Url] lỗi lấy link id=$id sau ${now() - startedAt}ms: ${result.error.describe()}" }
                 throw result.error.toIoException()
             }
         }
     }
 
     private fun AppError.toIoException(): IOException =
-        if (this is AppError.Http && status in PlayerConstants.REMOVED_STATUSES) VideoRemovedException() else StreamUrlException(this)
+        if (this is AppError.Http && status in MediaConstants.REMOVED_STATUSES) VideoRemovedException() else StreamUrlException(this)
 }
 
 /** Mô tả [AppError] cho log mà không lộ chi tiết nhạy cảm: [AppError.Unknown] chỉ ghi tên lớp của nguyên nhân. */
@@ -94,7 +94,7 @@ internal fun AppError.describe(): String = when (this) {
  * [getUri] cố ý trả địa chỉ ảo chứ không phải link thật: `CacheDataSource` ghi lại địa chỉ chuyển hướng vào chỉ mục cache
  * trên đĩa, mà link thật chứa `tempauth` nên không được để nó nằm lại đó.
  */
-internal class StreamDataSource(
+class StreamDataSource(
     private val upstream: DataSource,
     private val urls: StreamUrlProvider,
 ) : DataSource {
@@ -105,25 +105,25 @@ internal class StreamDataSource(
 
     override fun open(dataSpec: DataSpec): Long {
         val itemId = dataSpec.uri.lastPathSegment ?: run {
-            playerLog.e { "[Source] địa chỉ ảo không có id: scheme=${dataSpec.uri.scheme}" }
+            mediaLog.e { "[Source] địa chỉ ảo không có id: scheme=${dataSpec.uri.scheme}" }
             throw VideoRemovedException()
         }
         val id = itemId.shortId()
-        playerLog.d { "[Source] mở id=$id vị trí=${dataSpec.position} độ dài=${dataSpec.length}" }
+        mediaLog.d { "[Source] mở id=$id vị trí=${dataSpec.position} độ dài=${dataSpec.length}" }
         val length = try {
             openWith(dataSpec, itemId, refresh = false)
         } catch (e: HttpDataSource.InvalidResponseCodeException) {
-            playerLog.w { "[Source] id=$id HTTP ${e.responseCode}" }
-            if (e.responseCode !in PlayerConstants.EXPIRED_STATUSES) throw e
-            playerLog.i { "[Source] id=$id link hết hạn (HTTP ${e.responseCode}), lấy link mới và mở lại" }
+            mediaLog.w { "[Source] id=$id HTTP ${e.responseCode}" }
+            if (e.responseCode !in MediaConstants.EXPIRED_STATUSES) throw e
+            mediaLog.i { "[Source] id=$id link hết hạn (HTTP ${e.responseCode}), lấy link mới và mở lại" }
             runCatching { upstream.close() }
             openWith(dataSpec, itemId, refresh = true)
         } catch (e: IOException) {
             // Lỗi mạng/lấy link: chỉ ghi tên lớp, không ghi message (có thể chứa URL).
-            playerLog.w { "[Source] id=$id mở thất bại: ${e.javaClass.simpleName}" }
+            mediaLog.w { "[Source] id=$id mở thất bại: ${e.javaClass.simpleName}" }
             throw e
         }
-        playerLog.d { "[Source] id=$id đã mở, độ dài còn lại=$length" }
+        mediaLog.d { "[Source] id=$id đã mở, độ dài còn lại=$length" }
         openedUri = dataSpec.uri
         return length
     }
@@ -146,7 +146,7 @@ internal class StreamDataSource(
     }
 }
 
-internal class StreamDataSourceFactory(
+class StreamDataSourceFactory(
     private val http: DataSource.Factory,
     private val urls: StreamUrlProvider,
 ) : DataSource.Factory {

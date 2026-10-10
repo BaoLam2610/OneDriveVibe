@@ -89,6 +89,7 @@ internal object PreferenceKeys {
     val THEME_MODE = stringPreferencesKey("theme_mode")
     val ENABLED_KINDS = stringSetPreferencesKey("enabled_kinds")
     val SEEK_STEP_SECONDS = intPreferencesKey("seek_step_seconds")
+    val SHORT_MAX_MINUTES = intPreferencesKey("short_max_minutes")
     val DEFAULT_SPEED = floatPreferencesKey("default_speed")
 
     /** Vắng mặt nghĩa là "nhớ lần gần nhất"; có mặt thì là tên `VideoFit` cố định. */

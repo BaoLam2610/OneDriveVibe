@@ -10,7 +10,7 @@ App Android chỉ đọc OneDrive for Business qua Microsoft Graph: xem video, �
 | `.claude/docs/thiet-ke-ui.md` + `odv-tokens.json` | Giao diện: token, component, màn hình. Mục 1 là quy tắc bắt buộc khi dựng. Thanh điều hướng đáy và tab Short (Lát 8) đã có mô tả (mục 4.7, 4.8, 5.5) và **đã có artboard** (Foundations board 20, page Short SH1 đến SH9, Danh sách D1 đến D9, Cài đặt C1 đến C7 và O6); mục 11 là danh sách việc vẽ, còn lại 11.5 |
 | `.claude/docs/onedrive-graph-api.md` | Endpoint Graph, token, delta, mã lỗi |
 | `.claude/docs/onedrive-graph-responses.md` | Mẫu response thật (giá trị đã thay bằng mẫu) |
-| `.claude/adr/` | 24 quyết định kiến trúc (mục lục ở `README.md`). Muốn đổi thì viết ADR mới, không sửa ADR cũ |
+| `.claude/adr/` | 25 quyết định kiến trúc (mục lục ở `README.md`). Muốn đổi thì viết ADR mới, không sửa ADR cũ |
 | `.claude/docs/ke-hoach-mvp1.md` | Kế hoạch triển khai MVP1 theo lát cắt dọc, thứ tự Lát hiện hành, thư viện đã chọn |
 | `.claude/docs/ke-hoach-refactor-kien-truc.md` | Refactor nền móng R0 đến R7 và nợ kỹ thuật A1 đến A3: **đã xong** (2026-10-07). Đọc để biết lý do cấu trúc hiện tại |
 | `.claude/docs/tien-do-mvp1.md` | Đang ở lát nào, bước nào. Đọc đầu mỗi phiên, cập nhật khi bắt đầu hoặc xong một bước |
@@ -29,7 +29,7 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 - **Graph REST qua Ktor** (ADR-0006), kotlinx.serialization. Không dùng Graph SDK, Retrofit.
 - **Offline-first** (ADR-0007): Room KMP (`BundledSQLiteDriver`) là nguồn dữ liệu duy nhất cho UI, đồng bộ bằng delta query. **Mỗi lần đổi schema (thêm/bỏ/đổi cột, bảng, index) phải tăng `version` ở `OdvDatabase`** và ghi vào "Lịch sử version" (ADR-0015); quên là crash "Room cannot verify the data integrity". Trước phát hành: tăng version là đủ (có `fallbackToDestructiveMigration`); từ bản phát hành đầu: bắt buộc viết Migration.
 - **Bảo mật config** (ADR-0008, 0014): AES-GCM, khóa dẫn xuất từ PIN bằng Argon2id + Android Keystore. **Không lưu PIN, không lưu hash PIN.** Access token chỉ giữ trong bộ nhớ. Tự khóa khi rời app có độ trễ do người dùng chọn (ADR-0019).
-- **Video** (Media3 ExoPlayer): decoder FFmpeg (NextLib, GPL-3.0) chỉ làm dự phòng khi máy không giải mã được, vd HEVC 10-bit (ADR-0018). Tab Short dùng một ExoPlayer và `DefaultPreloadManager` tải trước video ±1 qua cache video chung (ADR-0024).
+- **Video** (Media3 ExoPlayer): decoder FFmpeg (NextLib, GPL-3.0) chỉ làm dự phòng khi máy không giải mã được, vd HEVC 10-bit (ADR-0018). Tab Short dùng một ExoPlayer và `DefaultPreloadManager` tải trước video ±1 qua cache video chung (ADR-0024). Phần nền phát dùng chung của Xem video và Short nằm ở `:core:media` (ADR-0025).
 - **Bộ nhớ đệm** (ADR-0021): trần chung 1 đến 10 GB, chia theo loại (thumbnail, ảnh, video, PDF), đọc lúc chạy; mỗi kho là `CacheStore`.
 - **Không viết test tự động** (ADR-0009): không unit test, UI test, coverage. Đừng thêm junit, kotlin-test, MockK, Turbine, Kover.
 - **Đa ngôn ngữ VI + EN** (ADR-0011): chuỗi trong Android `res/values` (VI, mặc định) và `res/values-en`. `domain` và `data` không chứa chuỗi hiển thị; lỗi là kiểu có cấu trúc (`AppError` → `UiError`).
@@ -45,6 +45,7 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 :core:data           → common, domain, network, database, security
 :core:network  :core:database  :core:security   → common
 :core:designsystem   Compose, token và component dùng chung
+:core:media          nền phát video dùng chung cho Xem video và Short: VideoCache, StreamDataSource, decoder, ExoPlayerFactory (ADR-0025) → common, domain
 :feature:*           tạo khi bắt đầu làm feature đó (auth, browser, library, shorts, player, imageviewer, pdfviewer, settings)
 :tools:debug         công cụ debug, chỉ bản debug (ADR-0012)
 ```

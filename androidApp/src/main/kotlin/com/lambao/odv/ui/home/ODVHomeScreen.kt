@@ -38,6 +38,7 @@ import com.lambao.odv.feature.browser.ODVBrowserScreen
 import com.lambao.odv.feature.library.ODVLibraryScreen
 import com.lambao.odv.feature.settings.ODVSettingsScreen
 import com.lambao.odv.feature.settings.PinPurpose
+import com.lambao.odv.feature.shorts.ODVShortsScreen
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
@@ -100,6 +101,7 @@ private fun HomeContent(
 ) {
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val protectionEnabled by viewModel.protectionEnabled.collectAsStateWithLifecycle()
+    val shortAvailable by viewModel.shortAvailable.collectAsStateWithLifecycle()
     var selected by rememberSaveable { mutableStateOf(start) }
     // DH-04: mỗi lần chạm lại tab đang chọn tăng bộ đếm của tab đó; tab nhận qua `reselectSignal` rồi cuộn lên đầu.
     var foldersReselect by rememberSaveable { mutableIntStateOf(0) }
@@ -112,7 +114,19 @@ private fun HomeContent(
     // DH-03: ở gốc tab Thư viện, Short hoặc Cài đặt thì Back về tab Thư mục (giữ nguyên trạng thái Thư mục).
     BackHandler(enabled = selected != HomeTab.Folders) { selected = HomeTab.Folders }
 
-    val tabs = listOf(HomeTab.Folders, HomeTab.Library, HomeTab.Settings)
+    // DH-01: Short chỉ có trên thanh khi loại Video bật và đồng bộ lần đầu xong; thiếu một trong hai thì còn 3 mục.
+    val tabs = remember(shortAvailable) {
+        buildList {
+            add(HomeTab.Folders)
+            add(HomeTab.Library)
+            if (shortAvailable == true) add(HomeTab.Short)
+            add(HomeTab.Settings)
+        }
+    }
+    // Tắt loại Video (hoặc mất điều kiện hiện Short) khi đang ở tab Short thì về Thư mục. `null` là chưa biết nên không đụng tới.
+    LaunchedEffect(shortAvailable, selected) {
+        if (shortAvailable == false && selected == HomeTab.Short) selected = HomeTab.Folders
+    }
     // DH-05: thanh ẩn khi bàn phím mở (tìm kiếm); lúc đó khung màn hình đệm đáy theo bàn phím như thường.
     val barVisible = !WindowInsets.isImeVisible
 
@@ -154,8 +168,8 @@ private fun HomeContent(
                             onDisconnected = onDisconnected,
                             reselectSignal = settingsReselect,
                         )
-                        // Tab Short thêm ở Lát 8b; chưa có thì không bao giờ nằm trong [tabs].
-                        HomeTab.Short -> Box(Modifier.fillMaxSize())
+                        // SH9: nút "Mở Cài đặt" ở trạng thái trống chuyển sang tab Cài đặt để tăng thời lượng tối đa (SV-15).
+                        HomeTab.Short -> ODVShortsScreen(onOpenSettings = { selected = HomeTab.Settings })
                     }
                 }
             }
@@ -167,6 +181,8 @@ private fun HomeContent(
             ODVNavBar(
                 items = items,
                 selectedIndex = tabs.indexOf(selected).coerceAtLeast(0),
+                // SV-10: ở tab Short thanh đáy chuyển sang bản nền tối N4, không phụ thuộc giao diện Sáng/Tối.
+                media = selected == HomeTab.Short,
                 onSelect = { index ->
                     val tab = tabs[index]
                     if (tab == selected) {

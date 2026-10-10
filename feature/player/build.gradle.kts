@@ -10,6 +10,10 @@ kotlin {
     }
 
     sourceSets {
+        commonMain.dependencies {
+            // Nền phát dùng chung với tab Short: VideoCache, StreamDataSource, ExoPlayerFactory, decoder (ADR-0025).
+            implementation(project(":core:media"))
+        }
         androidMain.dependencies {
             // koinInject trong màn xem (ngoài koinViewModel đã có từ convention plugin).
             implementation(libs.koin.compose)
@@ -20,8 +24,7 @@ kotlin {
             // Phát stream, SimpleCache và DataSource tự làm mới link (VD-11, VD-14). Chỉ Android ở MVP1; iOS dùng AVPlayer sau interface.
             implementation(libs.androidx.media3.exoplayer)
             implementation(libs.androidx.media3.uiCompose)
-            // Decoder phần mềm FFmpeg dự phòng cho video máy không giải mã được, vd HEVC 10-bit trên Helio G99 (ADR-0018, GPL-3.0).
-            implementation(libs.nextlib.media3ext)
+            // Decoder FFmpeg dự phòng (NextLib, ADR-0018) đã chuyển sang :core:media cùng ExoPlayerFactory.
         }
     }
 }

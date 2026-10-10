@@ -44,6 +44,7 @@ internal fun SettingsSheets(state: SettingsState, onIntent: (SettingsIntent) -> 
             AutoLockDelay.entries.map { Choice(it.label(), it == state.autoLockDelay, { onIntent(SettingsIntent.SelectAutoLock(it)) }) },
         )
         SettingsSheet.CacheLimit -> CacheLimitSheet(state.cacheLimitGb, onIntent)
+        SettingsSheet.ShortMax -> ShortMaxSheet(state.shortMaxMinutes, onIntent)
         SettingsSheet.SecretExpiry -> SecretExpirySheet(state.secretExpiryEpochDay, onIntent)
         SettingsSheet.CacheShares -> CacheSharesSheet(state.cacheShares, state.cacheLimitGb, onIntent)
         SettingsSheet.SeekStep -> ChoiceSheet(

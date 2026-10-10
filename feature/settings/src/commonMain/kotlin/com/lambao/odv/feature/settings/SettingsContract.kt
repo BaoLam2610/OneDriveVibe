@@ -16,7 +16,9 @@ import com.lambao.odv.core.domain.model.VideoFit
 import com.lambao.odv.core.domain.model.VideoSettingOptions
 
 /** Bảng chọn (OptionRow trong sheet, không có nút Lưu) đang mở. */
-enum class SettingsSheet { Theme, Language, AutoLock, SeekStep, Speed, VideoFit, Orientation, PlayMode, PdfStyle, CacheLimit, CacheShares, SecretExpiry }
+enum class SettingsSheet {
+    Theme, Language, AutoLock, SeekStep, Speed, VideoFit, Orientation, PlayMode, ShortMax, PdfStyle, CacheLimit, CacheShares, SecretExpiry
+}
 
 /** Hộp thoại xác nhận đang mở ở màn Cài đặt (các hộp thoại sau bước nhập PIN nằm trong màn PIN, xem [PinFlowState]). */
 enum class SettingsDialog {
@@ -61,6 +63,8 @@ data class SettingsState(
     val openVideoLandscape: Boolean = false,
     val playMode: PlayMode = PlayMode.AutoNext,
     val rememberVideoPosition: Boolean = true,
+    /** Thời lượng tối đa của video vào tab Short, phút (CD-13); chỉ hiện khi loại Video đang bật. */
+    val shortMaxMinutes: Int = VideoSettingOptions.DEFAULT_SHORT_MINUTES,
     val pdfReadingStyle: PdfReadingStyle = PdfReadingStyle.Vertical,
     /** Đang bật bảo vệ bằng PIN (CD-02, CD-03). Tắt thì các hàng phụ thuộc PIN trong nhóm Bảo mật không hiện. */
     val protectionEnabled: Boolean = false,
@@ -105,6 +109,9 @@ sealed interface SettingsIntent {
     data class ToggleKind(val kind: MediaKind) : SettingsIntent
 
     data class SelectSeekStep(val seconds: Int) : SettingsIntent
+
+    /** Bấm "Áp dụng" ở bảng Thời lượng tối đa của Short (O6, CD-13): lưu rồi đóng bảng. */
+    data class ApplyShortMax(val minutes: Int) : SettingsIntent
 
     data class SelectSpeed(val speed: Float) : SettingsIntent
 

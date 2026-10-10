@@ -1,6 +1,6 @@
 @file:androidx.annotation.OptIn(UnstableApi::class)
 
-package com.lambao.odv.feature.player
+package com.lambao.odv.core.media
 
 import android.net.Uri
 import androidx.media3.common.C
@@ -31,7 +31,7 @@ import androidx.media3.extractor.TrackOutput
  * Chỉ profile 8 (lớp nền tương thích): profile 5 không có lớp nền HEVC dùng được (màu sẽ sai) nên giữ nguyên. Màn hình có Dolby Vision thì không
  * bọc gì để vẫn dùng decoder Dolby Vision.
  */
-internal class DolbyVisionAsHevcExtractorsFactory(
+class DolbyVisionAsHevcExtractorsFactory(
     private val displaySupportsDolbyVision: Boolean,
     private val delegate: ExtractorsFactory = DefaultExtractorsFactory(),
 ) : ExtractorsFactory {
@@ -52,7 +52,7 @@ private fun Format.dolbyVisionProfile8AsHevc(): Format {
     val codecs = codecs ?: return this
     val isProfile8 = sampleMimeType == MimeTypes.VIDEO_DOLBY_VISION && (codecs.startsWith("dvhe.08") || codecs.startsWith("dvh1.08"))
     if (!isProfile8) return this
-    playerLog.i { "[Decoder] video Dolby Vision profile 8 ($codecs), màn hình không có Dolby Vision: coi là HEVC Main10" }
+    mediaLog.i { "[Decoder] video Dolby Vision profile 8 ($codecs), màn hình không có Dolby Vision: coi là HEVC Main10" }
     return buildUpon().setSampleMimeType(MimeTypes.VIDEO_H265).setCodecs(HEVC_MAIN10_CODECS).build()
 }
 

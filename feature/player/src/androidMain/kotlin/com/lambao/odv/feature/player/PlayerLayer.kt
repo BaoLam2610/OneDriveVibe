@@ -4,6 +4,7 @@ package com.lambao.odv.feature.player
 
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
+import com.lambao.odv.core.media.PlayerFailure
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize

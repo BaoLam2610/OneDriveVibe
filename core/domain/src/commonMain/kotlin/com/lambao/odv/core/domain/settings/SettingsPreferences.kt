@@ -45,6 +45,14 @@ interface SettingsPreferences {
 
     suspend fun setOpenVideoLandscape(landscape: Boolean)
 
+    /**
+     * Thời lượng tối đa của video vào tab Short, phút (CD-13, SV-01); từ `SHORT_MIN_MINUTES` đến `SHORT_MAX_MINUTES`, mặc định 3.
+     * Thuộc nhóm cài đặt nên bị xóa về mặc định khi Ngắt kết nối (CD-05).
+     */
+    val shortMaxMinutes: Flow<Int>
+
+    suspend fun setShortMaxMinutes(minutes: Int)
+
     /** Nhớ vị trí xem video (mặc định bật). Lát 9 (VD-12) dùng; hiện chỉ lưu. */
     val rememberVideoPosition: Flow<Boolean>
 

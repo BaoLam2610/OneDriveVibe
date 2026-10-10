@@ -1,6 +1,6 @@
 @file:androidx.annotation.OptIn(UnstableApi::class)
 
-package com.lambao.odv.feature.player
+package com.lambao.odv.core.media
 
 import android.media.MediaCodec
 import androidx.media3.common.C
@@ -15,7 +15,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
 /** Vì sao video không phát được, để giao diện chọn đúng thẻ lỗi thay vì để màn hình đen (VD-15, VD-16). */
-internal enum class PlayerFailure {
+enum class PlayerFailure {
     /** Định dạng hoặc codec máy không giải mã được (VD-15). */
     Unsupported,
 
@@ -33,14 +33,14 @@ internal enum class PlayerFailure {
  * Phân loại lỗi của ExoPlayer. Nhìn cả chuỗi nguyên nhân vì ExoPlayer gói lỗi gốc (mạng, HTTP, hay lỗi lấy link của
  * [StreamDataSource]) vào một mã chung như `ERROR_CODE_IO_UNSPECIFIED`.
  */
-internal fun PlaybackException.toFailure(): PlayerFailure {
+fun PlaybackException.toFailure(): PlayerFailure {
     val chain = causeChain()
 
     if (chain.any { it is VideoRemovedException }) return PlayerFailure.Removed
     if (chain.any { it is StreamUrlException && (it.error is AppError.Network || it.error is AppError.Timeout) }) {
         return PlayerFailure.Network
     }
-    if (chain.any { it is HttpDataSource.InvalidResponseCodeException && it.responseCode in PlayerConstants.REMOVED_STATUSES }) {
+    if (chain.any { it is HttpDataSource.InvalidResponseCodeException && it.responseCode in MediaConstants.REMOVED_STATUSES }) {
         return PlayerFailure.Removed
     }
     return when (errorCode) {
@@ -69,26 +69,26 @@ internal fun PlaybackException.toFailure(): PlayerFailure {
 }
 
 /** Tên bộ giải mã đã chết khi giải mã lỗi (`c2.mtk.hevc.decoder`...), null nếu lỗi không đến từ bộ giải mã. */
-internal fun PlaybackException.failedDecoderName(): String? =
+fun PlaybackException.failedDecoderName(): String? =
     causeChain().filterIsInstance<MediaCodecDecoderException>().firstNotNullOfOrNull { it.codecInfo?.name }
 
 /**
  * Chi tiết `MediaCodec.CodecException` trong chuỗi nguyên nhân (mã lỗi, tạm thời/khôi phục được, chuỗi chẩn đoán của codec) để biết vì sao
  * bộ giải mã chết. Không ghi message (CH-06); chuỗi chẩn đoán dạng `android.media.MediaCodec.error_neg_1000` không chứa dữ liệu người dùng.
  */
-internal fun PlaybackException.codecExceptionDetail(): String =
+fun PlaybackException.codecExceptionDetail(): String =
     causeChain().filterIsInstance<MediaCodec.CodecException>().firstOrNull()
         ?.let { "CodecException(mã=${it.errorCode}, tạm thời=${it.isTransient}, khôi phục được=${it.isRecoverable}, chẩn đoán=${it.diagnosticInfo})" }
         ?: "không có CodecException"
 
 private fun Throwable.causeChain(): List<Throwable> =
-    generateSequence<Throwable>(this) { it.cause }.take(PlayerConstants.CAUSE_DEPTH).toList()
+    generateSequence<Throwable>(this) { it.cause }.take(MediaConstants.CAUSE_DEPTH).toList()
 
 /**
  * Mô tả lỗi cho log: tên mã lỗi của ExoPlayer, rồi chuỗi nguyên nhân dạng `A <- B <- C` (tên lớp, kèm mã HTTP nếu có).
  * Cố ý không ghi message hay stack trace: message của ngoại lệ mạng có thể chứa URL ký (CH-06).
  */
-internal fun PlaybackException.describe(): String {
+fun PlaybackException.describe(): String {
     val chain = causeChain().joinToString(" <- ") { error ->
         val name = error.javaClass.simpleName
         if (error is HttpDataSource.InvalidResponseCodeException) "$name(${error.responseCode})" else name

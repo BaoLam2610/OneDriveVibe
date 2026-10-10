@@ -70,6 +70,10 @@
     <string name="settings_group_video">Video</string>
     <string name="settings_seek_step">Bước tua khi chạm đúp</string>
     <string name="settings_seconds">%1$d giây</string>
+    <!-- Thời lượng tối đa của Short (CD-13, O6) -->
+    <string name="settings_short_max">Thời lượng tối đa của Short</string>
+    <string name="settings_short_max_hint">Chỉ video dài tối đa bằng mốc này mới xuất hiện ở tab Short.</string> <!-- [mới] -->
+    <string name="settings_short_max_desc">Thời lượng tối đa, %1$d phút</string> <!-- [mới] -->
     <string name="settings_default_speed">Tốc độ mặc định</string>
     <string name="settings_default_fit">Khung hình mặc định</string>
     <string name="settings_fit_remember">Nhớ lần gần nhất</string>

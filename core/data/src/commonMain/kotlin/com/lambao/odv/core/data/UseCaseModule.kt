@@ -32,6 +32,10 @@ import com.lambao.odv.core.domain.usecase.security.VerifyPinUseCase
 import com.lambao.odv.core.domain.usecase.settings.GetLanguageUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveConnectionInfoUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveLastListTabUseCase
+import com.lambao.odv.core.domain.usecase.settings.ObserveShortMaxMinutesUseCase
+import com.lambao.odv.core.domain.usecase.shorts.GetShortVideoUseCase
+import com.lambao.odv.core.domain.usecase.shorts.ObserveShortTabAvailableUseCase
+import com.lambao.odv.core.domain.usecase.shorts.ObserveShortVideoIdsUseCase
 import com.lambao.odv.core.domain.usecase.settings.SetLastListTabUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveSecretExpiryNoticeUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveSecretExpiryUseCase
@@ -98,6 +102,11 @@ val useCaseModule = module {
     // Cài đặt (Lát 7)
     factoryOf(::ObserveThemeModeUseCase)
     factoryOf(::SetThemeModeUseCase)
+    // Tab Short (Lát 8b): danh sách video, chi tiết, điều kiện hiện mục và cài đặt thời lượng tối đa (SV-01, DH-01, CD-13).
+    factoryOf(::ObserveShortVideoIdsUseCase)
+    factoryOf(::GetShortVideoUseCase)
+    factoryOf(::ObserveShortTabAvailableUseCase)
+    factoryOf(::ObserveShortMaxMinutesUseCase)
     // Tab Thư mục/Thư viện dùng gần nhất (DH-06).
     factoryOf(::ObserveLastListTabUseCase)
     factoryOf(::SetLastListTabUseCase)

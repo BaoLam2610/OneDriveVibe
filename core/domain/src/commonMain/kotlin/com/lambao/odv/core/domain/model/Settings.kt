@@ -36,4 +36,9 @@ object VideoSettingOptions {
     /** Tốc độ phát (VD-05); cũng là danh sách ở bảng Tốc độ của màn xem. */
     val SPEEDS: List<Float> = listOf(0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
     const val DEFAULT_SPEED = 1f
+
+    /** Thời lượng tối đa của video vào tab Short, phút (CD-13): thanh trượt 3 đến 10, bước 1. */
+    const val SHORT_MIN_MINUTES = 3
+    const val SHORT_MAX_MINUTES = 10
+    const val DEFAULT_SHORT_MINUTES = 3
 }

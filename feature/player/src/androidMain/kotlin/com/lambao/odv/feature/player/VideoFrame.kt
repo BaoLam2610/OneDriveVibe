@@ -27,6 +27,7 @@ import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.VideoFit
 import com.lambao.odv.core.domain.model.thumbnailSource
+import com.lambao.odv.core.media.PlayerFailure
 import kotlin.math.roundToInt
 
 /** Gợn tua đang hiện: [seconds] là tổng đã cộng dồn, [tick] đổi mỗi lần chạm để hẹn giờ tắt tính lại. */

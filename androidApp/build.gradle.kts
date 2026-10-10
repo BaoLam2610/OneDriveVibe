@@ -21,12 +21,15 @@ dependencies {
     // security và database nay ghép qua `coreModules` của :core:data nên app không còn cần :core:network và :core:database.
     implementation(project(":core:security"))
     implementation(project(":core:designsystem"))
+    // Module Koin của nền phát video dùng chung (androidMediaModule, ADR-0025) ghép ở MainApplication.
+    implementation(project(":core:media"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:browser"))
     implementation(project(":feature:library"))
     implementation(project(":feature:imageviewer"))
     implementation(project(":feature:player"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:shorts"))
 
     // SingletonImageLoader.Factory ở MainApplication (Lát 4): AsyncImage lấy ImageLoader từ Koin qua singleton này.
     implementation(libs.coil.singleton)

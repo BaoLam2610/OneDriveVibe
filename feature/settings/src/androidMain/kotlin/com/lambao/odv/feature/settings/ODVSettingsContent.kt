@@ -190,6 +190,16 @@ private fun VideoGroup(state: SettingsState, onIntent: (SettingsIntent) -> Unit)
                 onCheckedChange = { onIntent(SettingsIntent.SetRememberPosition(it)) },
             )
         }
+        // CD-13: cuối nhóm Video; cả nhóm Video chỉ có ý nghĩa khi loại Video bật nên hàng này ẩn khi tắt Video.
+        if (MediaKind.Video in state.enabledKinds) {
+            row {
+                ODVValueRow(
+                    title = stringResource(R.string.settings_short_max),
+                    value = stringResource(R.string.settings_minutes, state.shortMaxMinutes),
+                    onClick = { onIntent(SettingsIntent.ShowSheet(SettingsSheet.ShortMax)) },
+                )
+            }
+        }
     }
 }
 

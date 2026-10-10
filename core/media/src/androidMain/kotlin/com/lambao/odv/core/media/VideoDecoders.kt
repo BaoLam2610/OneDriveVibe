@@ -1,6 +1,6 @@
 @file:androidx.annotation.OptIn(UnstableApi::class)
 
-package com.lambao.odv.feature.player
+package com.lambao.odv.core.media
 
 import android.content.Context
 import android.hardware.display.DisplayManager
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * Bộ chọn được gọi từ luồng phát của ExoPlayer, còn [block] và [reset] từ luồng chính, nên danh sách đọc/ghi qua [AtomicReference].
  */
-internal class VideoDecoders(private val context: Context) {
+class VideoDecoders(private val context: Context) {
     private val blocked = AtomicReference<Set<String>>(emptySet())
 
     val selector = MediaCodecSelector { mimeType, requiresSecureDecoder, requiresTunnelingDecoder ->

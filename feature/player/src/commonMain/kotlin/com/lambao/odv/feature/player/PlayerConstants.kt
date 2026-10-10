@@ -16,41 +16,10 @@ internal object PlayerConstants {
     /** Thẻ log duy nhất của module. */
     const val TAG = "ODVPlayer"
 
-    // --- Nguồn dữ liệu (StreamDataSource) ---
+    // Nguồn dữ liệu, cache và buffer (STREAM_*, URL_TTL_MS, *_STATUSES, HTTP_TIMEOUT_MS, CACHE_DIR_NAME, BACK_BUFFER_MS,
+    // URL_FETCH_TIMEOUT_MS) đã chuyển sang MediaConstants của :core:media (ADR-0025).
 
-    /** Địa chỉ ảo ExoPlayer thấy: `odv-video://item/{itemId}`. Link ký thật chỉ xuất hiện lúc mở kết nối. */
-    const val STREAM_SCHEME = "odv-video"
-    const val STREAM_AUTHORITY = "item"
-
-    /**
-     * Link ký của OneDrive sống khoảng 1 giờ (VD-14). Làm mới sớm hơn một chút (45 phút) để không phải chờ một lần thất bại
-     * mới biết link hết hạn giữa lúc đang xem.
-     */
-    const val URL_TTL_MS = 45L * 60 * 1000
-
-    /** Mã HTTP link hết hạn thường trả (onedrive-graph-api.md mục 9.2): lấy link mới rồi mở lại một lần (VD-14). */
-    val EXPIRED_STATUSES: Set<Int> = setOf(401, 403)
-
-    /** Mã HTTP cho tệp không còn. 401/403 không vào đây vì đã thử làm mới link. */
-    val REMOVED_STATUSES: Set<Int> = setOf(404, 410)
-
-    /** Mạng chậm hoặc CDN ì ạch thì 8 giây mặc định hay làm đứt kết nối oan; nới lên 15 giây. */
-    const val HTTP_TIMEOUT_MS = 15_000
-
-    // --- Cache và buffer ---
-
-    /** Thư mục cache video trong `cacheDir` (không sao lưu, CH-04). */
-    const val CACHE_DIR_NAME = "video"
-
-    // Trần dung lượng cache video không còn là hằng số: người dùng đặt ở Cài đặt (CD) và đọc qua CacheBudgetProvider (7d).
-
-    /** Giữ lại chừng này đã phát phía sau để tua lùi ngắn không phải tải lại. */
-    const val BACK_BUFFER_MS = 30_000
-
-    // --- Phân loại lỗi ---
-
-    /** Số tầng nguyên nhân duyệt khi phân loại và ghi log một lỗi. */
-    const val CAUSE_DEPTH = 8
+    // Phân loại lỗi phát (PlayerFailure, CAUSE_DEPTH) đã chuyển sang :core:media cùng nền phát (ADR-0025).
 
     // --- Giao diện và cử chỉ ---
 
@@ -102,9 +71,6 @@ internal object PlayerConstants {
      * chưa có thư mục hoặc mới có một phần; hết thời gian mà vẫn không có thì đóng màn thay vì phát nhầm video khác.
      */
     const val START_WAIT_MS = 15_000L
-
-    /** Lấy link phát tối đa chừng này: Graph bị throttle thì `HttpRequestRetry` có thể chờ tới 60 giây và giữ luồng tải của ExoPlayer. */
-    const val URL_FETCH_TIMEOUT_MS = 15_000L
 
     // --- Lát 6b ---
 
