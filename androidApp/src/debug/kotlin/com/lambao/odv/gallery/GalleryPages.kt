@@ -82,7 +82,7 @@ internal fun LazyListScope.spacingPage() {
     }
 }
 
-/** Trang "Icon và Logo": 42 icon (mục 3.1) và 3 biến thể logo (mục 3.2). */
+/** Trang "Icon và Logo": 43 icon (mục 3.1) và 3 biến thể logo (mục 3.2). */
 @OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.iconsPage() {
     item { SectionTitle("Icon (${ODVIcon.entries.size})") }

@@ -35,13 +35,13 @@ sealed interface AppRoute : NavKey {
     @Serializable
     data object Lock : AppRoute
 
-    /** Danh sách: tab Thư mục và Thư viện. */
+    /**
+     * Màn chính với thanh điều hướng đáy (ADR-0023): các tab Thư mục, Thư viện, Short, Cài đặt. Từ Lát 8 Cài đặt là một tab của màn này,
+     * không còn route riêng (trước đây `AppRoute.Settings` mở từ bánh răng ở AppBar); các màn con của Cài đặt (PIN, Thiết lập bảo mật,
+     * Cập nhật Client Secret) vẫn là route đẩy lên trên Home và che thanh đáy (DH-05).
+     */
     @Serializable
     data object Home : AppRoute
-
-    /** Cài đặt (CD, Lát 7). Mở từ nút bánh răng ở AppBar Danh sách. */
-    @Serializable
-    data object Settings : AppRoute
 
     /**
      * Màn nhập PIN trong Cài đặt (P1 → P3). [purpose] là tên `PinPurpose` của `:feature:settings` (chuỗi để route lưu được qua process

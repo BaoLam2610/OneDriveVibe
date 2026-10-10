@@ -12,7 +12,7 @@ import com.lambao.odv.locale.AndroidAppLocaleController
 import com.lambao.odv.network.AndroidNetworkMonitor
 import com.lambao.odv.security.AndroidBiometricAuthenticator
 import com.lambao.odv.security.CurrentActivityHolder
-import com.lambao.odv.ui.home.HomeBannerViewModel
+import com.lambao.odv.ui.home.HomeViewModel
 import com.lambao.odv.ui.splash.SplashViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
@@ -33,5 +33,5 @@ val appModule = module {
     // đưa về "Theo hệ thống" (CD-05). DisconnectUseCase gom mọi ConnectionResetter bằng getAll().
     single { AndroidAppLocaleController(get()) } binds arrayOf(AppLocaleController::class, ConnectionResetter::class)
     viewModelOf(::SplashViewModel)
-    viewModelOf(::HomeBannerViewModel)
+    viewModelOf(::HomeViewModel)
 }

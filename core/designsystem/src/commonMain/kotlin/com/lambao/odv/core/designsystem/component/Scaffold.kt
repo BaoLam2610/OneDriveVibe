@@ -13,8 +13,17 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.lambao.odv.core.designsystem.theme.ODVTheme
+
+/**
+ * `true` khi bên trên đã có thanh điều hướng đáy ([ODVNavBar]) tự đệm inset của thanh điều hướng hệ thống (Lát 8, ADR-0023). Khi đó
+ * [ODVScaffold] không đệm đáy nữa, vì vùng chứa nội dung đã kết thúc ở mép trên thanh đáy. Nơi đặt thanh phải đặt lại về `false` khi
+ * ẩn thanh (vd. bàn phím mở), để inset đáy và bàn phím lại do khung xử lý.
+ */
+val LocalODVNavBarOwnsInset = compositionLocalOf { false }
 
 /**
  * Khung màn hình chuẩn: [topBar] đứng cố định ở trên, [content] cuộn bên dưới nên thanh không bị cuộn mất.
@@ -51,7 +60,7 @@ fun ODVScaffold(
             topBar()
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            content(insets.only(WindowInsetsSides.Bottom).asPaddingValues())
+            content(if (LocalODVNavBarOwnsInset.current) PaddingValues(all = 0.dp) else insets.only(WindowInsetsSides.Bottom).asPaddingValues())
         }
     }
 }

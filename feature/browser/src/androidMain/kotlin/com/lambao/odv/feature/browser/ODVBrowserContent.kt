@@ -13,7 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -43,6 +45,7 @@ import com.lambao.odv.core.designsystem.component.ODVFolderCard
 import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVOptionRow
 import com.lambao.odv.core.designsystem.component.ODVRemoteImage
+import com.lambao.odv.core.designsystem.component.ODVReselectEffect
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSearchBar
 import com.lambao.odv.core.designsystem.component.ODVSortBar
@@ -75,36 +78,37 @@ private val SortChoices = listOf(
 
 /**
  * Giao diện tab Thư mục (thiet-ke-ui.md mục 4.4, 5.2; D1, D2, D4 → D6, D8): AppBar (hoặc thanh tìm), Banner, Breadcrumb,
- * SortBar, rồi danh sách hoặc lưới, kéo xuống để làm mới. [tabs] là thanh Tabs Thư mục/Thư viện do màn chứa dựng, đặt ngay
- * dưới AppBar (chỉ hiện khi không tìm kiếm). Chưa có dải Xem tiếp (Lát 9) và dấu `cloud-off` trên
- * thẻ tệp chưa có trong cache (Lát 5 → 7, khi có cache tệp gốc).
+ * SortBar, rồi danh sách hoặc lưới, kéo xuống để làm mới. Từ Lát 8 không còn Tabs và nút Cài đặt (Cài đặt là tab của thanh điều hướng
+ * đáy, ADR-0023). [banner] là banner secret sắp hết hạn (D9) do Màn chính dựng, đặt ở đầu thân (chỉ hiện khi không tìm kiếm).
+ * [reselectSignal] tăng khi người dùng chạm lại tab Thư mục (DH-04): cuộn lên đầu, nếu đã ở đầu thì về thư mục gốc. Chưa có dải Xem
+ * tiếp (Lát 10) và dấu `cloud-off` trên thẻ tệp chưa có trong cache (Lát 5 → 7, khi có cache tệp gốc).
  */
 @Composable
 internal fun ODVBrowserContent(
     state: BrowserState,
     onIntent: (BrowserIntent) -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    tabs: @Composable () -> Unit = {},
+    banner: @Composable () -> Unit = {},
+    reselectSignal: Int = 0,
 ) {
     val search = state.search
     ODVScaffold(
         modifier = modifier,
         topBar = {
-            if (search != null) SearchTopBar(search, onIntent) else BrowseTopBar(state, onIntent, onOpenSettings)
+            if (search != null) SearchTopBar(search, onIntent) else BrowseTopBar(state, onIntent)
         },
     ) { contentPadding ->
         if (search != null) {
             SearchBody(search, contentPadding, onIntent)
         } else {
-            BrowseBody(state, contentPadding, onIntent, tabs)
+            BrowseBody(state, contentPadding, onIntent, banner, reselectSignal)
         }
     }
     if (state.isSortSheetOpen) SortSheet(state.sort, onIntent)
 }
 
 @Composable
-private fun BrowseTopBar(state: BrowserState, onIntent: (BrowserIntent) -> Unit, onOpenSettings: () -> Unit) {
+private fun BrowseTopBar(state: BrowserState, onIntent: (BrowserIntent) -> Unit) {
     val inRoot = state.path.isEmpty()
     ODVAppBar(
         title = if (inRoot) stringResource(R.string.browser_title) else state.path.last().name,
@@ -117,7 +121,6 @@ private fun BrowseTopBar(state: BrowserState, onIntent: (BrowserIntent) -> Unit,
         },
         actions = {
             ODVIconButton(ODVIcon.Search, stringResource(R.string.browser_search), { onIntent(BrowserIntent.OpenSearch) })
-            ODVIconButton(ODVIcon.Settings, stringResource(R.string.browser_settings), onOpenSettings)
         },
     )
 }
@@ -141,13 +144,20 @@ private fun BrowseBody(
     state: BrowserState,
     contentPadding: PaddingValues,
     onIntent: (BrowserIntent) -> Unit,
-    tabs: @Composable () -> Unit,
+    banner: @Composable () -> Unit,
+    reselectSignal: Int,
 ) {
     val rootLabel = stringResource(R.string.browser_root)
     val sortLabel = state.sort.label()
     val isGrid = state.viewMode == ViewMode.Grid
+    val canGoRoot = state.path.isNotEmpty()
+    // DH-04: khi không có danh sách để cuộn (đang tải, lỗi, thư mục rỗng) thì chạm lại tab chỉ còn nghĩa là về thư mục gốc.
+    val listShown = !state.isLoading && state.error == null && state.items.isNotEmpty()
+    if (!listShown) {
+        ODVReselectEffect(reselectSignal) { if (canGoRoot) onIntent(BrowserIntent.GoToCrumb(0)) }
+    }
     Column(Modifier.fillMaxSize()) {
-        tabs()
+        banner()
         SyncBanner(state, onIntent)
         ODVBreadcrumb(
             items = listOf(rootLabel) + state.path.map { it.name },
@@ -192,8 +202,8 @@ private fun BrowseBody(
                     modifier = Modifier.align(Alignment.Center),
                     body = stringResource(R.string.browser_empty_body),
                 )
-                isGrid -> ItemGrid(state.items, contentPadding, onIntent)
-                else -> ItemList(state.items, contentPadding, onIntent)
+                isGrid -> ItemGrid(state.items, contentPadding, onIntent, reselectSignal, canGoRoot)
+                else -> ItemList(state.items, contentPadding, onIntent, reselectSignal, canGoRoot)
             }
         }
     }
@@ -262,10 +272,21 @@ private fun BoxScope.ErrorState(error: BrowserError, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun ItemList(items: List<DriveItem>, contentPadding: PaddingValues, onIntent: (BrowserIntent) -> Unit) {
+private fun ItemList(
+    items: List<DriveItem>,
+    contentPadding: PaddingValues,
+    onIntent: (BrowserIntent) -> Unit,
+    reselectSignal: Int,
+    canGoRoot: Boolean,
+) {
     val resources = LocalResources.current
     val languageTag = odvLocale().toLanguageTag()
-    LazyColumn(contentPadding = contentPadding) {
+    val listState = rememberLazyListState()
+    // DH-04: cuộn lên đầu; đã ở đầu thì về thư mục gốc.
+    ODVReselectEffect(reselectSignal) {
+        if (listState.canScrollBackward) listState.animateScrollToItem(0) else if (canGoRoot) onIntent(BrowserIntent.GoToCrumb(0))
+    }
+    LazyColumn(state = listState, contentPadding = contentPadding) {
         items(items, key = { it.id }) { item ->
             ODVFileRow(
                 title = item.name,
@@ -281,10 +302,22 @@ private fun ItemList(items: List<DriveItem>, contentPadding: PaddingValues, onIn
 
 /** Lưới 2 cột, khe 12 ngang và 16 dọc (mục 4.4 FileCard). */
 @Composable
-private fun ItemGrid(items: List<DriveItem>, contentPadding: PaddingValues, onIntent: (BrowserIntent) -> Unit) {
+private fun ItemGrid(
+    items: List<DriveItem>,
+    contentPadding: PaddingValues,
+    onIntent: (BrowserIntent) -> Unit,
+    reselectSignal: Int,
+    canGoRoot: Boolean,
+) {
     val resources = LocalResources.current
     val languageTag = odvLocale().toLanguageTag()
+    val gridState = rememberLazyGridState()
+    // DH-04: cuộn lên đầu; đã ở đầu thì về thư mục gốc.
+    ODVReselectEffect(reselectSignal) {
+        if (gridState.canScrollBackward) gridState.animateScrollToItem(0) else if (canGoRoot) onIntent(BrowserIntent.GoToCrumb(0))
+    }
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Fixed(2),
         contentPadding = PaddingValues(
             start = 16.dp,

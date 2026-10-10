@@ -16,17 +16,19 @@ import org.koin.compose.viewmodel.koinViewModel
 /**
  * Màn Cài đặt (CD, thiet-ke-ui.md mục 5.4). **Không** tự đặt `FLAG_SECURE` (đổi 2026-10-08, người dùng chốt; trước đây luôn chặn theo
  * CH-05): chụp được khi tắt "Bảo vệ màn hình", còn bật thì chặn nhờ `ODVSecureWindowPolicy.appWide` (CD-12) như mọi màn khác. Đánh đổi đã
- * chấp nhận: thông tin kết nối đã che bớt (Tenant ID, Client ID) chụp được. [onBack] chạy khi bấm nút quay lại hoặc Back. [onOpenSecuritySetup] mở luồng thiết lập PIN khi bật bảo vệ
+ * chấp nhận: thông tin kết nối đã che bớt (Tenant ID, Client ID) chụp được. Vì cờ này theo cả cửa sổ chứ không theo màn nên DH-08 (áp lại khi
+ * đổi tab) đã thỏa: không cần xử lý riêng theo tab. Từ Lát 8 Cài đặt là một tab của thanh điều hướng đáy (ADR-0023), không còn nút quay lại;
+ * [reselectSignal] tăng khi người dùng chạm lại tab này (DH-04): cuộn lên đầu. [onOpenSecuritySetup] mở luồng thiết lập PIN khi bật bảo vệ
  * (CD-02) và [onOpenPin] mở màn PIN cho một thao tác nhạy cảm (CD-03, CD-08, CD-09, CD-04); [onOpenSecretForm] mở form cập nhật Client Secret khi bảo vệ tắt; [onDisconnected] chạy sau khi ngắt kết nối xong (CD-05: về Kết nối với back stack sạch); app sở hữu back stack nên điều hướng đi qua đây.
  */
 @Composable
 fun ODVSettingsScreen(
-    onBack: () -> Unit,
     onOpenSecuritySetup: () -> Unit,
     onOpenPin: (PinPurpose) -> Unit,
     onOpenSecretForm: () -> Unit,
     onDisconnected: () -> Unit,
     modifier: Modifier = Modifier,
+    reselectSignal: Int = 0,
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -45,5 +47,11 @@ fun ODVSettingsScreen(
             SettingsEffect.ShowSecretSaved -> scope.launch { snackbarHost.showSnackbar(savedMessage) }
         }
     }
-    ODVSettingsContent(state = state, onIntent = viewModel::onIntent, onBack = onBack, snackbarHost = snackbarHost, modifier = modifier)
+    ODVSettingsContent(
+        state = state,
+        onIntent = viewModel::onIntent,
+        snackbarHost = snackbarHost,
+        modifier = modifier,
+        reselectSignal = reselectSignal,
+    )
 }

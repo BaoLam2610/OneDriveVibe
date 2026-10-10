@@ -1,5 +1,6 @@
 package com.lambao.odv.core.domain.settings
 
+import com.lambao.odv.core.domain.model.HomeListTab
 import com.lambao.odv.core.domain.model.SortOrder
 import com.lambao.odv.core.domain.model.ViewMode
 import kotlinx.coroutines.flow.Flow
@@ -12,6 +13,10 @@ interface BrowserPreferences {
     val sortOrder: Flow<SortOrder>
     val viewMode: Flow<ViewMode>
 
+    /** Tab Thư mục hoặc Thư viện dùng gần nhất, để mở app vào đúng tab đó (DH-06). Mặc định [HomeListTab.Folders]. */
+    val lastListTab: Flow<HomeListTab>
+
     suspend fun setSortOrder(order: SortOrder)
     suspend fun setViewMode(mode: ViewMode)
+    suspend fun setLastListTab(tab: HomeListTab)
 }

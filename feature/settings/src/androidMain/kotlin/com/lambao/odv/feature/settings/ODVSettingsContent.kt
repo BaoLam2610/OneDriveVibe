@@ -27,13 +27,13 @@ import androidx.compose.ui.unit.dp
 import com.lambao.odv.core.designsystem.component.ODVAppBar
 import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVChipsRow
-import com.lambao.odv.core.designsystem.component.ODVIconButton
+import com.lambao.odv.core.designsystem.component.LocalODVNavBarOwnsInset
+import com.lambao.odv.core.designsystem.component.ODVReselectEffect
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSettingsGroup
 import com.lambao.odv.core.designsystem.component.ODVSnackbarHost
 import com.lambao.odv.core.designsystem.component.ODVSwitchRow
 import com.lambao.odv.core.designsystem.component.ODVValueRow
-import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.odvFormatSpeed
 import com.lambao.odv.core.designsystem.odvLocale
 import com.lambao.odv.core.designsystem.theme.ODVTheme
@@ -51,22 +51,26 @@ import java.util.Locale
 internal fun ODVSettingsContent(
     state: SettingsState,
     onIntent: (SettingsIntent) -> Unit,
-    onBack: () -> Unit,
     snackbarHost: SnackbarHostState,
     modifier: Modifier = Modifier,
+    reselectSignal: Int = 0,
 ) {
     val scroll = rememberScrollState()
+    // DH-04: chạm lại tab Cài đặt thì cuộn lên đầu.
+    ODVReselectEffect(reselectSignal) { scroll.animateScrollTo(0) }
     val lineColor = ODVTheme.colors.line
     Box(modifier) {
         ODVScaffold(
             topBar = {
                 ODVAppBar(
+                    // Từ Lát 8 Cài đặt là tab: tiêu đề lề trái 16, không có nút quay lại (thiet-ke-ui.md mục 5.4).
                     title = stringResource(R.string.settings_title),
-                    navigation = { ODVIconButton(ODVIcon.ArrowLeft, stringResource(R.string.settings_back), onBack) },
                     // Kẻ đáy chỉ hiện khi nội dung đã cuộn lên dưới AppBar.
-                    modifier = Modifier.drawBehind {
-                        if (scroll.value > 0) drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
-                    },
+                    modifier = Modifier
+                        .drawBehind {
+                            if (scroll.value > 0) drawLine(lineColor, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
+                        }
+                        .padding(start = 12.dp),
                 )
             },
         ) { contentPadding ->
@@ -88,7 +92,7 @@ internal fun ODVSettingsContent(
             }
         }
         // Snackbar S5 "Đã cập nhật Client Secret" nổi ở đáy, trên cả nội dung cuộn.
-        ODVSnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp))
+        ODVSnackbarHost(snackbarHost, Modifier.align(Alignment.BottomCenter).then(if (LocalODVNavBarOwnsInset.current) Modifier else Modifier.navigationBarsPadding()).padding(16.dp))
     }
     SettingsSheets(state, onIntent)
     SettingsDialogs(state, onIntent)

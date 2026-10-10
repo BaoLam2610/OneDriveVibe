@@ -1,6 +1,7 @@
 package com.lambao.odv.core.data.prefs
 
 import com.lambao.odv.core.data.PreferenceKeys
+import com.lambao.odv.core.domain.model.HomeListTab
 import com.lambao.odv.core.domain.model.SortDirection
 import com.lambao.odv.core.domain.model.SortField
 import com.lambao.odv.core.domain.model.SortOrder
@@ -21,6 +22,13 @@ internal class DataStoreBrowserPreferences(
     }
 
     override val viewMode: Flow<ViewMode> = prefs.observeEnum(PreferenceKeys.VIEW_MODE, ViewMode.List, ViewMode.entries)
+
+    override val lastListTab: Flow<HomeListTab> =
+        prefs.observeEnum(PreferenceKeys.LAST_LIST_TAB, HomeListTab.Folders, HomeListTab.entries)
+
+    override suspend fun setLastListTab(tab: HomeListTab) {
+        prefs.edit { it[PreferenceKeys.LAST_LIST_TAB] = tab.name }
+    }
 
     override suspend fun setSortOrder(order: SortOrder) {
         prefs.edit {

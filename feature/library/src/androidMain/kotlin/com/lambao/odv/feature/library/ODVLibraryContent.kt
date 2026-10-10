@@ -43,10 +43,10 @@ import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVDateHeader
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVFastScroller
-import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVPhotoCell
 import com.lambao.odv.core.designsystem.component.ODVPhotoCellPlaceholder
 import com.lambao.odv.core.designsystem.component.ODVRemoteImage
+import com.lambao.odv.core.designsystem.component.ODVReselectEffect
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.format.odvFormatDuration
@@ -86,8 +86,9 @@ private const val HEADER = "header"
 private const val CELL = "cell"
 
 /**
- * Giao diện tab Thư viện (thiet-ke-ui.md mục 4.4, 5.2; D3, D7): AppBar, Tabs, Banner (offline / đang lập chỉ mục / lỗi),
- * chip lọc, rồi lưới 4 cột nhóm theo ngày với cuộn nhanh. [tabs] là thanh Tabs Thư mục/Thư viện do màn chứa dựng.
+ * Giao diện tab Thư viện (thiet-ke-ui.md mục 4.4, 5.2; D3, D7): AppBar, Banner (offline / đang lập chỉ mục / lỗi / secret sắp hết
+ * hạn), chip lọc, rồi lưới 4 cột nhóm theo ngày với cuộn nhanh. Từ Lát 8 không còn Tabs và nút Cài đặt (ADR-0023). [banner] là banner
+ * secret sắp hết hạn (D9) do Màn chính dựng; [reselectSignal] tăng khi người dùng chạm lại tab này (DH-04): cuộn lên đầu.
  */
 @Composable
 internal fun ODVLibraryContent(
@@ -95,9 +96,9 @@ internal fun ODVLibraryContent(
     pages: LazyPagingItems<DriveItem>,
     onIntent: (LibraryIntent) -> Unit,
     onShowFolders: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    tabs: @Composable () -> Unit = {},
+    banner: @Composable () -> Unit = {},
+    reselectSignal: Int = 0,
 ) {
     ODVScaffold(
         modifier = modifier,
@@ -105,20 +106,17 @@ internal fun ODVLibraryContent(
             ODVAppBar(
                 title = stringResource(R.string.library_title),
                 navigation = { ODVAppBarLogo() },
-                actions = {
-                    ODVIconButton(ODVIcon.Settings, stringResource(R.string.library_settings), onOpenSettings)
-                },
             )
         },
     ) { contentPadding ->
         Column(Modifier.fillMaxSize()) {
-            tabs()
+            banner()
             LibraryBanner(state, onIntent, onShowFolders)
             if (state.showFilters) FilterRow(state.filter, onIntent)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 val layout = remember(state.days) { LibraryLayout(state.days) }
                 when {
-                    layout.total > 0 -> LibraryGrid(state, pages, layout, contentPadding, onIntent)
+                    layout.total > 0 -> LibraryGrid(state, pages, layout, contentPadding, onIntent, reselectSignal)
                     // Quét lần đầu đang chạy: banner D7 đã nói rõ, chưa có gì để hiện (TV-06).
                     !state.sync.initialSyncDone && state.sync.isSyncing -> Unit
                     !state.daysLoaded -> Loading()
@@ -204,12 +202,15 @@ private fun LibraryGrid(
     layout: LibraryLayout,
     contentPadding: PaddingValues,
     onIntent: (LibraryIntent) -> Unit,
+    reselectSignal: Int,
 ) {
     val resources = LocalResources.current
     val locale = odvLocale()
     val dates = remember(locale) { LibraryDateFormatter(locale) }
     val labels = remember(resources, dates, locale, state.utcOffsetMs) { DayLabels(resources, dates, locale, state.utcOffsetMs) }
     val gridState = rememberLazyGridState()
+    // DH-04: chạm lại tab Thư viện thì cuộn lên đầu.
+    ODVReselectEffect(reselectSignal) { gridState.animateScrollToItem(0) }
     val scope = rememberCoroutineScope()
     val headerHeightPx = with(LocalDensity.current) { DateHeaderHeight.toPx() }
 

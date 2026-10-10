@@ -51,5 +51,6 @@ internal actual fun rememberIconPainter(icon: ODVIcon): Painter = painterResourc
         ODVIcon.Fit -> R.drawable.ic_fit
         ODVIcon.Prev -> R.drawable.ic_prev
         ODVIcon.Next -> R.drawable.ic_next
+        ODVIcon.Short -> R.drawable.ic_short
     },
 )

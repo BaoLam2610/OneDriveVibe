@@ -30,6 +30,9 @@ import com.lambao.odv.core.designsystem.component.ODVRadioRow
 import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.component.ODVStepBar
 import com.lambao.odv.core.designsystem.component.ODVSwitch
+import com.lambao.odv.core.designsystem.component.ODVNavBadge
+import com.lambao.odv.core.designsystem.component.ODVNavBar
+import com.lambao.odv.core.designsystem.component.ODVNavItem
 import com.lambao.odv.core.designsystem.component.ODVTab
 import com.lambao.odv.core.designsystem.component.ODVTabs
 import com.lambao.odv.core.designsystem.component.ODVTextField
@@ -121,6 +124,23 @@ internal fun LazyListScope.controlsSection() {
                 ODVSwitch(false, {}, "Tắt")
                 ODVSwitch(true, {}, "Vô hiệu", enabled = false)
             }
+        }
+    }
+
+    item { SectionTitle("NavBar · N1 (4 mục), N3 (chấm), N4 (nền tối Short)") }
+    item {
+        var selected by rememberSaveable { mutableStateOf(0) }
+        val items = listOf(
+            ODVNavItem("Thư mục", ODVIcon.Folder, "Thư mục, tab 1 trên 4"),
+            ODVNavItem("Thư viện", ODVIcon.Image, "Thư viện, tab 2 trên 4"),
+            ODVNavItem("Short", ODVIcon.Short, "Short, tab 3 trên 4"),
+            ODVNavItem("Cài đặt", ODVIcon.Settings, "Cài đặt, tab 4 trên 4, có thông báo", badge = ODVNavBadge.Warning),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            ODVNavBar(items, selectedIndex = selected, onSelect = { selected = it })
+            ODVNavBar(items, selectedIndex = 3, onSelect = {})
+            ODVNavBar(items.map { if (it.badge != null) ODVNavItem(it.label, it.icon, it.contentDescription, ODVNavBadge.Danger) else it }, selectedIndex = 3, onSelect = {})
+            ODVNavBar(items, selectedIndex = 2, onSelect = {}, media = true)
         }
     }
 

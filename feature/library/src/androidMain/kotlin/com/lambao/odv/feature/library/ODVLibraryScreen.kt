@@ -11,17 +11,17 @@ import com.lambao.odv.core.domain.model.ViewerContext
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * Tab Thư viện (TV-01 → TV-06). [onOpenFile] chạy khi chạm một ô; màn xem làm ở Lát 5–6 nên nơi gọi có thể truyền hàm rỗng.
- * [onShowFolders] là lối tắt sang tab Thư mục ở banner "Đang lập chỉ mục" (TV-06). [tabs] là thanh Tabs Thư mục/Thư viện
- * do màn chứa (Home) dựng. [onOpenSettings] chạy khi bấm bánh răng ở AppBar (Lát 7).
+ * Tab Thư viện (TV-01 → TV-06). [onOpenFile] chạy khi chạm một ô. [onShowFolders] là lối tắt sang tab Thư mục ở banner "Đang lập
+ * chỉ mục" (TV-06). [banner] là banner secret sắp hết hạn do Màn chính dựng (D9). [reselectSignal] tăng khi người dùng chạm lại tab
+ * Thư viện trên thanh điều hướng đáy (DH-04). Từ Lát 8 không còn Tabs và nút bánh răng (ADR-0023).
  */
 @Composable
 fun ODVLibraryScreen(
     modifier: Modifier = Modifier,
     onOpenFile: (DriveItem, ViewerContext) -> Unit = { _, _ -> },
     onShowFolders: () -> Unit = {},
-    onOpenSettings: () -> Unit = {},
-    tabs: @Composable () -> Unit = {},
+    banner: @Composable () -> Unit = {},
+    reselectSignal: Int = 0,
     viewModel: LibraryViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -38,8 +38,8 @@ fun ODVLibraryScreen(
         pages = pages,
         onIntent = viewModel::onIntent,
         onShowFolders = onShowFolders,
-        onOpenSettings = onOpenSettings,
         modifier = modifier,
-        tabs = tabs,
+        banner = banner,
+        reselectSignal = reselectSignal,
     )
 }

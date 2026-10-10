@@ -33,7 +33,6 @@ import com.lambao.odv.feature.auth.security.ODVSecuritySetupScreen
 import com.lambao.odv.feature.imageviewer.ODVImageViewerScreen
 import com.lambao.odv.feature.player.ODVPlayerScreen
 import com.lambao.odv.feature.settings.ODVPinFlowScreen
-import com.lambao.odv.feature.settings.ODVSettingsScreen
 import com.lambao.odv.feature.settings.ODVUpdateSecretScreen
 import com.lambao.odv.feature.settings.PinPurpose
 import com.lambao.odv.ui.home.ODVHomeScreen
@@ -145,8 +144,13 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                 }
                 entry<AppRoute.Home> {
                     ODVHomeScreen(
-                        // Guard: chạm đôi bánh răng không được đẩy hai màn Cài đặt.
-                        onOpenSettings = { if (backStack.lastOrNull() != AppRoute.Settings) backStack.add(AppRoute.Settings) },
+                        // Cài đặt là tab của Màn chính (ADR-0023): các màn con của nó vẫn đẩy lên back stack của app, che thanh đáy (DH-05).
+                        // Guard: bấm đôi công tắc không được đẩy hai màn.
+                        onOpenSecuritySetup = { if (backStack.lastOrNull() == AppRoute.Home) backStack.add(AppRoute.SecuritySetup(fromSettings = true)) },
+                        onOpenPin = { purpose -> if (backStack.lastOrNull() == AppRoute.Home) backStack.add(AppRoute.SettingsPin(purpose.name)) },
+                        onOpenSecretForm = { if (backStack.lastOrNull() == AppRoute.Home) backStack.add(AppRoute.UpdateSecret) },
+                        // CD-05: đã xóa sạch dữ liệu, về Kết nối với back stack sạch.
+                        onDisconnected = { backStack.resetTo(AppRoute.Connect) },
                         // Banner hết hạn secret (CD-06): bảo vệ bật thì xác thực lại bằng PIN trước (CD-04), tắt thì vào thẳng form.
                         onUpdateSecret = { requiresPin ->
                             if (backStack.lastOrNull() == AppRoute.Home) {
@@ -164,18 +168,6 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                                 }
                             }
                         },
-                    )
-                }
-                entry<AppRoute.Settings> { route ->
-                    ODVSettingsScreen(
-                        // Chỉ bỏ khi đang ở trên cùng (không bỏ nhầm màn Khóa).
-                        onBack = { if (backStack.size > 1 && backStack.lastOrNull() == route) backStack.removeLastOrNull() },
-                        // Guard: bấm đôi công tắc không được đẩy hai màn.
-                        onOpenSecuritySetup = { if (backStack.lastOrNull() == route) backStack.add(AppRoute.SecuritySetup(fromSettings = true)) },
-                        onOpenPin = { purpose -> if (backStack.lastOrNull() == route) backStack.add(AppRoute.SettingsPin(purpose.name)) },
-                        onOpenSecretForm = { if (backStack.lastOrNull() == route) backStack.add(AppRoute.UpdateSecret) },
-                        // CD-05: đã xóa sạch dữ liệu, về Kết nối với back stack sạch.
-                        onDisconnected = { backStack.resetTo(AppRoute.Connect) },
                     )
                 }
                 entry<AppRoute.SettingsPin> { route ->

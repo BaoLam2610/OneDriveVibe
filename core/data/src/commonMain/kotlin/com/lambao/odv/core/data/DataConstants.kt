@@ -83,6 +83,7 @@ internal object PreferenceKeys {
     val SORT_FIELD = stringPreferencesKey("sort_field")
     val SORT_DIRECTION = stringPreferencesKey("sort_direction")
     val VIEW_MODE = stringPreferencesKey("view_mode")
+    val LAST_LIST_TAB = stringPreferencesKey("last_list_tab")
     val PLAY_MODE = stringPreferencesKey("play_mode")
     val VIDEO_FIT = stringPreferencesKey("video_fit")
     val THEME_MODE = stringPreferencesKey("theme_mode")

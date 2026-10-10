@@ -31,6 +31,8 @@ import com.lambao.odv.core.domain.usecase.security.UnlockWithPinUseCase
 import com.lambao.odv.core.domain.usecase.security.VerifyPinUseCase
 import com.lambao.odv.core.domain.usecase.settings.GetLanguageUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveConnectionInfoUseCase
+import com.lambao.odv.core.domain.usecase.settings.ObserveLastListTabUseCase
+import com.lambao.odv.core.domain.usecase.settings.SetLastListTabUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveSecretExpiryNoticeUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveSecretExpiryUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveThemeModeUseCase
@@ -96,6 +98,9 @@ val useCaseModule = module {
     // Cài đặt (Lát 7)
     factoryOf(::ObserveThemeModeUseCase)
     factoryOf(::SetThemeModeUseCase)
+    // Tab Thư mục/Thư viện dùng gần nhất (DH-06).
+    factoryOf(::ObserveLastListTabUseCase)
+    factoryOf(::SetLastListTabUseCase)
     factoryOf(::ObserveSecretExpiryUseCase)
     factoryOf(::SetSecretExpiryUseCase)
     factoryOf(::ObserveSecretExpiryNoticeUseCase)

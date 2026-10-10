@@ -57,6 +57,13 @@ object ODVSize {
     val field = 52.dp
     val chip = 36.dp
     val tabItem = 40.dp
+    /** Chiều cao thanh điều hướng đáy, chưa tính system inset (mục 4.7, Lát 8) */
+    val navBar = 64.dp
+    /** Viên chọn mục thanh điều hướng đáy */
+    val navIndicatorWidth = 56.dp
+    val navIndicatorHeight = 32.dp
+    /** Chấm nhắc trên mục Cài đặt (DH-07) */
+    val navDot = 8.dp
     val switchWidth = 52.dp
     val switchHeight = 32.dp
     val radio = 22.dp

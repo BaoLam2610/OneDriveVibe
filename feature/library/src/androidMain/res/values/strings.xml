@@ -3,7 +3,6 @@
     <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
          Câu chữ lấy từ thiết kế (ODV List); mục ghi [mới] chưa có trong thiết kế, cần duyệt. -->
     <string name="library_title" translatable="false">OneDrive</string>
-    <string name="library_settings">Cài đặt</string>
 
     <!-- Chip lọc (TV-03) -->
     <string name="library_filter_all">Tất cả</string>

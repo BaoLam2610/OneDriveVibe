@@ -6,9 +6,15 @@
     <string name="splash_tagline">Phim · Ảnh · Truyện trên OneDrive</string>
 
     <!-- Hộp thoại sinh trắc học của hệ thống (L2, KH-01, BM-02). Câu chữ tự viết, chờ duyệt (ADR-0014) -->
-    <!-- Tabs màn Danh sách (thiet-ke-ui.md mục 4.1) -->
+    <!-- Thanh điều hướng đáy của Màn chính (thiet-ke-ui.md mục 4.7, ADR-0023) -->
     <string name="home_tab_folders">Thư mục</string>
     <string name="home_tab_library">Thư viện</string>
+    <string name="home_tab_short">Short</string>
+    <string name="home_tab_settings">Cài đặt</string>
+    <!-- Nhãn TalkBack, ví dụ "Thư mục, tab 1 trên 3, đang chọn, có thông báo" -->
+    <string name="home_tab_description">%1$s, tab %2$d trên %3$d</string> <!-- [mới] -->
+    <string name="home_tab_selected">, đang chọn</string> <!-- [mới] -->
+    <string name="home_tab_badge">, có thông báo</string> <!-- [mới] -->
 
     <string name="biometric_unlock_title">Mở khóa OneDriveVibe</string> <!-- [mới] -->
     <string name="biometric_unlock_subtitle">Dùng sinh trắc học để mở khóa</string> <!-- [mới] -->

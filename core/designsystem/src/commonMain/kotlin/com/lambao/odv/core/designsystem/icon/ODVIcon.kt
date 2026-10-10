@@ -1,4 +1,4 @@
-// Sinh từ board "06 Icon" (ODV Foundations) bởi script. 42 icon, lưới 24x24, nét 2dp, đầu tròn.
+// Sinh từ board "06 Icon" (ODV Foundations) bởi script. 43 icon, lưới 24x24, nét 2dp, đầu tròn.
 package com.lambao.odv.core.designsystem.icon
 
 /** Bộ icon ODV (mục 3.1). Không dùng Material Icons, không dùng emoji. */
@@ -87,4 +87,6 @@ enum class ODVIcon {
     Prev,
     /** Video sau */
     Next,
+    /** Tab Short (Lát 8) */
+    Short,
 }
