@@ -16,4 +16,6 @@ val androidMediaModule = module {
     single { ExoPlayerFactory(get<Context>(), get(), get()) }
     // Tải trước đầu video kế tiếp của tab Short vào cache video chung (SV-13, ADR-0026).
     single { VideoPreloader(get(), get(), get()) }
+    // Khung hình đầu thật làm poster khi vuốt (tab Short, 2026-10-11).
+    single { FirstFrameProvider(get(), get()) }
 }

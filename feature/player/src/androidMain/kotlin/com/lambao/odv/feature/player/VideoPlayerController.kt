@@ -2,6 +2,7 @@
 
 package com.lambao.odv.feature.player
 
+import android.os.SystemClock
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -199,6 +200,54 @@ internal class VideoPlayerController(
     fun seekTo(targetMs: Long) {
         player.seekTo(targetMs.coerceAtLeast(0L))
         refreshProgress()
+    }
+
+    /** Đang kéo thanh tua với preview khung hình (VD-02, 2026-10-11). */
+    private var scrubbing = false
+
+    /** Video đang phát lúc bắt đầu kéo: nhả tay thì phát tiếp, đang dừng thì vẫn dừng. */
+    private var resumeAfterScrub = false
+    private var lastScrubSeekAt = 0L
+    private var scrubSeeks = 0
+
+    /**
+     * Bắt đầu kéo thanh tua: bật chế độ tua liên tục của Media3 (`setScrubbingModeEnabled`, có từ 1.8.0) và tạm dừng, để khung hình trên
+     * màn chạy theo ngón tay chính là preview. Cùng cách với tab Short.
+     */
+    fun beginScrub() {
+        if (scrubbing) return
+        scrubbing = true
+        resumeAfterScrub = player.playWhenReady
+        scrubSeeks = 0
+        lastScrubSeekAt = 0L
+        playerLog.i { "[Player][Seek] bắt đầu kéo có preview, vị trí=${player.currentPosition}ms đang phát=$resumeAfterScrub" }
+        player.setScrubbingModeEnabled(true)
+        player.pause()
+    }
+
+    /** Vị trí đang kéo tới: tua để hiện khung hình ở đó, tối đa một lần mỗi [PlayerConstants.SCRUB_SEEK_INTERVAL_MS]. */
+    fun scrubTo(targetMs: Long) {
+        if (!scrubbing) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastScrubSeekAt < PlayerConstants.SCRUB_SEEK_INTERVAL_MS) return
+        lastScrubSeekAt = now
+        scrubSeeks++
+        val limit = if (durationMs > 0L) durationMs else Long.MAX_VALUE
+        player.seekTo(targetMs.coerceIn(0L, limit))
+    }
+
+    /** Nhả tay: tua tới [targetMs] (null: giữ vị trí hiện tại), tắt chế độ tua liên tục và khôi phục phát/dừng như lúc bắt đầu kéo. */
+    fun endScrub(targetMs: Long?) {
+        if (scrubbing) {
+            scrubbing = false
+            // Tắt chế độ tua liên tục trước khi tua lần cuối để lần tua chốt vị trí chính xác.
+            player.setScrubbingModeEnabled(false)
+            playerLog.i { "[Player][Seek] kết thúc kéo sau $scrubSeeks lần tua preview, phát tiếp=$resumeAfterScrub" }
+            if (targetMs != null) seekTo(targetMs)
+            if (resumeAfterScrub) player.play()
+        } else if (targetMs != null) {
+            seekTo(targetMs)
+        }
     }
 
     /** Đọc lại vị trí, buffer và thời lượng; giao diện gọi theo nhịp ngắn khi đang hiển thị. */

@@ -78,8 +78,8 @@ internal fun BoxScope.CenterControls(
 
 /**
  * Thanh dưới: thanh tua, thời gian "12:04 / 1:26:02" và các nút Tốc độ, Chế độ phát, Khung hình, Xoay màn hình (VD-02, VD-05,
- * VD-20, VD-06, VD-07). Kéo thanh tua chỉ đổi vị trí hiển thị và hiện bong bóng thời gian; chỉ tua thật khi nhả tay, để không bắn
- * hàng chục yêu cầu tải qua mạng trong lúc kéo.
+ * VD-20, VD-06, VD-07). Kéo thanh tua hiện bong bóng thời gian và cho player tua theo ngón tay ở chế độ tua liên tục của Media3 (tối đa
+ * 10 lần/giây, tạm dừng trong lúc kéo) để khung hình trên màn là preview; nhả tay thì tua tới vị trí cuối và phát tiếp nếu đang phát.
  */
 @Composable
 internal fun BoxScope.BottomControls(
@@ -110,11 +110,16 @@ internal fun BoxScope.BottomControls(
                 onSeek = {
                     onTouch()
                     onScrub(it)
+                    // Preview (2026-10-11): player tua theo ngón tay (có throttle) nên khung hình trên màn là ảnh xem trước, không chỉ bong bóng thời gian.
+                    if (duration > 0L) {
+                        controller.beginScrub()
+                        controller.scrubTo((it * duration).toLong())
+                    }
                 },
                 contentDescription = stringResource(R.string.player_seek_description),
                 valueDescription = stringResource(R.string.player_seek_value, spokenDuration(shownMs), spokenDuration(duration)),
                 onSeekFinished = {
-                    scrubState()?.let { controller.seekTo((it * duration).toLong()) }
+                    controller.endScrub(scrubState()?.let { (it * duration).toLong() })
                     onScrub(null)
                 },
             )

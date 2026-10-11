@@ -133,6 +133,7 @@ internal class ShortPlayerController(
     suspend fun load(item: DriveItem, generation: Int, startPositionMs: Long, autoPlay: Boolean) {
         failure = null
         failedItemId = null
+        cancelScrub()
         // Video mới: bộ giải mã bị chặn vì video trước không được áp sang video này.
         decoders.reset()
         decoderRetries = 0
@@ -165,6 +166,7 @@ internal class ShortPlayerController(
      * người dùng đã dừng vẫn nằm chờ.
      */
     fun onAppLocked() {
+        cancelScrub()
         val id = loadedId
         shortsLog.i { "[Short] app bị khóa: dừng player, bỏ nguồn và xóa link ký (đang nạp=${id != null}, vị trí=${player.currentPosition}ms)" }
         // Khóa lần hai trước khi video kịp nạp lại thì loadedId đang null: giữ vị trí đã lưu ở lần khóa trước thay vì ghi đè bằng null.
@@ -261,11 +263,27 @@ internal class ShortPlayerController(
 
     /** Nhả tay: tua tới vị trí cuối, tắt chế độ tua liên tục và khôi phục phát/dừng như lúc bắt đầu kéo. */
     fun endScrub(targetMs: Long) {
-        seekTo(targetMs)
+        if (scrubbing) {
+            scrubbing = false
+            // Tắt chế độ tua liên tục trước khi tua lần cuối để lần tua chốt vị trí chính xác.
+            player.setScrubbingModeEnabled(false)
+            shortsLog.i { "[Short][Seek] kết thúc kéo sau $scrubSeeks lần tua preview, phát tiếp=$resumeAfterScrub" }
+            seekTo(targetMs)
+            if (resumeAfterScrub) player.play()
+        } else {
+            seekTo(targetMs)
+        }
+    }
+
+    /**
+     * Hủy lần kéo đang dở mà không tua (thanh tua rời màn giữa lúc kéo, nạp video khác, app bị khóa): nếu không, chế độ tua liên tục và cờ phát
+     * lại của lần kéo cũ sẽ kẹt sang video sau. Không làm gì khi không đang kéo.
+     */
+    fun cancelScrub() {
         if (!scrubbing) return
         scrubbing = false
         player.setScrubbingModeEnabled(false)
-        shortsLog.i { "[Short][Seek] kết thúc kéo sau $scrubSeeks lần tua preview, phát tiếp=$resumeAfterScrub" }
+        shortsLog.i { "[Short][Seek] hủy lần kéo dở, phát tiếp=$resumeAfterScrub" }
         if (resumeAfterScrub) player.play()
     }
 

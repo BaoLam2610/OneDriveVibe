@@ -109,6 +109,9 @@ internal object PlayerConstants {
      */
     const val MAX_DECODER_RETRIES = 2
 
+    /** Khi kéo thanh tua có preview, tua tối đa một lần mỗi chừng này (khoảng 10 lần/giây) để không dồn lệnh tua cho bộ giải mã (như tab Short). */
+    const val SCRUB_SEEK_INTERVAL_MS = 100L
+
     // --- Log ---
 
     /** Id Graph dài và khó đọc; log chỉ ghi chừng này ký tự đầu. */

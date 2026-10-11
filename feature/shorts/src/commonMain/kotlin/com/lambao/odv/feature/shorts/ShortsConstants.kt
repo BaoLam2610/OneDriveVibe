@@ -42,6 +42,10 @@ internal object ShortsConstants {
     /** Khi kéo thanh tua có preview, tua tối đa một lần mỗi chừng này (khoảng 10 lần/giây) để không dồn lệnh tua cho bộ giải mã. */
     const val SCRUB_SEEK_INTERVAL_MS = 100L
 
+    /** Poster khung hình đầu: rộng tối đa chừng này px (nửa màn hình thường, đủ nét khi phủ tạm vài trăm ms) và giữ tối đa chừng này ảnh trong RAM. */
+    const val POSTER_MAX_WIDTH_PX = 540
+    const val POSTER_MAX_COUNT = 4
+
     /** Chờ chừng này mới hiện spinner tải: video đã được tải trước thường lên hình trong vài trăm ms, hiện spinner ngay chỉ gây nháy. */
     const val SPINNER_DELAY_MS = 400L
 

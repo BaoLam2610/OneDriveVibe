@@ -5,7 +5,9 @@ package com.lambao.odv.feature.shorts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.foundation.pager.PagerState
 import com.lambao.odv.core.designsystem.component.ODVReselectEffect
 import kotlin.math.ln
@@ -98,6 +100,7 @@ internal fun ShortsContent(
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
     onPreload: (List<ShortVideo>) -> Unit,
+    posterOf: (String) -> ImageBitmap?,
     reselectSignal: Int,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
@@ -118,7 +121,7 @@ internal fun ShortsContent(
             )
             // Dựng lại Pager từ đầu mỗi lần danh sách được xây hoặc xáo lại (generation đổi).
             ShortsPhase.Ready -> key(state.generation) {
-                ShortsPager(state, controller, reshuffledShown, onIntent, onPositionChanged, onPreload, reselectSignal)
+                ShortsPager(state, controller, reshuffledShown, onIntent, onPositionChanged, onPreload, posterOf, reselectSignal)
             }
         }
     }
@@ -132,6 +135,7 @@ private fun BoxScope.ShortsPager(
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
     onPreload: (List<ShortVideo>) -> Unit,
+    posterOf: (String) -> ImageBitmap?,
     reselectSignal: Int,
 ) {
     val ids = state.ids
@@ -292,6 +296,7 @@ private fun BoxScope.ShortsPager(
             ShortPage(
                 video = state.videos[ids[page]],
                 controller = controller,
+                poster = posterOf(ids[page]),
                 isCurrent = page == settled && !autoScrolling,
             )
         }
@@ -343,6 +348,7 @@ private fun ReshuffleIndicator(reshuffle: ReshuffleConnection, modifier: Modifie
 private fun ShortPage(
     video: ShortVideo?,
     controller: ShortPlayerController?,
+    poster: ImageBitmap?,
     isCurrent: Boolean,
 ) {
     val item = video?.item
@@ -364,7 +370,9 @@ private fun ShortPage(
         val active = if (isCurrent && controller != null && controller.loadedId == item.id) controller else null
         val rendered = active != null && active.renderedItemId == item.id
         val failure = active?.takeIf { it.failedItemId == item.id }?.failure
-        val aspect = active?.videoAspect?.takeIf { it > 0f } ?: item.video.guessAspect()
+        // Poster là khung hình đầu thật nên tỉ lệ của nó chính xác hơn đoán từ metadata (khi player chưa báo tỉ lệ).
+        val posterAspect = poster?.let { it.width.toFloat() / it.height } ?: 0f
+        val aspect = active?.videoAspect?.takeIf { it > 0f } ?: posterAspect.takeIf { it > 0f } ?: item.video.guessAspect()
         val fit = decideFit(aspect, containerAspect)
         val paused = active?.userPaused == true
 
@@ -389,12 +397,23 @@ private fun ShortPage(
                     surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
                 )
             }
-            // Cố ý KHÔNG phủ thumbnail của OneDrive trước khung hình đầu (kiểm tay 2026-10-11): thumbnail không phải khung hình đầu của video nên
-            // khi khung hình thật hiện ra, hình bị nháy từ ảnh này sang ảnh khác. Nền đen cộng spinner cho tới khi có khung hình đầu thật.
-            // Việc dùng đúng khung hình đầu làm poster (như các app Short khác) cần tải trước và giải mã sẵn, ghi ở kế hoạch 8c.
-            // Chỉ hiện spinner khi phải chờ quá SPINNER_DELAY_MS: video đã được tải trước thường lên hình sau vài trăm ms, hiện spinner ngay chỉ gây
-            // nháy (kiểm tay 2026-10-11). Trong lúc chờ là nền đen.
-            val waiting = isCurrent && !rendered && failure == null
+            // Cố ý KHÔNG dùng thumbnail của OneDrive làm poster (kiểm tay 2026-10-11): nó không phải khung hình đầu nên hình bị nháy khi khung thật
+            // hiện ra. Poster ở đây là chính khung hình đầu (FirstFrameProvider, lấy sẵn cho video kế cận), vẽ cùng khung với bề mặt phát nên lúc
+            // bề mặt vẽ khung đầu thì hai ảnh trùng nhau, không nháy. Chưa có poster (chưa lấy kịp hoặc máy không giải mã được) thì giữ nền đen.
+            if (poster != null && !rendered) {
+                Image(
+                    bitmap = poster,
+                    contentDescription = null,
+                    modifier = when {
+                        aspect <= 0f -> Modifier.fillMaxSize()
+                        fit == ShortFit.Cover -> Modifier.coverAspect(aspect)
+                        else -> Modifier.aspectRatio(aspect)
+                    },
+                )
+            }
+            // Có poster thì không cần spinner: người xem đã thấy hình. Không có poster thì chỉ hiện spinner khi phải chờ quá SPINNER_DELAY_MS
+            // (video đã tải trước thường lên hình sau vài trăm ms, hiện spinner ngay chỉ gây nháy).
+            val waiting = isCurrent && !rendered && failure == null && poster == null
             var spinnerVisible by remember(item.id) { mutableStateOf(false) }
             LaunchedEffect(waiting, item.id) {
                 spinnerVisible = false
@@ -530,6 +549,8 @@ private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Mo
         animationSpec = tween(ShortsConstants.PAUSE_FADE_MS),
         label = "shortSeekExpanded",
     )
+    // Thanh rời màn giữa lúc kéo (đổi tab, xuống nền, video khác) thì onSeekFinished không bao giờ chạy: trả player về trạng thái trước khi kéo.
+    DisposableEffect(controller) { onDispose { controller.cancelScrub() } }
     val description = stringResource(R.string.shorts_seek_description)
     val valueDescription = stringResource(
         R.string.shorts_seek_value,

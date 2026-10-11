@@ -69,6 +69,7 @@ fun ODVShortsScreen(
         onIntent = viewModel::onIntent,
         onPositionChanged = { savedPosition = it },
         onPreload = holder::preload,
+        posterOf = holder::posterOf,
         reselectSignal = reselectSignal,
         onOpenSettings = onOpenSettings,
         modifier = modifier,
