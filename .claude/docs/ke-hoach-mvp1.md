@@ -97,6 +97,7 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 
 - 6a: phát stream, tự lấy link mới (VD-14), Play/Pause, tua, chạm đúp tua, tốc độ, Back, giữ màn sáng, lỗi codec và mất mạng.
 - 6b: vuốt độ sáng/âm lượng, khung hình, xoay, khóa thao tác, trước/sau và chế độ phát, Phát lại, zoom, bảng thông tin.
+- Sửa chen ngang 2026-10-11 (không đổi thứ tự Lát): zoom (VD-18) tràn cả màn hình ở Vừa khung hướng dọc và zoom theo điểm giữa hai ngón; chi tiết ở `tien-do-mvp1.md`.
 
 ### Lát 7: Cài đặt đầy đủ (đưa lên trước PDF, 2026-10-07)
 

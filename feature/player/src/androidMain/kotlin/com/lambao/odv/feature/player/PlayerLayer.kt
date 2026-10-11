@@ -6,9 +6,7 @@ import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import com.lambao.odv.core.media.PlayerFailure
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -20,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
@@ -238,13 +235,10 @@ internal fun PlayerLayer(
             seekFeedback = seekFeedback,
             centerFeedback = centerFeedback,
             onCenterFeedbackFinished = { centerFeedback = null },
-            showMiniProgress = !showControls,
-            // Hướng dọc + Vừa khung: khung 16:9 căn giữa (thiet-ke-ui.md mục 4.5). Cắt đầy / Kéo giãn / hướng ngang: lấp cả màn.
-            modifier = if (!landscape && state.videoFit == VideoFit.Fit) {
-                Modifier.fillMaxWidth().aspectRatio(PlayerConstants.FRAME_ASPECT).align(Alignment.Center)
-            } else {
-                Modifier.fillMaxSize()
-            },
+            // Đang zoom thì ẩn thanh tiến độ mảnh: nó nằm cố định ở đáy khung 16:9 nên lơ lửng giữa hình đã phóng to (VD-18).
+            showMiniProgress = !showControls && !zoom.isZoomed,
+            // Hướng dọc + Vừa khung: khung 16:9 căn giữa (thiet-ke-ui.md mục 4.5), nhưng zoom vẫn tràn cả màn (VD-18).
+            portraitFit = !landscape && state.videoFit == VideoFit.Fit,
         )
 
         PlayerControlsOverlay(

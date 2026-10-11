@@ -48,10 +48,13 @@ internal fun VideoFrame(
     centerFeedback: CenterFeedback?,
     onCenterFeedbackFinished: () -> Unit,
     showMiniProgress: Boolean,
-    modifier: Modifier,
+    portraitFit: Boolean,
 ) {
     val failure = controller.failure.takeIf { controller.failedItemId == item.id }
-    Box(modifier.clipToBounds().onSizeChanged { zoom.frameSize = it }, contentAlignment = Alignment.Center) {
+    // Hướng dọc + Vừa khung: khung 16:9 căn giữa (thiet-ke-ui.md mục 4.5). Cắt đầy / Kéo giãn / hướng ngang: lấp cả màn.
+    // Khung chỉ là bố cục lúc 1x; vùng cắt và lớp zoom là cả màn hình nên zoom tràn ra ngoài khung 16:9 (VD-18).
+    val frameModifier = if (portraitFit) Modifier.fillMaxWidth().aspectRatio(PlayerConstants.FRAME_ASPECT) else Modifier.fillMaxSize()
+    Box(Modifier.fillMaxSize().clipToBounds().onSizeChanged { zoom.updateViewport(it) }, contentAlignment = Alignment.Center) {
         val aspect = controller.videoAspect
         Box(
             Modifier
@@ -64,62 +67,69 @@ internal fun VideoFrame(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            val rendered = controller.hasRenderedFirstFrame(item.id)
-            PlayerSurface(
-                player = controller.player,
-                modifier = when {
-                    aspect <= 0f || fit == VideoFit.Stretch -> Modifier.fillMaxSize()
-                    fit == VideoFit.Crop -> Modifier.coverAspect(aspect)
-                    else -> Modifier.aspectRatio(aspect)
+            Box(frameModifier, contentAlignment = Alignment.Center) {
+                val rendered = controller.hasRenderedFirstFrame(item.id)
+                PlayerSurface(
+                    player = controller.player,
+                    modifier = when {
+                        aspect <= 0f || fit == VideoFit.Stretch -> Modifier.fillMaxSize()
+                        fit == VideoFit.Crop -> Modifier.coverAspect(aspect)
+                        else -> Modifier.aspectRatio(aspect)
+                    }
+                        // Hình chữ nhật video thật, để chặn kéo lố vào vùng viền đen khi zoom.
+                        .onSizeChanged { zoom.updateContent(it) }
+                        // TextureView giữ lại khung hình cuối của video trước (khi chuyển video hoặc video chạy hết): ẩn tới khi video này
+                        // vẽ khung đầu, nếu không nó lộ ra ở phần chừa trống quanh thumbnail.
+                        .graphicsLayer { alpha = if (rendered) 1f else 0f },
+                    surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
+                )
+                // Lỗi codec/đã xóa thì không phủ thumbnail lên thẻ lỗi; mất mạng vẫn giữ để có hình nền.
+                if (!rendered && (failure == null || failure == PlayerFailure.Network)) {
+                    // key theo id: AsyncImage giữ ảnh cũ trong lúc tải ảnh mới, nên không có key thì thumbnail video trước hiện lại phía sau.
+                    key(item.id) {
+                        AsyncImage(
+                            model = item.thumbnailSource(ThumbnailSize.Viewer),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = when (fit) {
+                                VideoFit.Fit -> ContentScale.Fit
+                                VideoFit.Crop -> ContentScale.Crop
+                                VideoFit.Stretch -> ContentScale.FillBounds
+                            },
+                        )
+                    }
                 }
-                    // TextureView giữ lại khung hình cuối của video trước (khi chuyển video hoặc video chạy hết): ẩn tới khi video này
-                    // vẽ khung đầu, nếu không nó lộ ra ở phần chừa trống quanh thumbnail.
-                    .graphicsLayer { alpha = if (rendered) 1f else 0f },
-                surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
-            )
-            // Lỗi codec/đã xóa thì không phủ thumbnail lên thẻ lỗi; mất mạng vẫn giữ để có hình nền.
-            if (!rendered && (failure == null || failure == PlayerFailure.Network)) {
-                // key theo id: AsyncImage giữ ảnh cũ trong lúc tải ảnh mới, nên không có key thì thumbnail video trước hiện lại phía sau.
-                key(item.id) {
-                    AsyncImage(
-                        model = item.thumbnailSource(ThumbnailSize.Viewer),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = when (fit) {
-                            VideoFit.Fit -> ContentScale.Fit
-                            VideoFit.Crop -> ContentScale.Crop
-                            VideoFit.Stretch -> ContentScale.FillBounds
-                        },
+            }
+        }
+        // Lớp phủ nằm theo khung bố cục (16:9 ở hướng dọc + Vừa khung), không đi qua lớp zoom: vùng ripple (nửa trái/phải) kèm sóng lan,
+        // biểu tượng Phát/Tạm dừng giữa khung và thanh tiến độ mảnh.
+        Box(frameModifier) {
+            seekFeedback?.let { feedback ->
+                Box(
+                    Modifier
+                        .align(if (feedback.rightSide) Alignment.CenterEnd else Alignment.CenterStart)
+                        .fillMaxHeight()
+                        .fillMaxWidth(0.5f),
+                ) {
+                    SeekRipple(
+                        label = stringResource(
+                            if (feedback.rightSide) R.string.player_seek_forward else R.string.player_seek_back,
+                            feedback.seconds,
+                        ),
+                        rightSide = feedback.rightSide,
+                        tick = feedback.tick,
                     )
                 }
             }
-        }
-        // Vùng ripple (nửa trái/phải khung video) kèm sóng lan, và biểu tượng Phát/Tạm dừng giữa khung: đều nằm trong video.
-        seekFeedback?.let { feedback ->
-            Box(
-                Modifier
-                    .align(if (feedback.rightSide) Alignment.CenterEnd else Alignment.CenterStart)
-                    .fillMaxHeight()
-                    .fillMaxWidth(0.5f),
-            ) {
-                SeekRipple(
-                    label = stringResource(
-                        if (feedback.rightSide) R.string.player_seek_forward else R.string.player_seek_back,
-                        feedback.seconds,
-                    ),
-                    rightSide = feedback.rightSide,
-                    tick = feedback.tick,
+            centerFeedback?.let { CenterFeedbackIcon(it, onFinished = onCenterFeedbackFinished, modifier = Modifier.align(Alignment.Center)) }
+            if (showMiniProgress) {
+                val duration = controller.durationMs
+                ODVViewerMiniProgress(
+                    position = fraction(controller.positionMs, duration),
+                    buffered = fraction(controller.bufferedPositionMs, duration),
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
-        }
-        centerFeedback?.let { CenterFeedbackIcon(it, onFinished = onCenterFeedbackFinished, modifier = Modifier.align(Alignment.Center)) }
-        if (showMiniProgress) {
-            val duration = controller.durationMs
-            ODVViewerMiniProgress(
-                position = fraction(controller.positionMs, duration),
-                buffered = fraction(controller.bufferedPositionMs, duration),
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 }

@@ -280,7 +280,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
   | Thư mục chứa tệp | dựng từ chuỗi thư mục cha trong CSDL |
 
   Trường nào không có dữ liệu thì ẩn dòng đó. Không dùng `photo.alternateTakenDateTime` làm ngày quay vì giá trị này có thể chỉ trùng ngày tải lên. OneDrive không có khái niệm "ngày đăng", nên app dùng ngày tải lên.
-- **VD-18** (zoom tự do): dùng hai ngón tay để zoom từ 1x đến 4x; khi đang zoom lớn hơn 1x thì một ngón kéo để di chuyển video, và hiện nút "Đặt lại zoom". Chạm đúp vẫn là tua (VD-03), không dùng để zoom. Zoom được đặt lại về 1x khi chuyển sang video khác hoặc khi đổi hướng màn hình.
+- **VD-18** (zoom tự do): dùng hai ngón tay để zoom từ 1x đến 4x; khi đang zoom lớn hơn 1x thì một ngón kéo để di chuyển video, và hiện nút "Đặt lại zoom". Zoom theo điểm giữa hai ngón (điểm video dưới hai ngón đứng yên khi zoom). Video phóng ra **tràn cả màn hình**, không bị cắt ở mép khung 16:9 của chế độ Vừa khung hướng dọc; kéo tới đúng mép video, theo chiều nào video đã phóng còn nhỏ hơn màn thì giữ ở giữa chứ không kéo vào vùng viền đen. Khi đang zoom lớn hơn 1x, thanh tiến độ mảnh (hiện lúc điều khiển ẩn) cũng ẩn đi; về 1x thì hiện lại. Chạm đúp vẫn là tua (VD-03), không dùng để zoom. Zoom được đặt lại về 1x khi chuyển sang video khác hoặc khi đổi hướng màn hình.
 - **VD-19** (hướng màn hình):
   - Mở video từ Danh sách vào ở hướng theo Cài đặt › Video › "Hướng màn hình khi mở video" (mặc định **dọc**), bất kể tỉ lệ video hay hướng của lần xem trước (không nhớ hướng).
   - Chuyển video trước/sau hoặc tự phát video kế tiếp thì **giữ hướng hiện tại**.

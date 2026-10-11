@@ -502,7 +502,7 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
     - **Không có nút toàn màn hình** (VD-07).
 - **Lớp phủ khi điều khiển hiện:** `#00000080` phủ toàn màn. Điều khiển tự ẩn sau 3 giây và mờ dần 250ms.
 - **MiniProgress:** khi điều khiển ẩn, thanh 3dp sát đáy khung video (hướng dọc), rãnh `#ffffff33`, phần đã xem `volt`.
-- **Khung video ở hướng dọc:** rộng toàn màn, tỉ lệ 16:9, căn giữa theo chiều dọc. Hướng ngang lấp chiều cao.
+- **Khung video ở hướng dọc:** rộng toàn màn, tỉ lệ 16:9, căn giữa theo chiều dọc. Hướng ngang lấp chiều cao. Khung chỉ là bố cục lúc 1x: khi zoom (VD-18) video tràn ra cả màn hình; gợn tua và biểu tượng Phát/Tạm dừng vẫn nằm trong khung 16:9 và không bị zoom; thanh tiến độ mảnh ẩn khi đang zoom lớn hơn 1x.
 - **Gợn chạm đúp (VD-03):** nửa hình elip nền `#ffffff26` phủ nửa trái hoặc nửa phải của khung video. Icon `rewind` / `forward` 32 kèm nhãn 14 600 ("-10 giây", "+20 giây"). Chạm liên tiếp thì cộng dồn nhãn, không tạo gợn mới.
 - **HUD vuốt (VD-04):** khung 56 × 200, bo 28, nền `#000000b3`, cách mép 32.
     - Phần trăm `timecode-sm` ở trên. Rãnh dọc 6 `#ffffff33`, mức hiện tại `volt`. Icon `sun` (nửa trái) hoặc `volume` (nửa phải) ở dưới.
@@ -897,7 +897,7 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 | Ảnh tải xong (AN-01) | Hiện thumbnail lớn ngay, cross-fade sang ảnh gốc trong 150ms. Chỉ báo tải nhỏ, không che ảnh |
 | Điều khiển video (VD-01) | Chạm để hiện hoặc ẩn. Tự ẩn sau 3 giây không thao tác, trừ khi đang ở trạng thái Phát lại, đang tải, hoặc đang mở sheet hay dialog |
 | Đổi khung hình / chế độ phát | Mỗi lần bấm xoay vòng, hiện viên thuốc nhãn 2 giây. Chế độ được nhớ |
-| Zoom video (VD-18) | 1x–4x. Khi > 1x, một ngón kéo để di chuyển, tắt vuốt chỉnh sáng/âm lượng, hiện nút Đặt lại zoom. Zoom về 1x khi đổi video hoặc đổi hướng |
+| Zoom video (VD-18) | 1x–4x, zoom theo điểm giữa hai ngón, video tràn cả màn hình (không bị cắt ở khung 16:9). Khi > 1x, một ngón kéo để di chuyển (tới mép video), tắt vuốt chỉnh sáng/âm lượng, hiện nút Đặt lại zoom. Zoom về 1x khi đổi video hoặc đổi hướng |
 | Khóa thao tác (VD-08) | Chặn mọi chạm. Giữ nút mở khóa 1 giây, vòng volt chạy theo thời gian giữ. Rung nhẹ khi khóa và khi mở |
 | Mất mạng (VD-16) | Phát hết phần đã tải trước rồi mới hiện thẻ Mất mạng. Không tự chuyển video khi mất mạng |
 | Tự phát tiếp (VD-13) | Vòng đếm 5 giây đầy dần tuyến tính. Bấm Hủy thì ở lại màn, hiện trạng thái Phát lại |
