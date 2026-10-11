@@ -31,6 +31,7 @@ import com.lambao.odv.feature.auth.connect.ODVConnectScreen
 import com.lambao.odv.feature.auth.lock.ODVLockScreen
 import com.lambao.odv.feature.auth.security.ODVSecuritySetupScreen
 import com.lambao.odv.feature.imageviewer.ODVImageViewerScreen
+import com.lambao.odv.feature.pdfviewer.ODVPdfViewerScreen
 import com.lambao.odv.feature.player.ODVPlayerScreen
 import com.lambao.odv.feature.settings.ODVPinFlowScreen
 import com.lambao.odv.feature.settings.ODVUpdateSecretScreen
@@ -158,13 +159,15 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                             }
                         },
                         onOpenFile = { item, viewerContext ->
-                            // Guard: chạm đôi một ô không được đẩy hai màn xem. PDF (Lát 7) chưa có màn xem.
+                            // Guard: chạm đôi một ô không được đẩy hai màn xem.
                             val top = backStack.lastOrNull()
-                            if (top !is AppRoute.ImageViewer && top !is AppRoute.VideoPlayer) {
+                            if (top !is AppRoute.ImageViewer && top !is AppRoute.VideoPlayer && top !is AppRoute.PdfViewer) {
                                 when (item.mediaKind) {
                                     MediaKind.Image -> backStack.add(viewerContext.toImageViewerRoute(item.id))
                                     MediaKind.Video -> backStack.add(viewerContext.toVideoPlayerRoute(item.id))
-                                    else -> Unit
+                                    // PDF không vuốt sang tệp khác nên route chỉ cần id (Lát 9b).
+                                    MediaKind.Pdf -> backStack.add(AppRoute.PdfViewer(item.id))
+                                    null -> Unit
                                 }
                             }
                         },
@@ -202,6 +205,13 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                         context = route.toViewerContext(),
                         startItemId = route.startItemId,
                         // Nút quay lại và "không còn ảnh nào" cùng đi qua đây; chỉ bỏ khi nó đang ở trên cùng (không bỏ nhầm màn Khóa).
+                        onBack = { if (backStack.size > 1 && backStack.lastOrNull() == route) backStack.removeLastOrNull() },
+                    )
+                }
+                entry<AppRoute.PdfViewer> { route ->
+                    ODVPdfViewerScreen(
+                        itemId = route.itemId,
+                        // Cùng cách đóng với màn xem ảnh và video: chỉ bỏ khi nó đang ở trên cùng (không bỏ nhầm màn Khóa).
                         onBack = { if (backStack.size > 1 && backStack.lastOrNull() == route) backStack.removeLastOrNull() },
                     )
                 }

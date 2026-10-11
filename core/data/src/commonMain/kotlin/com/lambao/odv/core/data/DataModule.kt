@@ -9,6 +9,7 @@ import com.lambao.odv.core.data.drive.LibraryRepositoryImpl
 import com.lambao.odv.core.data.drive.ShortRepositoryImpl
 import com.lambao.odv.core.data.drive.ViewerRepositoryImpl
 import com.lambao.odv.core.data.drive.VideoStreamRepositoryImpl
+import com.lambao.odv.core.data.pdf.ReadingProgressRepositoryImpl
 import com.lambao.odv.core.data.security.LockoutStore
 import com.lambao.odv.core.data.security.SecurityRepositoryImpl
 import com.lambao.odv.core.data.sync.SyncCoordinator
@@ -18,6 +19,7 @@ import com.lambao.odv.core.domain.hook.ConnectionResetter
 import com.lambao.odv.core.domain.repository.ConnectionRepository
 import com.lambao.odv.core.domain.repository.FolderRepository
 import com.lambao.odv.core.domain.repository.LibraryRepository
+import com.lambao.odv.core.domain.repository.ReadingProgressRepository
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.domain.repository.SyncRepository
 import com.lambao.odv.core.domain.repository.VideoStreamRepository
@@ -55,6 +57,8 @@ val dataModule = module {
     singleOf(::ViewerRepositoryImpl) bind ViewerRepository::class
     // Danh sách video của tab Short (SV-01): đọc id từ Room.
     singleOf(::ShortRepositoryImpl) bind ShortRepository::class
+    // Trang đang đọc của PDF (Lát 9a, PD-05). Cũng là ConnectionResetter: Ngắt kết nối xóa tiến độ đọc (CD-05).
+    singleOf(::ReadingProgressRepositoryImpl) binds arrayOf(ReadingProgressRepository::class, ConnectionResetter::class)
     // Link phát video (Lát 6, VD-14): trình phát hỏi lại mỗi lần mở kết nối vì link chỉ sống khoảng 1 giờ.
     singleOf(::VideoStreamRepositoryImpl) bind VideoStreamRepository::class
     // Đồng bộ delta về Room (ADR-0007). SyncCoordinator vừa là SyncRepository vừa là ConnectionResetter của Room nên

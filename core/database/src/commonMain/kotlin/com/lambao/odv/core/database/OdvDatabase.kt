@@ -14,15 +14,17 @@ import androidx.room3.RoomDatabaseConstructor
  * Lịch sử version:
  * - 1: bảng `drive_item`, `sync_state` (Lát 3, 4).
  * - 2: `drive_item` thêm 5 cột facet video cho bảng thông tin (Lát 6, VD-17).
+ * - 3: bảng `reading_progress` lưu trang đang đọc của PDF (Lát 9a, PD-05).
  */
 @Database(
-    entities = [DriveItemEntity::class, SyncStateEntity::class],
-    version = 2,
+    entities = [DriveItemEntity::class, SyncStateEntity::class, ReadingProgressEntity::class],
+    version = 3,
     exportSchema = true,
 )
 @ConstructedBy(OdvDatabaseConstructor::class)
 abstract class OdvDatabase : RoomDatabase() {
     abstract fun driveDao(): DriveDao
+    abstract fun readingProgressDao(): ReadingProgressDao
 }
 
 // Room (KSP) sinh bản `actual` cho từng target; không viết tay.

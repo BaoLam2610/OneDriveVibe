@@ -81,6 +81,13 @@ sealed interface AppRoute : NavKey {
         val sortDirection: String = SortDirection.Ascending.name,
         val libraryFilter: String? = null,
     ) : AppRoute
+
+    /**
+     * Màn xem PDF (PD, Lát 9). Chỉ cần [itemId]: không vuốt sang PDF khác (đặc tả không có) nên không mang ngữ cảnh mở. Màn tự đọc tên,
+     * cTag từ Room và trang đã lưu (PD-05). Route có từ 9a nhưng chưa có `entry` và `onOpenFile` chưa mở nó cho tới khi 9b có màn.
+     */
+    @Serializable
+    data class PdfViewer(val itemId: String) : AppRoute
 }
 
 internal fun ViewerContext.toImageViewerRoute(startItemId: String): AppRoute.ImageViewer = when (this) {

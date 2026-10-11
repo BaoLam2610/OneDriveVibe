@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: English. Keys match values/strings.xml; all strings are [new] and need review. -->
+
+    <string name="pdf_back">Back</string> <!-- [mới] -->
+    <string name="pdf_style">Reading style</string> <!-- [mới] -->
+    <string name="pdf_info">Info</string> <!-- [mới] -->
+    <string name="pdf_page_counter">%1$d / %2$d</string> <!-- [mới] -->
+    <string name="pdf_page_button_description">Go to page, showing page %1$d of %2$d</string> <!-- [mới] -->
+    <string name="pdf_page_description">Page %1$d of %2$d</string> <!-- [mới] -->
+    <string name="pdf_resume_notice">You\'re on page %1$d</string> <!-- [mới] -->
+
+    <string name="pdf_cancel">Cancel</string> <!-- [mới] -->
+    <string name="pdf_retry">Try again</string> <!-- [mới] -->
+    <string name="pdf_download_progress">%1$d%% · %2$s / %3$s</string> <!-- [mới] -->
+    <string name="pdf_download_offline_title">Connect to the internet to download this PDF</string> <!-- [mới] -->
+    <string name="pdf_download_failed_title">Couldn\'t download this PDF</string> <!-- [mới] -->
+    <string name="pdf_open_error_title">Couldn\'t open this PDF</string>
+    <string name="pdf_open_error_body">The file is password-protected or damaged.</string> <!-- [mới] -->
+
+    <string name="pdf_jump_title">Go to page</string> <!-- [mới] -->
+    <string name="pdf_jump_label">Page number</string> <!-- [mới] -->
+    <string name="pdf_jump_hint">From 1 to %1$d</string> <!-- [mới] -->
+    <string name="pdf_jump_error">Enter a number from 1 to %1$d</string> <!-- [mới] -->
+    <string name="pdf_jump_go">Go</string> <!-- [mới] -->
+
+    <string name="pdf_style_title">Reading style</string> <!-- [mới] -->
+    <string name="pdf_style_vertical">Vertical scroll</string> <!-- [mới] -->
+    <string name="pdf_style_horizontal">Horizontal pages</string> <!-- [mới] -->
+
+    <string name="pdf_info_title">Info</string> <!-- [mới] -->
+    <string name="pdf_info_close">Close</string> <!-- [mới] -->
+    <string name="pdf_info_name">File name</string> <!-- [mới] -->
+    <string name="pdf_info_size">Size</string> <!-- [mới] -->
+    <string name="pdf_info_pages">Pages</string> <!-- [mới] -->
+    <string name="pdf_info_uploaded">Uploaded</string> <!-- [mới] -->
+    <string name="pdf_info_modified">Modified</string> <!-- [mới] -->
+    <string name="pdf_info_folder">Folder</string> <!-- [mới] -->
+</resources>

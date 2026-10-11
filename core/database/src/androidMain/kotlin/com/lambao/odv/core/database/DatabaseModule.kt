@@ -12,6 +12,7 @@ import kotlin.coroutines.CoroutineContext
 val databaseModule = module {
     single<OdvDatabase> { buildDatabase(androidContext(), get<DispatcherProvider>().io) }
     single<DriveDao> { get<OdvDatabase>().driveDao() }
+    single<ReadingProgressDao> { get<OdvDatabase>().readingProgressDao() }
     // Thu gọn tệp sau khi xóa dữ liệu (SyncCoordinator.reset, CD-05).
     single { DatabaseCompactor(get()) }
 }

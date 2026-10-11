@@ -17,6 +17,7 @@ import com.lambao.odv.feature.auth.authModule
 import com.lambao.odv.feature.browser.browserModule
 import com.lambao.odv.feature.imageviewer.imageViewerModule
 import com.lambao.odv.feature.library.libraryModule
+import com.lambao.odv.feature.pdfviewer.pdfViewerModule
 import com.lambao.odv.feature.player.androidPlayerModule
 import com.lambao.odv.feature.player.playerModule
 import com.lambao.odv.feature.settings.settingsModule
@@ -50,7 +51,7 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
             modules(
                 // Debug đứng cuối để ghi đè binding của bản phát hành (vd. ThumbnailQuality).
                 listOf(appModule) + coreModules + listOf(
-                    androidMediaModule, authModule, browserModule, libraryModule, imageViewerModule, playerModule, androidPlayerModule,
+                    androidMediaModule, authModule, browserModule, libraryModule, imageViewerModule, pdfViewerModule, playerModule, androidPlayerModule,
                     settingsModule, shortsModule, androidShortsModule,
                 ) + DebugTools.koinModules,
             )

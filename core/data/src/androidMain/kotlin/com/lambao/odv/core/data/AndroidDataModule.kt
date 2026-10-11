@@ -13,6 +13,7 @@ import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.data.cache.CacheBudgetSource
 import com.lambao.odv.core.data.file.ResumableFileStore
 import com.lambao.odv.core.data.original.FileOriginalImageRepository
+import com.lambao.odv.core.data.pdf.FilePdfRepository
 import com.lambao.odv.core.data.prefs.DataStoreBrowserPreferences
 import com.lambao.odv.core.data.prefs.DataStoreCacheSettings
 import com.lambao.odv.core.data.prefs.DataStorePlayerPreferences
@@ -34,6 +35,7 @@ import com.lambao.odv.core.domain.hook.ThumbnailCache
 import com.lambao.odv.core.domain.hook.ThumbnailQuality
 import com.lambao.odv.core.domain.model.CacheKind
 import com.lambao.odv.core.domain.repository.OriginalImageRepository
+import com.lambao.odv.core.domain.repository.PdfRepository
 import com.lambao.odv.core.domain.settings.BrowserPreferences
 import com.lambao.odv.core.domain.settings.CacheSettings
 import com.lambao.odv.core.domain.settings.PlayerPreferences
@@ -116,6 +118,22 @@ val androidDataModule = module {
             ),
         )
     } binds arrayOf(OriginalImageRepository::class, ConnectionResetter::class, CacheStore::class)
+    // PDF (Lát 9a): cùng ResumableFileStore với ảnh gốc nhưng thư mục và trần riêng (CacheKind.Pdf); cũng là ConnectionResetter và
+    // CacheStore nên Ngắt kết nối xóa sạch (CD-05) và Cài đặt đo, xóa, dọn theo giới hạn (CD-07).
+    single {
+        val budget = get<CacheBudgetProvider>()
+        FilePdfRepository(
+            api = get(),
+            dao = get(),
+            store = ResumableFileStore(
+                directory = androidContext().cacheDir.resolve(StorageNames.PDF_DIR),
+                maxBytes = { budget.bytesFor(CacheKind.Pdf) },
+                dispatchers = get(),
+                logTag = "Pdf",
+            ),
+            dispatchers = get(),
+        )
+    } binds arrayOf(PdfRepository::class, ConnectionResetter::class, CacheStore::class)
 }
 
 /**

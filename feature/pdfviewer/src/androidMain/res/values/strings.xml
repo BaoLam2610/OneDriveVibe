@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ADR-0011: values/ là Tiếng Việt (mặc định), values-en/ là English. Thêm chuỗi thì thêm ở cả hai.
+         Thiết kế (ODV PDF detail) chưa cung cấp câu chữ nên mọi chuỗi đều đánh dấu [mới], cần duyệt. -->
+
+    <!-- Thanh trên và thanh dưới (PD-04, PD-06) -->
+    <string name="pdf_back">Quay lại</string> <!-- [mới] -->
+    <string name="pdf_style">Kiểu đọc</string> <!-- [mới] -->
+    <string name="pdf_info">Thông tin</string> <!-- [mới] -->
+    <string name="pdf_page_counter">%1$d / %2$d</string> <!-- [mới] -->
+    <string name="pdf_page_button_description">Đi tới trang, hiện ở trang %1$d trên %2$d</string> <!-- [mới] -->
+    <string name="pdf_page_description">Trang %1$d trên %2$d</string> <!-- [mới] -->
+    <string name="pdf_resume_notice">Đang ở trang %1$d</string> <!-- [mới] -->
+
+    <!-- Đang tải và lỗi (PD-01, PD-07) -->
+    <string name="pdf_cancel">Hủy</string> <!-- [mới] -->
+    <string name="pdf_retry">Thử lại</string> <!-- [mới] -->
+    <string name="pdf_download_progress">%1$d%% · %2$s / %3$s</string> <!-- [mới] -->
+    <string name="pdf_download_offline_title">Cần kết nối mạng để tải tệp PDF</string> <!-- [mới] -->
+    <string name="pdf_download_failed_title">Không tải được tệp PDF</string> <!-- [mới] -->
+    <string name="pdf_open_error_title">Không mở được tệp PDF này</string>
+    <string name="pdf_open_error_body">Tệp có mật khẩu hoặc bị hỏng.</string> <!-- [mới] -->
+
+    <!-- Nhảy tới trang (PD-04) -->
+    <string name="pdf_jump_title">Đi tới trang</string> <!-- [mới] -->
+    <string name="pdf_jump_label">Số trang</string> <!-- [mới] -->
+    <string name="pdf_jump_hint">Từ 1 đến %1$d</string> <!-- [mới] -->
+    <string name="pdf_jump_error">Nhập số từ 1 đến %1$d</string> <!-- [mới] -->
+    <string name="pdf_jump_go">Đi</string> <!-- [mới] -->
+
+    <!-- Kiểu đọc -->
+    <string name="pdf_style_title">Kiểu đọc</string> <!-- [mới] -->
+    <string name="pdf_style_vertical">Cuộn dọc</string> <!-- [mới] -->
+    <string name="pdf_style_horizontal">Lật trang ngang</string> <!-- [mới] -->
+
+    <!-- Bảng thông tin (PD-08) -->
+    <string name="pdf_info_title">Thông tin</string> <!-- [mới] -->
+    <string name="pdf_info_close">Đóng</string> <!-- [mới] -->
+    <string name="pdf_info_name">Tên tệp</string> <!-- [mới] -->
+    <string name="pdf_info_size">Dung lượng</string> <!-- [mới] -->
+    <string name="pdf_info_pages">Số trang</string> <!-- [mới] -->
+    <string name="pdf_info_uploaded">Ngày tải lên</string> <!-- [mới] -->
+    <string name="pdf_info_modified">Ngày sửa</string> <!-- [mới] -->
+    <string name="pdf_info_folder">Thư mục</string> <!-- [mới] -->
+    <string name="pdf_info_root" translatable="false">OneDrive</string>
+</resources>

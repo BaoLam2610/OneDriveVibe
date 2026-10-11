@@ -33,6 +33,10 @@ import com.lambao.odv.core.domain.usecase.settings.GetLanguageUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveConnectionInfoUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveLastListTabUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveShortMaxMinutesUseCase
+import com.lambao.odv.core.domain.usecase.pdf.GetPdfFileUseCase
+import com.lambao.odv.core.domain.usecase.pdf.GetReadingProgressUseCase
+import com.lambao.odv.core.domain.usecase.pdf.OpenPdfUseCase
+import com.lambao.odv.core.domain.usecase.pdf.SaveReadingProgressUseCase
 import com.lambao.odv.core.domain.usecase.shorts.GetShortVideoUseCase
 import com.lambao.odv.core.domain.usecase.shorts.ObserveShortTabAvailableUseCase
 import com.lambao.odv.core.domain.usecase.shorts.ObserveShortVideoIdsUseCase
@@ -98,6 +102,12 @@ val useCaseModule = module {
     factoryOf(::GetImageInfoUseCase)
     factoryOf(::OpenOriginalImageUseCase)
     factoryOf(::GetStreamUrlUseCase)
+
+    // Màn xem PDF (Lát 9, PD-01, PD-05, PD-08)
+    factoryOf(::OpenPdfUseCase)
+    factoryOf(::GetPdfFileUseCase)
+    factoryOf(::GetReadingProgressUseCase)
+    factoryOf(::SaveReadingProgressUseCase)
 
     // Cài đặt (Lát 7)
     factoryOf(::ObserveThemeModeUseCase)

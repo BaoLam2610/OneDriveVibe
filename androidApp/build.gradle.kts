@@ -27,6 +27,7 @@ dependencies {
     implementation(project(":feature:browser"))
     implementation(project(":feature:library"))
     implementation(project(":feature:imageviewer"))
+    implementation(project(":feature:pdfviewer"))
     implementation(project(":feature:player"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:shorts"))

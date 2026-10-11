@@ -76,6 +76,7 @@ internal object StorageNames {
     /** Thư mục con của `cacheDir`. */
     const val THUMBNAILS_DIR = "thumbnails"
     const val ORIGINALS_DIR = "originals"
+    const val PDF_DIR = "pdf"
 }
 
 /** Khóa trong DataStore Preferences. **Không được đổi giá trị** (xem [StorageNames]). */

@@ -302,7 +302,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 
 - **PD-01**: Mở PDF: tải toàn bộ tệp, hiện tiến trình (% và dung lượng); cho phép hủy. Tệp đã có trong cache thì mở ngay.
 - **PD-02**: Chế độ đọc mặc định: cuộn dọc liên tục; có tùy chọn lật trang ngang.
-- **PD-03**: Zoom bằng hai ngón tay và chạm đúp; mặc định vừa chiều rộng màn hình.
+- **PD-03**: Zoom bằng hai ngón tay và chạm đúp; mặc định vừa chiều rộng màn hình. Zoom từ 1x đến 4x quanh điểm giữa hai ngón; chạm đúp: chưa zoom thì vào 2,5x quanh điểm chạm, đang zoom thì về 1x. Đang zoom, một ngón kéo nội dung; ở chế độ cuộn dọc, kéo vượt mép màn thì cuộn tiếp qua các trang (có quán tính); ở chế độ lật ngang thì tắt vuốt lật trang (muốn sang trang khác thì về 1x), và sang trang hoặc nhảy trang đều về 1x. Dừng zoom khoảng 0,25 giây thì dựng lại trang đang hiện ở độ phân giải cao hơn cho chữ nét (bản cũ vẫn hiện trong lúc chờ); trang khổ rất lớn hoặc máy heap nhỏ bị giới hạn bộ nhớ nên ở 4x kém nét hơn zoom thật.
 - **PD-04**: Hiện số trang hiện tại / tổng số trang; chạm vào để nhập số trang cần nhảy tới.
 - **PD-05**: Lưu trang đang đọc theo từng tệp; mở lại thì vào thẳng trang đó (có thông báo nhỏ "Đang ở trang X"). Đọc đến trang cuối thì coi là đã đọc xong và xóa khỏi dải "Đọc tiếp".
 - **PD-06**: Chạm một lần để ẩn/hiện thanh công cụ; giữ màn hình luôn sáng khi đang đọc.
