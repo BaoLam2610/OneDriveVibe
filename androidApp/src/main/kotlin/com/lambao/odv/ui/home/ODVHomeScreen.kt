@@ -2,6 +2,7 @@ package com.lambao.odv.ui.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -39,6 +40,9 @@ import com.lambao.odv.feature.browser.ODVBrowserScreen
 import com.lambao.odv.feature.library.ODVLibraryScreen
 import com.lambao.odv.feature.settings.ODVSettingsScreen
 import com.lambao.odv.feature.settings.PinPurpose
+import com.lambao.odv.feature.shorts.LocalODVShortSeekGuard
+import com.lambao.odv.feature.shorts.ODVShortSeekGuard
+import com.lambao.odv.feature.shorts.ODVShortSeekGuardStrip
 import com.lambao.odv.feature.shorts.ODVShortsScreen
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -146,6 +150,9 @@ private fun HomeContent(
         }
     }
 
+    // Cầu nối để thanh tua của Short ăn luôn dải trên cùng của thanh đáy, tránh chạm hụt rơi vào tab (xem ODVShortSeekGuard).
+    val seekGuard = remember { ODVShortSeekGuard() }
+    CompositionLocalProvider(LocalODVShortSeekGuard provides seekGuard) {
     Column(modifier.fillMaxSize().background(ODVTheme.colors.bg)) {
         // zIndex: vẽ vùng nội dung đè lên thanh đáy để núm thanh tua của Short (tâm ở rãnh sát đường tiếp xúc, tràn xuống vài dp) không bị
         // thanh đáy che. Các tab khác không vẽ ra ngoài vùng của mình nên không bị ảnh hưởng.
@@ -185,27 +192,32 @@ private fun HomeContent(
             val items = tabs.mapIndexed { index, tab ->
                 tab.navItem(index, tabs.size, selected = tab == selected, notice = notice)
             }
-            ODVNavBar(
-                items = items,
-                selectedIndex = tabs.indexOf(selected).coerceAtLeast(0),
-                // SV-10: ở tab Short thanh đáy chuyển sang bản nền tối N4, không phụ thuộc giao diện Sáng/Tối.
-                media = selected == HomeTab.Short,
-                onSelect = { index ->
-                    val tab = tabs[index]
-                    if (tab == selected) {
-                        when (tab) {
-                            HomeTab.Folders -> foldersReselect++
-                            HomeTab.Library -> libraryReselect++
-                            HomeTab.Settings -> settingsReselect++
-                            // DH-04: Short cuộn mượt về video đầu rồi xáo lại khi đang ở video không phải đầu.
-                            HomeTab.Short -> shortReselect++
+            Box {
+                ODVNavBar(
+                    items = items,
+                    selectedIndex = tabs.indexOf(selected).coerceAtLeast(0),
+                    // SV-10: ở tab Short thanh đáy chuyển sang bản nền tối N4, không phụ thuộc giao diện Sáng/Tối.
+                    media = selected == HomeTab.Short,
+                    onSelect = { index ->
+                        val tab = tabs[index]
+                        if (tab == selected) {
+                            when (tab) {
+                                HomeTab.Folders -> foldersReselect++
+                                HomeTab.Library -> libraryReselect++
+                                HomeTab.Settings -> settingsReselect++
+                                // DH-04: Short cuộn mượt về video đầu rồi xáo lại khi đang ở video không phải đầu.
+                                HomeTab.Short -> shortReselect++
+                            }
+                        } else {
+                            selected = tab
                         }
-                    } else {
-                        selected = tab
-                    }
-                },
-            )
+                    },
+                )
+                // SV-07 (2026-10-11): ở tab Short, dải đầu thanh đáy thuộc về thanh tua; đặt sau thanh đáy để nhận chạm trước.
+                if (selected == HomeTab.Short) ODVShortSeekGuardStrip(Modifier.align(Alignment.TopCenter))
+            }
         }
+    }
     }
 }
 

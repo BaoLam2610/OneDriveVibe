@@ -42,6 +42,9 @@ internal object ShortsConstants {
     /** Khi kéo thanh tua có preview, tua tối đa một lần mỗi chừng này (khoảng 10 lần/giây) để không dồn lệnh tua cho bộ giải mã. */
     const val SCRUB_SEEK_INTERVAL_MS = 100L
 
+    /** Dải trong suốt phủ lên đầu thanh đáy ở tab Short, chuyển cử chỉ cho thanh tua (xem ODVShortSeekGuard). Cùng cỡ nửa vùng chạm 48 của thanh tua. */
+    const val SEEK_GUARD_DP = 24
+
     /** Poster khung hình đầu: rộng tối đa chừng này px (nửa màn hình thường, đủ nét khi phủ tạm vài trăm ms) và giữ tối đa chừng này ảnh trong RAM. */
     const val POSTER_MAX_WIDTH_PX = 540
     const val POSTER_MAX_COUNT = 4

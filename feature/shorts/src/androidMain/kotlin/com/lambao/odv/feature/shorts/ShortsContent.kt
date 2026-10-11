@@ -549,8 +549,48 @@ private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Mo
         animationSpec = tween(ShortsConstants.PAUSE_FADE_MS),
         label = "shortSeekExpanded",
     )
-    // Thanh rời màn giữa lúc kéo (đổi tab, xuống nền, video khác) thì onSeekFinished không bao giờ chạy: trả player về trạng thái trước khi kéo.
-    DisposableEffect(controller) { onDispose { controller.cancelScrub() } }
+    // Kéo có preview (SV-07 sửa 2026-10-11): khung hình chạy theo ngón tay; nhả tay mới chốt vị trí và khôi phục phát/dừng. Dùng chung cho vùng chạm
+    // của chính thanh và dải bảo vệ trên thanh đáy (ODVShortSeekGuard); cập nhật theo từng lần dựng lại để thấy thời lượng mới nhất.
+    val seekHandler by rememberUpdatedState<(Float) -> Unit> { fraction ->
+        if (duration > 0L) {
+            if (scrub == null) controller.beginScrub()
+            scrub = fraction
+            controller.scrubTo((fraction * duration).toLong())
+        }
+    }
+    val finishHandler by rememberUpdatedState {
+        scrub?.let { controller.endScrub((it * duration).toLong()) }
+        scrub = null
+    }
+    // Dải bảo vệ phủ lên đầu thanh đáy chuyển cử chỉ vào đây, để chạm hụt xuống dưới đường tiếp xúc vẫn là tua, không rơi vào tab.
+    val guard = LocalODVShortSeekGuard.current
+    DisposableEffect(guard, controller) {
+        // Cử chỉ đang giữ ở dải có thể sống lâu hơn thanh tua (đổi video giữa lúc kéo): sau khi bị hủy, mọi lời gọi muộn đều bị bỏ qua để
+        // không tua nhầm video mới.
+        var disposed = false
+        val target = object : ODVShortSeekGuard.Target {
+            override fun onTouch(down: Boolean) {
+                if (disposed) return
+                shortsLog.d { "[Short][Seek] ${if (down) "chạm" else "nhả"} qua dải bảo vệ" }
+                touching = down
+            }
+
+            override fun onSeek(fraction: Float) {
+                if (!disposed) seekHandler(fraction)
+            }
+
+            override fun onFinish() {
+                if (!disposed) finishHandler()
+            }
+        }
+        guard?.target = target
+        onDispose {
+            disposed = true
+            if (guard?.target === target) guard.target = null
+            // Thanh rời màn giữa lúc kéo (đổi tab, xuống nền, video khác) thì onSeekFinished không bao giờ chạy: trả player về trạng thái trước khi kéo.
+            controller.cancelScrub()
+        }
+    }
     val description = stringResource(R.string.shorts_seek_description)
     val valueDescription = stringResource(
         R.string.shorts_seek_value,
@@ -585,19 +625,10 @@ private fun ShortSeek(controller: ShortPlayerController, modifier: Modifier = Mo
                 position = played,
                 buffered = fraction(controller.bufferedPositionMs, duration),
                 // Kéo có preview (SV-07 sửa 2026-10-11): khung hình chạy theo ngón tay; nhả tay mới chốt vị trí và khôi phục phát/dừng.
-                onSeek = { fraction ->
-                    if (duration > 0L) {
-                        if (scrub == null) controller.beginScrub()
-                        scrub = fraction
-                        controller.scrubTo((fraction * duration).toLong())
-                    }
-                },
+                onSeek = seekHandler,
                 contentDescription = description,
                 valueDescription = valueDescription,
-                onSeekFinished = {
-                    scrub?.let { controller.endScrub((it * duration).toLong()) }
-                    scrub = null
-                },
+                onSeekFinished = finishHandler,
                 expanded = expanded,
             )
         }

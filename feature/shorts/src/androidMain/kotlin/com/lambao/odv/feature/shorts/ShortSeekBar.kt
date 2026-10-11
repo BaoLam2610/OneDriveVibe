@@ -1,8 +1,8 @@
 package com.lambao.odv.feature.shorts
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -63,18 +63,25 @@ internal fun ShortSeekBar(
                     true
                 }
             }
+            // Thanh "ăn" mọi cử chỉ bắt đầu trong vùng chạm của nó (như YouTube, kiểm tay 2026-10-11): chạm xuống là nhận luôn và chiếm sự kiện
+            // cho tới khi nhả, kéo theo hướng nào cũng chỉ là tua. Trước đây dùng detectHorizontalDragGestures nên ngón tay trượt chéo/dọc trước
+            // thì Pager dọc nhận cử chỉ và chuyển sang video khác.
             .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    seek((offset.x / size.width).unit())
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    down.consume()
+                    seek((down.position.x / size.width).unit())
+                    while (true) {
+                        val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            change.consume()
+                            break
+                        }
+                        seek((change.position.x / size.width).unit())
+                        change.consume()
+                    }
                     finished()
                 }
-            }
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = { offset -> seek((offset.x / size.width).unit()) },
-                    onDragEnd = { finished() },
-                    onDragCancel = { finished() },
-                ) { change, _ -> seek((change.position.x / size.width).unit()) }
             },
     ) {
         // Một thanh duy nhất đổi dáng liên tục theo [expanded]: 0 là thanh mảnh `mini-progress` 3 không núm (đang phát, không chạm), 1 là thanh tua
