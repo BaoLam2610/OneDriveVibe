@@ -118,6 +118,9 @@ internal class VideoPlayerController(
     /** Trạng thái cho nút giữa (mục 4.5). IDLE mà không lỗi nghĩa là chưa chuẩn bị xong nên coi là đang tải. */
     val playState: ODVPlayState
         get() = when {
+            // Đang kéo thanh tua (đã tạm dừng): mỗi lần tua làm player đổi qua lại BUFFERING/READY, nếu theo đó thì nút giữa nhấp nháy giữa
+            // spinner và Play (kiểm tay 2026-10-11). Giữ biểu tượng của trạng thái trước khi kéo cho tới khi nhả tay.
+            scrubbing -> if (resumeAfterScrub) ODVPlayState.Playing else ODVPlayState.Paused
             playbackState == Player.STATE_ENDED -> ODVPlayState.Replay
             playbackState == Player.STATE_BUFFERING || (playbackState == Player.STATE_IDLE && failure == null) -> ODVPlayState.Loading
             isPlaying -> ODVPlayState.Playing
@@ -203,7 +206,7 @@ internal class VideoPlayerController(
     }
 
     /** Đang kéo thanh tua với preview khung hình (VD-02, 2026-10-11). */
-    private var scrubbing = false
+    private var scrubbing by mutableStateOf(false)
 
     /** Video đang phát lúc bắt đầu kéo: nhả tay thì phát tiếp, đang dừng thì vẫn dừng. */
     private var resumeAfterScrub = false
