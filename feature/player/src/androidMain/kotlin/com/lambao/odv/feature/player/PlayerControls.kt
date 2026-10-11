@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -98,6 +99,9 @@ internal fun BoxScope.BottomControls(
 ) {
     // Đọc qua hàm chứ không nhận giá trị: chạm vào thanh tua gọi onSeek rồi onSeekFinished ngay trong cùng một sự kiện, trước
     // khi composition kịp chạy lại, nên onSeekFinished phải thấy giá trị mới nhất chứ không phải giá trị lúc dựng.
+    // Thanh dưới ẩn (tự ẩn khi không chạm, xoay màn) hoặc rời màn giữa lúc kéo thì onSeekFinished không chạy: chốt lần kéo dở để player không kẹt
+    // ở chế độ tua liên tục và đang tạm dừng. Giữ nguyên vị trí hiện tại (không tua).
+    DisposableEffect(controller) { onDispose { controller.endScrub(null) } }
     val scrub = scrubState()
     val shownMs = if (scrub != null) (scrub * duration).toLong() else controller.positionMs
     val speedText = odvFormatSpeed(state.speed, odvLocale())

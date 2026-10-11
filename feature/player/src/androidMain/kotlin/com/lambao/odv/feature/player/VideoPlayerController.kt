@@ -241,6 +241,8 @@ internal class VideoPlayerController(
 
     /** Nhả tay: tua tới [targetMs] (null: giữ vị trí hiện tại), tắt chế độ tua liên tục và khôi phục phát/dừng như lúc bắt đầu kéo. */
     fun endScrub(targetMs: Long?) {
+        // Player đã nhả (cha dispose trước con trong vài thứ tự): không đụng tới nữa.
+        if (released) return
         if (scrubbing) {
             scrubbing = false
             // Tắt chế độ tua liên tục trước khi tua lần cuối để lần tua chốt vị trí chính xác.
@@ -261,7 +263,10 @@ internal class VideoPlayerController(
         if (duration != C.TIME_UNSET && duration > 0L) durationMs = duration
     }
 
+    private var released = false
+
     fun release() {
+        released = true
         playerLog.i { "[Player] nhả player ở vị trí=${player.currentPosition}ms" }
         player.removeListener(this)
         player.release()

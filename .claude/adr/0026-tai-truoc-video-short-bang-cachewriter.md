@@ -1,7 +1,7 @@
 # ADR-0026: Tải trước video của tab Short bằng `CacheWriter` thay cho `DefaultPreloadManager`
 
 **Ngày**: 2026-10-11
-**Trạng thái**: proposed (thay mục 1 của ADR-0024 về cơ chế tải trước; các mục còn lại của ADR-0024 giữ nguyên). Chờ người dùng xác nhận sau khi kiểm tay.
+**Trạng thái**: accepted 2026-10-11 (thay mục 1 của ADR-0024 về cơ chế tải trước; các mục còn lại của ADR-0024 giữ nguyên). Người dùng chốt sau khi kiểm tay: tải trước chạy ổn. Poster khung hình đầu tách ra ở ADR-0027.
 **Người quyết định**: LamBao (đề xuất bởi Claude khi làm Lát 8c)
 
 ## Bối cảnh

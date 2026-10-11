@@ -411,9 +411,10 @@ private fun ShortPage(
                     },
                 )
             }
-            // Có poster thì không cần spinner: người xem đã thấy hình. Không có poster thì chỉ hiện spinner khi phải chờ quá SPINNER_DELAY_MS
-            // (video đã tải trước thường lên hình sau vài trăm ms, hiện spinner ngay chỉ gây nháy).
-            val waiting = isCurrent && !rendered && failure == null && poster == null
+            // Spinner chỉ hiện khi phải chờ quá SPINNER_DELAY_MS (video đã tải trước thường lên hình sau vài trăm ms, hiện ngay chỉ gây nháy).
+            // Có poster cũng vậy: lên hình nhanh thì người xem không thấy spinner, còn kẹt lâu (mạng chậm, đệm) thì vẫn có dấu hiệu đang tải
+            // thay vì một ảnh tĩnh trông như treo.
+            val waiting = isCurrent && !rendered && failure == null
             var spinnerVisible by remember(item.id) { mutableStateOf(false) }
             LaunchedEffect(waiting, item.id) {
                 spinnerVisible = false
