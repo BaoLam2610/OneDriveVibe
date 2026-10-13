@@ -24,14 +24,17 @@ import com.lambao.odv.core.designsystem.component.ODVBannerTone
 import com.lambao.odv.core.designsystem.component.ODVBottomSheet
 import com.lambao.odv.core.designsystem.component.ODVButton
 import com.lambao.odv.core.designsystem.component.ODVButtonStyle
+import com.lambao.odv.core.designsystem.component.ODVCardGridSkeleton
 import com.lambao.odv.core.designsystem.component.ODVDialog
 import com.lambao.odv.core.designsystem.component.ODVDialogCard
 import com.lambao.odv.core.designsystem.component.ODVDialogTone
 import com.lambao.odv.core.designsystem.component.ODVFullScreenLoader
 import com.lambao.odv.core.designsystem.component.ODVInfoRow
+import com.lambao.odv.core.designsystem.component.ODVListSkeleton
 import com.lambao.odv.core.designsystem.component.ODVLoaderStep
 import com.lambao.odv.core.designsystem.component.ODVLoaderStepState
 import com.lambao.odv.core.designsystem.component.ODVOptionRow
+import com.lambao.odv.core.designsystem.component.ODVPhotoGridSkeleton
 import com.lambao.odv.core.designsystem.component.ODVSnackbar
 import com.lambao.odv.core.designsystem.component.ODVSnackbarHost
 import com.lambao.odv.core.designsystem.component.showODVSnackbar
@@ -115,6 +118,16 @@ internal fun LazyListScope.overlaysSection() {
                     cancelLabel = "Hủy", onCancel = {},
                 )
             }
+        }
+    }
+
+    // Khung chờ shimmer (thiet-ke-ui.md mục 4.2): vệt sáng quét 1.200ms, đứng yên khi bật Giảm hiệu ứng của hệ thống. Ở app thật chỉ hiện sau 200ms chờ.
+    item { SectionTitle("Skeleton shimmer: Danh sách · Lưới thẻ · Lưới Thư viện (khung 240 × 480)") }
+    item {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            LoaderFrame { ODVListSkeleton("Đang tải") }
+            LoaderFrame { ODVCardGridSkeleton("Đang tải") }
+            LoaderFrame { ODVPhotoGridSkeleton("Đang tải") }
         }
     }
 }
