@@ -20,3 +20,6 @@ node_modules/
 
 # Bản xuất Claude Design (HTML nặng và PNG), không đưa vào git
 .claude/design/
+
+# schema json database
+core/database/schemas/com.lambao.odv.core.database.OdvDatabase
