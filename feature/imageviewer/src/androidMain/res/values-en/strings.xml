@@ -24,4 +24,5 @@
     <string name="image_info_taken">Date taken</string> <!-- [mới] -->
     <string name="image_info_camera">Camera</string> <!-- [mới] -->
     <string name="image_info_folder">Folder</string> <!-- [mới] -->
+    <string name="image_info_account">Account</string>
 </resources>

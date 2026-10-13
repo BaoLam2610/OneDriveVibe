@@ -17,3 +17,6 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Bản xuất Claude Design (HTML nặng và PNG), không đưa vào git
+.claude/design/

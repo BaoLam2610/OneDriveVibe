@@ -39,6 +39,16 @@ fun ODVSplashScreen(
         }
     }
 
+    ODVSplashContent(modifier)
+}
+
+/**
+ * Hình của Splash (mark + dòng giới thiệu), không có logic. Dùng chung cho các khoảng chờ trước khi Màn chính sẵn sàng (chờ trạng thái khóa
+ * ở `ODVNavDisplay`, chờ tab đầu ở `ODVHomeScreen`) để từ khung đầu tiên tới lúc có nội dung chỉ thấy MỘT hình, có logo, không xen
+ * khoảng nền trơn (lỗi 2026-10-13: không thấy logo ở giao diện tối, chuyển sang Màn chính bị chớp và khựng).
+ */
+@Composable
+fun ODVSplashContent(modifier: Modifier = Modifier) {
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
     Box(

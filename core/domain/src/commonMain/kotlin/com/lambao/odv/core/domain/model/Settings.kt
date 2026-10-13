@@ -7,16 +7,15 @@ enum class ThemeMode { System, Light, Dark }
 enum class AppLanguage { System, Vietnamese, English }
 
 /**
- * Thông tin kết nối hiển thị ở nhóm Kết nối của Cài đặt (CD, mục Kết nối). Tenant ID và Client ID đã che bớt (vd. `a1b2••••9f0e`),
- * **không bao giờ chứa Client Secret**. [lastSyncedAt] là mốc (epoch mili giây) lần đồng bộ trọn vẹn gần nhất, null nếu chưa có.
+ * Phần dùng chung của kết nối, hiển thị ở nhóm "Tài khoản và kết nối" của Cài đặt (CD, mục 3.8, TA-09). Tenant ID và Client ID đã che bớt
+ * (vd. `a1b2••••9f0e`), **không bao giờ chứa Client Secret**. Danh sách tài khoản và thời điểm đồng bộ của từng tài khoản nằm ở
+ * `AccountStatus` (từ khi có nhiều tài khoản, ADR-0030).
  *
- * [toString] che toàn bộ để UPN không lọt vào log (CH-06); đừng bỏ override này.
+ * [toString] che toàn bộ (CH-06); đừng bỏ override này.
  */
 data class ConnectionInfo(
-    val upn: String,
     val tenantIdMasked: String,
     val clientIdMasked: String,
-    val lastSyncedAt: Long?,
 ) {
     override fun toString(): String = "ConnectionInfo(***)"
 }

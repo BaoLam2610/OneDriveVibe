@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lambao.odv.core.designsystem.component.ODVSpinner
+import com.lambao.odv.core.designsystem.component.ODVViewerSystemBars
 import com.lambao.odv.core.designsystem.theme.ODVMediaColors
 import com.lambao.odv.core.domain.model.CachedFileState
 import com.lambao.odv.core.domain.model.PdfFile
@@ -30,7 +31,7 @@ internal fun ODVPdfViewerContent(
     modifier: Modifier = Modifier,
 ) {
     val reading = state.download is CachedFileState.Ready && state.pageCount > 0 && !state.openFailed
-    ODVPdfSystemBars(hidden = reading && !state.controlsVisible)
+    ODVViewerSystemBars(hidden = reading && !state.controlsVisible)
     PdfKeepScreenOn(enabled = reading)
     BackHandler(enabled = state.info != null) { onIntent(PdfViewerIntent.HideInfo) }
 
@@ -72,9 +73,11 @@ private fun BoxScope.PdfOpened(
 ) {
     when (val open = rememberPdfDocument(path)) {
         PdfOpenState.Loading -> LoadingSpinner()
-        PdfOpenState.Failed -> {
-            LaunchedEffect(Unit) { onIntent(PdfViewerIntent.OpenFailed) }
-            PdfOpenError(file.item.name, onBack)
+        is PdfOpenState.Failed -> {
+            val corrupted = open.reason == PdfOpenFailure.Corrupt
+            LaunchedEffect(Unit) { onIntent(PdfViewerIntent.OpenFailed(corrupted)) }
+            // Hỏng thì cho Thử lại (ViewModel đã xóa bản cache hỏng); có mật khẩu thì chỉ Quay lại (PD-07).
+            PdfOpenError(file.item.name, onBack, onRetry = if (corrupted) ({ onIntent(PdfViewerIntent.Retry) }) else null)
         }
         is PdfOpenState.Opened -> {
             val document = open.document

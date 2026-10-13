@@ -18,7 +18,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -28,7 +32,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lambao.odv.core.designsystem.icon.ODVIcon
@@ -96,9 +102,25 @@ fun ODVSearchBar(
 ) {
     val colors = ODVTheme.colors
     val type = ODVTheme.typography
-    // Mở thanh tìm là gõ được ngay (không bắt chạm thêm vào ô); chỉ xin tiêu điểm một lần khi vào composition.
+    // Giữ cả vị trí con trỏ (TextFieldValue), không chỉ chữ: với `value: String` con trỏ không được nhớ nên mở tệp từ kết quả tìm rồi Back
+    // thì con trỏ về đầu chữ (lỗi 2026-10-13). Giá trị được lưu qua rememberSaveable; lần đầu con trỏ đặt ở cuối chữ.
+    var textValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(query, TextRange(query.length)))
+    }
+    // Chữ đổi từ bên ngoài (nút X, ViewModel chuẩn hóa) thì theo `query` và đưa con trỏ về cuối. Chạy theo `query` (không so sánh ngay trong
+    // composition): lúc người dùng gõ, `textValue` đã có chữ mới trước khi `query` kịp đổi theo, so sánh ngay sẽ hoàn lại chữ cũ và mất phím.
+    LaunchedEffect(query) {
+        if (textValue.text != query) textValue = TextFieldValue(query, TextRange(query.length))
+    }
+    // Mở thanh tìm là gõ được ngay (không bắt chạm thêm vào ô); chỉ xin tiêu điểm một lần khi vào composition. Đặt con trỏ về cuối chữ
+    // trước khi xin tiêu điểm để quay lại màn này thì gõ tiếp ngay sau chữ cũ.
     val focusRequester = remember { FocusRequester() }
-    if (autoFocus) LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    if (autoFocus) {
+        LaunchedEffect(Unit) {
+            textValue = textValue.copy(selection = TextRange(textValue.text.length))
+            focusRequester.requestFocus()
+        }
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -109,8 +131,12 @@ fun ODVSearchBar(
     ) {
         ODVIconButton(ODVIcon.ArrowLeft, backContentDescription, onBack)
         BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
+            value = textValue,
+            onValueChange = {
+                // Vùng soạn thảo của IME đổi mà chữ không đổi thì chỉ cập nhật nội bộ, không báo ra ngoài.
+                textValue = it
+                if (it.text != query) onQueryChange(it.text)
+            },
             modifier = Modifier
                 .weight(1f)
                 .focusRequester(focusRequester)

@@ -5,11 +5,18 @@ package com.lambao.odv.core.domain.model
  * route điều hướng lưu được qua process death; màn xem tự nạp danh sách từ Room theo ngữ cảnh này.
  */
 sealed interface ViewerContext {
-    /** Mở từ tab Thư mục (kể cả từ kết quả tìm): các tệp cùng thư mục [folderId] (null = gốc), theo [sort] đang chọn. */
-    data class Folder(val folderId: String?, val sort: SortOrder) : ViewerContext
+    /**
+     * Mở từ tab Thư mục (kể cả từ kết quả tìm): các tệp cùng thư mục [folderId] (null = gốc), theo [sort] đang chọn.
+     * [resumeFromSaved] là mở từ dải "Xem tiếp / Đọc tiếp" (DS-02, Lát 10): video vào thẳng vị trí đã dừng, không xét cài đặt "Khi mở
+     * lại video xem dở" (VD-12). Chỉ màn xem video đọc cờ này; để trong ngữ cảnh vì ngữ cảnh đã đi hết chuỗi điều hướng và route.
+     */
+    data class Folder(val folderId: String?, val sort: SortOrder, val resumeFromSaved: Boolean = false) : ViewerContext
 
-    /** Mở từ tab Thư viện: các mục thuộc cùng bộ lọc [filter] (TV-03). */
-    data class Library(val filter: LibraryFilter) : ViewerContext
+    /**
+     * Mở từ tab Thư viện: các mục thuộc cùng bộ lọc [filter] (TV-03). [query] khác null là mở từ kết quả tìm (TV-07): màn xem chỉ vuốt trong
+     * các mục có tên khớp từ khóa đó, cùng thứ tự với lưới kết quả. Mặc định null nên route lưu từ phiên bản trước vẫn khôi phục được.
+     */
+    data class Library(val filter: LibraryFilter, val query: String? = null) : ViewerContext
 }
 
 /**

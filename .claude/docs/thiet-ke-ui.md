@@ -1,7 +1,7 @@
 # Đặc tả giao diện OneDriveVibe (bàn giao thiết kế cho code)
 
 - **Áp dụng cho:** app Android OneDriveVibe (Kotlin, Jetpack Compose). Tên app đổi từ "ODV" thành OneDriveVibe (chốt 2026-10-07); tiền tố code UI vẫn là `ODV`, và tên canvas/file nguồn "ODV Foundations", "ODV Settings" giữ nguyên.
-- **Nguồn thiết kế:** canvas "ODV Foundations" trên Claude Design (bản v22, 02/10/2026). Có 5 page: Foundations, Khởi động, Danh sách, Màn xem, Cài đặt. Lát 8 (2026-10-10) cần thêm page **Short** và sửa page Danh sách, Cài đặt (danh sách việc ở **mục 11**).
+- **Nguồn thiết kế:** canvas "ODV Foundations" trên Claude Design (bản v22, 02/10/2026). Có 5 page: Foundations, Khởi động, Danh sách, Màn xem, Cài đặt. Lát 8 (2026-10-10) cần thêm page **Short** và sửa page Danh sách, Cài đặt (danh sách việc ở **mục 11**). Tính năng **nhiều tài khoản** (2026-10-12, đặc tả mục 3.9) **đã vẽ xong 2026-10-12**: board Foundations 21 "Components · Tài khoản", AC1 đến AC9 trong `ODV Settings`, D10 trong `ODV List`, SH10 trong `ODV Short`, avatar trên AppBar D1 đến D9 (còn lại ở **mục 11.6**). **Từ 2026-10-12 các page Cài đặt, Danh sách, Short xuất ra thư mục PNG** (`.claude/design/ODV Settings`, `ODV List`, `ODV Short`) thay cho HTML nặng; các file `ODV Settings.html`, `ODV List.html`, `ODV Short.html` cũ không còn được cập nhật.
 - **Phân công (chốt 2026-10-10):** tài liệu này được cập nhật ở topic tài liệu; việc vẽ trên Claude Design làm ở **topic riêng**, theo đúng mục 11 và các mục được dẫn tới, không tự chế giá trị.
 - **Tài liệu đi kèm:**
     - `docs/dac-ta-nghiep-vu.md`: nghiệp vụ, mã KN, BM, KH, DH, TM, TV, DS, SV, VD, AN, PD, CD…
@@ -22,7 +22,7 @@
     - Dựng bằng token và component ở mục 2 đến 4.
     - So ảnh theo mục 10.
 3. **Không tự chế giá trị.** Khi cần màu, cỡ chữ, khoảng cách hay câu chữ chưa có trong tài liệu, ghi lại và hỏi người thiết kế. Không chọn giá trị "gần giống". Giá trị mới phải được thêm vào thiết kế và tài liệu này trước khi dùng.
-4. **Mã trùng giữa các page.** Một số mã lặp lại giữa các page, ví dụ D1 (Danh sách) và D1 (Cài đặt), hoặc P1 (PDF) và P1 (PIN trong Cài đặt). Luôn ghi kèm tên page: "Cài đặt · D1". Mã mới của Lát 8 dùng tiền tố riêng để tránh trùng: **N** (thanh điều hướng đáy) và **SH** (Short), vì **S** đã dùng cho Splash và Secret.
+4. **Mã trùng giữa các page.** Một số mã lặp lại giữa các page, ví dụ D1 (Danh sách) và D1 (Cài đặt), hoặc P1 (PDF) và P1 (PIN trong Cài đặt). Luôn ghi kèm tên page: "Cài đặt · D1". Mã mới của Lát 8 dùng tiền tố riêng để tránh trùng: **N** (thanh điều hướng đáy) và **SH** (Short), vì **S** đã dùng cho Splash và Secret. Màn và sheet tài khoản (2026-10-12) dùng tiền tố **AC** (account), vì **A** đã dùng cho Ảnh và **T** dễ nhầm với mã nghiệp vụ TK/TA.
 
 ---
 
@@ -132,6 +132,7 @@ Số liệu đầy đủ, dạng máy đọc được, nằm trong `docs/odv-tok
 | `media.icon-well` | `#ffffff1f` | Vòng tròn sau icon lỗi trên media; kẻ trên thanh đáy bản N4 |
 | `media.card` | `#1b1d22` | Thẻ trên media: Tiếp theo, Mất mạng |
 | `media.pdf-canvas` | `#2a2c31` | Nền sau trang PDF |
+| `media.pdf-paper` | `#ffffff` | Giấy trang PDF: nền tô trước khi dựng trang và nền khung trang lúc chờ dựng; luôn trắng, không đổi theo theme |
 | `media.accent` | `#c5f23a` | Nút phát, phần đã xem, phần đã xem ở thanh tiến độ tab Short |
 | `media.on-accent` | `#101217` | Icon trên nút phát |
 
@@ -245,7 +246,9 @@ Viên chọn và icon mục đang chọn trên thanh đáy bản N4 dùng **bả
 | `nav-bar` | 64dp | **Mới (Lát 8), chưa có trong `odv-tokens.json`**. Chiều cao thanh điều hướng đáy, chưa tính lề dưới của hệ thống |
 | `nav-indicator-width` | 56dp | **Mới (Lát 8), chưa có trong `odv-tokens.json`**. Viên chọn phía sau icon |
 | `nav-indicator-height` | 32dp | **Mới (Lát 8), chưa có trong `odv-tokens.json`** |
-| `nav-dot` | 8dp | **Mới (Lát 8), chưa có trong `odv-tokens.json`**. Chấm nhắc trên mục Cài đặt (DH-07) |
+| `nav-dot` | 8dp | Chấm nhắc trên mục Cài đặt (DH-07); chấm lỗi trên AccountAvatar (mục 4.9). Đã có trong `odv-tokens.json` |
+| `account-avatar-sm` | 32dp | **Mới (2026-10-12), đã có trong `odv-tokens.json`.** AccountAvatar trên AppBar, trong vùng chạm 48 (mục 4.9) |
+| `account-avatar-md` | 40dp | **Mới (2026-10-12), đã có trong `odv-tokens.json`.** AccountAvatar trong AccountRow và vòng hàng Thêm tài khoản; ô tài khoản ở D10 dùng 56 (`thumb-row`) |
 
 Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đáy (mục 4.7) đã có trên board Bố cục của Foundations và trong `odv-tokens.json`.
 
@@ -265,7 +268,7 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
 |---|---|---|
 | `duration.fast` | 150ms | Nhấn nút (co 98%), Switch, chip, cross-fade thumbnail → ảnh gốc (AN-01), lỗi dưới ô nhập, đổi tab trên thanh đáy, hiện/ẩn biểu tượng tạm dừng ở tab Short |
 | `duration.base` | 250ms | Dialog, Sheet, Snackbar, hiện/ẩn điều khiển, đổi theme, zoom chạm đúp, vuốt sang video kế ở tab Short, thanh đáy đổi giữa bản thường và bản N4 |
-| `duration.slow` | 400ms | Mở rộng thumbnail thành màn xem, Banner trượt vào |
+| `duration.slow` | 400ms | Mở rộng thumbnail thành màn xem, Banner trượt vào (từ trên xuống kèm fade; biến mất fade `fast`) |
 | `easing.ease-out` | cubic-bezier(0.2, 0, 0, 1) | Xuất hiện, mở rộng |
 | `easing.ease-in` | cubic-bezier(0.4, 0, 1, 1) | Biến mất, thu nhỏ |
 | `duration.controls-auto-hide` | 3000ms | Điều khiển video tự ẩn (VD-01) |
@@ -277,7 +280,9 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
 **Quy tắc chuyển động:**
 - Không nảy, không đàn hồi.
 - Không có chuyển động lặp vô hạn, trừ chỉ báo đang tải.
-- Đổi tab trên thanh đáy: nội dung cross-fade, **không trượt ngang** (các tab không có thứ tự không gian). Viên chọn hiện bằng fade + giãn ngang từ giữa.
+- Đổi tab trên thanh đáy: nội dung cross-fade, **không trượt ngang** (các tab không có thứ tự không gian). Viên chọn hiện bằng fade + giãn ngang từ giữa. Cặp có tab Short (vào hoặc ra) đổi ngay, không hoạt ảnh, để player và thanh hệ thống của Short không chạy chồng với tab kia.
+- **Chuyển màn (thêm 2026-10-13):** chỉ fade, không trượt, không scale. Vào màn mới: màn mới fade in `base` (`ease-out`), màn cũ đứng yên bên dưới. Back và vuốt Back: màn trên cùng fade out `base` (`ease-in`) để lộ màn dưới. Không mờ cả hai cùng lúc vì nền cửa sổ lộ ra giữa chừng (chớp sáng khi vào màn xem nền đen). **Màn Khóa hiện ngay, không hoạt ảnh**, để không lộ nội dung bên dưới khi app vừa bị khóa (CH-03).
+- **Đổi nội dung cùng vị trí (thêm 2026-10-13):** cross-fade `fast` cho AppBar thường ↔ thanh tìm kiếm cùng nội dung bên dưới, và đang tải ↔ lỗi ↔ trống ↔ danh sách ở tab Thư mục. Thanh đáy hiện lại bằng fade in `fast` khi bàn phím đóng; lúc bàn phím mở thanh ẩn ngay để bố cục không giật.
 - Khi hệ thống bật Giảm hiệu ứng:
     - Bỏ scale, trượt, gợn và mở rộng thumbnail. Thay bằng cross-fade ≤ 150ms hoặc hiện ngay.
     - Vuốt chuyển video ở tab Short vẫn theo ngón tay, nhưng phần tự chạy tới vị trí dừng rút còn 150ms.
@@ -293,7 +298,7 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
 
 ## 3. Icon và logo
 
-### 3.1 Bộ icon (43 icon)
+### 3.1 Bộ icon (46 icon)
 
 - Lưới 24 × 24, nét 2dp, đầu và góc nét tròn, không tô.
 - Chỉ `play` và `pause` tô đặc.
@@ -318,6 +323,10 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
 | `eye`, `eye-off` | Hiện/ẩn ký tự ô bị che | `backspace`, `fingerprint` | Bàn phím PIN |
 | `minus` | Checkbox chọn một phần | `fullscreen` | Dự phòng, **không dùng** (VD-07 bỏ nút toàn màn hình) |
 | `short` | **Mới (Lát 8), chưa có trên board.** Mục Short trên thanh đáy. Gợi ý hình: khung chữ nhật đứng bo góc (tỉ lệ khoảng 9:16) có tam giác phát ở giữa, cùng quy cách nét | | |
+| `users` | Avatar gộp "Tất cả tài khoản" (TA-03, TA-04). **Đã vẽ 2026-10-12** | `user-plus` | Hàng "Thêm tài khoản" trong sheet và Cài đặt (TA-07). **Đã vẽ 2026-10-12** |
+| `trash` | Nút xóa tài khoản ở hàng tài khoản trong Cài đặt (TA-08). **Đã vẽ 2026-10-12** | | |
+
+Board Icon có đủ 46 icon (đã thêm `users`, `user-plus`, `trash` ngày 2026-10-12). Bộ icon không có icon bóng người lẻ: avatar một tài khoản dùng chữ cái đầu, không dùng icon.
 
 ### 3.2 Logo
 
@@ -326,7 +335,8 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
     - Bản ink dùng trên nền volt.
     - Bản trắng dùng trên media.
 - **Cỡ:** nhỏ nhất 24dp. Splash dùng 112dp. Kết nối dùng 40dp, đặt phía trên tiêu đề. AppBar Danh sách dùng 28dp. Màn Khóa dùng 48dp. Vòng tải dùng 36dp, nằm trong vòng 72dp.
-- **App icon (adaptive):** nền `#101217`, mark nằm trong vùng an toàn 66/108.
+- **App icon (adaptive):** nền `#101217`, mark nằm trong vùng an toàn 66/108. **Đã cấu hình (2026-10-13):** `ic_launcher_background/foreground` (mark nở 1.27 lần, tâm 54), lớp `monochrome` cho icon theo chủ đề (Android 13+). Android 7.x (API 24, 25) dùng vector trong `mipmap-anydpi`, không dùng PNG.
+- **Splash hệ thống (Android 12+, 2026-10-13):** không tắt hẳn được nên cấu hình trùng nền (`windowSplashScreenBackground` = token `bg`) và icon trong suốt, để người dùng chỉ thấy splash tự viết S1. Nền cửa sổ XML dùng `odv_window_bg` (sáng `#f4f5f7`, tối `#0c0e12`), phải đổi cùng token `bg`. Giao diện **chọn trong app** được áp từ khung đầu tiên: giá trị đọc đồng bộ từ bản sao khởi động (`ThemeBootCache`, SharedPreferences `odv_boot`, ghi lại mỗi khi DataStore phát giá trị) và dùng cho nền cửa sổ (`Theme.OneDriveVibe.Light/Dark` qua `setTheme`), màu khởi đầu của Compose và, từ Android 13, theme splash hệ thống (`setSplashScreenTheme`, có hiệu lực từ lần khởi động kế tiếp). Giới hạn: Android 12/12L và lần khởi động đầu tiên sau khi đổi giao diện trong app vẫn có splash hệ thống theo giao diện của máy; từ khung Compose đầu tiên trở đi luôn theo app.
 
 ---
 
@@ -444,7 +454,8 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
 - **AppBar:** cao 56, padding ngang 4.
     - Bên trái: ở gốc là mark 28, cách lề 12. Trong thư mục con là nút `arrow-left` "Lên một cấp".
     - Tiêu đề `title`, một dòng, cắt "…". Tab Thư mục: tên thư mục đang mở ("OneDrive" ở gốc). Tab Thư viện: "Thư viện" (đã vẽ ở D1 đến D8 bản mới).
-    - Bên phải: chỉ còn IconButton `search` "Tìm kiếm". **Nút `settings` đã bỏ từ Lát 8** (Cài đặt là tab, DH-01).
+    - Bên phải: IconButton `search` "Tìm kiếm", rồi **nút tài khoản** (AccountAvatar 32 trong vùng chạm 48, mục 4.9; thêm 2026-10-12, TA-03), sát lề phải 4 như các IconButton. **Nút `settings` đã bỏ từ Lát 8** (Cài đặt là tab, DH-01).
+    - Ở phạm vi Tất cả tài khoản, tiêu đề tab Thư mục tại gốc là "Tất cả tài khoản" thay cho "OneDrive" [mới].
 - **AppBar tìm kiếm:** nút quay lại, rồi ô tìm cao 48 tròn nền `surface-2` gồm icon `search` 20 màu `ink-muted`, chữ `body` (placeholder "Tìm tên tệp hoặc thư mục") và nút X "Xóa từ khóa".
 - **Breadcrumb:** padding ngang 16, chữ `body-sm`.
     - Mục trước màu `ink-muted`, cao chạm tối thiểu 32. Mục cuối dùng `body-sm-strong`. Giữa các mục là mũi tên 16 màu `ink-faint`, cách 4.
@@ -473,6 +484,7 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
     - Chữ padding 10/12: tên `body-sm-strong`, phụ `meta`.
     - Dải cuộn ngang, padding 16, thẻ cách 12. Tiêu đề dải `heading`.
     - Dải chỉ hiện ở gốc Thư mục; trong thư mục con thì ẩn.
+    - **Từ 2026-10-13 dải là mục đầu của vùng cuộn, cuộn chung với danh sách/lưới** (không đứng yên phía trên); Breadcrumb và SortBar vẫn đứng yên phía trên vùng cuộn. Artboard D1 và D10 còn vẽ dải đứng yên trước Breadcrumb (xem mục 11, dòng 19).
 - **DateHeader (Thư viện):** `body-strong`, padding 12/16/8, nền `bg`, dính khi cuộn. Số mục ở bên phải dùng `body` màu `ink-muted`.
 - **PhotoCell:** lưới 4 cột ở hướng dọc, khe 2, ô vuông bo 4, center-crop. Video có icon `video` 14 ở góc trên trái và badge ở góc dưới phải. Ô chưa tải có nền `surface-2`.
 - **FastScroller:**
@@ -529,6 +541,7 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
     - Mỗi hàng: nhãn `ink-muted` bên trái, giá trị bên phải, kẻ đáy `line`, padding dọc 10. Số liệu dùng JetBrains Mono.
     - Video tạm dừng khi bảng mở.
     - Trường nào không có dữ liệu thì ẩn hàng.
+    - Khi app có từ 2 tài khoản, thêm hàng cuối "Tài khoản" [mới]: giá trị là tên hiển thị, dòng dưới là email `caption` màu `ink-muted` (VD-17, AN-05, PD-08). Không cần vẽ lại V15, V16, A4, P8.
 - **Bảng tốc độ:**
     - Hướng dọc: bottom sheet gồm 7 radio, 1x có thêm " · Bình thường".
     - Hướng ngang: bảng bên phải 360, radio gọn cao 40.
@@ -562,7 +575,7 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
 
   | Mức | Icon | Nút chính | Dùng cho |
     |---|---|---|---|
-  | Cảnh báo, bước 1 | warning | danger (tonal) | Ngắt kết nối bước 1, Quên PIN bước 1, Xóa bộ nhớ đệm, Bật xóa dữ liệu tự động |
+  | Cảnh báo, bước 1 | warning | danger (tonal) | Ngắt kết nối bước 1, Quên PIN bước 1, Xóa bộ nhớ đệm, Bật xóa dữ liệu tự động, Xóa tài khoản khỏi app (AC8, chỉ một bước) |
   | Nguy hiểm, bước 2 | danger | danger-solid | Xóa toàn bộ dữ liệu |
   | Cảnh báo, hành động an toàn | warning | primary | Giảm giới hạn bộ nhớ đệm |
   | Tắt bảo vệ | warning | danger-solid | Tắt bảo vệ ứng dụng |
@@ -588,7 +601,7 @@ Thay cho Tabs (mục 4.1). Đã có artboard N1 đến N4 ở board 20 "Thanh đ
 
 - **Bản N4 (khi đang ở tab Short, SV-10):** nền `media.background`, kẻ trên 1dp `media.icon-well`. Chưa chọn: icon và nhãn `media.on-media-faint`. Đang chọn (Short): viên `#222c0b` (`volt-soft` bản tối), icon `#ccf55b` (`volt-text` bản tối), nhãn `media.on-media`. Đổi giữa bản thường và N4 bằng cross-fade 250ms.
 - **Chấm nhắc (N3, DH-07):** chấm tròn 8 (`nav-dot`) ở góc trên phải viên của mục Cài đặt, lệch vào trong 4. Màu `warning` khi secret sắp hết hạn, `danger` khi đã hết hạn. Hiện cả khi mục Cài đặt đang chọn.
-- **Khi nào ẩn (DH-05):** không vẽ ở màn xem, Khóa, Kết nối, Thiết lập bảo mật, màn con của Cài đặt (P1 đến P3, S1 đến S5, Thiết lập bảo mật từ Cài đặt) và khi bàn phím đang mở để tìm kiếm. Dialog và Bottom sheet phủ lên trên thanh.
+- **Khi nào ẩn (DH-05):** không vẽ ở màn xem, Khóa, Kết nối, Thiết lập bảo mật, màn con của Cài đặt (P1 đến P3, S1 đến S5, AC4 đến AC7, Thiết lập bảo mật từ Cài đặt) và khi bàn phím đang mở để tìm kiếm. Dialog và Bottom sheet phủ lên trên thanh.
 - **Nhãn TalkBack:** "Thư mục, tab 1 trên 4, đang chọn"; mục có chấm thêm ", có thông báo" (vd. "Cài đặt, tab 4 trên 4, có thông báo").
 
 ### 4.8 Short (Lát 8, SV-01 → SV-16)
@@ -615,6 +628,47 @@ Thay cho Tabs (mục 4.1). Đã có artboard N1 đến N4 ở board 20 "Thanh đ
     - Nội dung: "Không có video nào dài tối đa N phút. Tăng thời lượng trong Cài đặt › Video."
     - Nút: "Mở Cài đặt" (chuyển sang tab Cài đặt)
 - **Nhãn TalkBack:** vùng video "Video ngắn, <tên tệp>, đang phát" hoặc "..., đã tạm dừng"; hành động chạm "Tạm dừng" / "Phát"; thêm hai hành động tùy chỉnh "Video kế tiếp", "Video trước" thay cho vuốt; ở video đầu thêm "Xáo lại danh sách".
+- **Phạm vi Tất cả tài khoản (SV-09, 2026-10-12):** dòng 2 thêm tên tài khoản ở đầu, cách thư mục bằng " · ": "Bao Lam · Du lịch 2026". Cùng style, cắt "…" ở cuối dòng. Không có avatar trên Short.
+
+### 4.9 Tài khoản (thêm 2026-10-12, TA-01 → TA-12)
+
+**Đã vẽ (2026-10-12):** board Foundations 21 "Components · Tài khoản", AC1 đến AC9 (`ODV Settings`), D10 (`ODV List`), SH10 (`ODV Short`). Số liệu dưới đây khớp thiết kế; nếu thấy lệch khi dựng thì hỏi lại, không tự sửa. Token `account-avatar-sm` (32dp) và `account-avatar-md` (40dp) đã có trong `odv-tokens.json`. Câu chữ nhãn [mới] là chuỗi người dùng viết trong đặc tả, chờ duyệt.
+
+- **AccountAvatar:** hình tròn, chữ cái đầu của tên hiển thị (TA-02), viết hoa, căn giữa. Không có ảnh.
+    - **Cỡ sm 32** (AppBar): chữ `body-sm-strong`. **Cỡ md 40** (AccountRow): chữ `body-strong`. Ô thư mục tài khoản ở D10 dùng cỡ 56 (`thumb-row`), chữ `heading`.
+    - Màu một tài khoản: nền `volt-soft`, chữ `volt-text`. Mọi tài khoản dùng cùng màu (không tô màu riêng theo tài khoản, để không thêm màu mới); phân biệt bằng chữ cái và tên.
+    - **Avatar gộp** (phạm vi Tất cả tài khoản): nền `surface-2`, icon `users` 20 (cỡ sm) hoặc 24 (cỡ md) màu `ink`.
+    - Trên AppBar: nằm trong vùng chạm 48 tròn, nhấn phủ `surface-2` như IconButton standard; focus dùng `focus-ring`.
+    - Tài khoản đang lỗi (TA-10): avatar giữ màu, thêm chấm 8 (`nav-dot`) màu `danger` ở góc trên phải, viền 2dp màu `surface` để tách khỏi avatar. Chấm chỉ hiện khi **tài khoản đang xem** lỗi (phạm vi gộp: khi có ít nhất một tài khoản lỗi).
+- **AccountRow** (trong sheet AC1 và nhóm Tài khoản ở Cài đặt):
+    - Cao tối thiểu 56 (`settings-row-min`), padding 8/16. AccountAvatar md 40 bên trái, cách chữ 12.
+    - Dòng 1: tên hiển thị `body-strong` màu `ink`, một dòng, cắt "…".
+    - Dòng 2: email `caption` màu `ink-muted`, một dòng, cắt "…" **ở giữa** để giữ tên miền (vd. "nguyen.van…@contoso.com").
+    - Ở Cài đặt có thêm dòng 3 `caption` màu `ink-muted`: "Đồng bộ lúc 14:05, 12/10/2026" [mới], định dạng theo ngôn ngữ (CD-10). Đang đồng bộ lần đầu: "Đang lập chỉ mục, đã quét 12.480 mục" [mới] (cùng câu với TV-06).
+    - Bên phải (trong sheet): `check` 24 màu `volt-text` ở mục đang chọn; mục khác không có gì. Ở Cài đặt: viên "Đang xem" [mới] (`label` màu `volt-text` trên viên `volt-soft` cao 24, padding ngang 8, bo tròn) nằm **cuối dòng 1, cạnh tên**, ở tài khoản đang xem (để dòng 3 không bị ép xuống dòng); tài khoản khác tài khoản đang xem có **nút xóa**: IconButton 48 icon `trash` 24 màu `ink-muted` ở cuối hàng (TA-08). Chạm nút hoặc cả hàng mở hộp thoại AC8. Tài khoản đang xem và trường hợp chỉ có một tài khoản không có nút xóa.
+    - Hàng **Tất cả tài khoản** (chỉ trong sheet, khi có ≥ 2 tài khoản): avatar gộp, dòng 1 "Tất cả tài khoản" [mới], dòng 2 "3 tài khoản" [mới] (số theo ngôn ngữ).
+    - Trạng thái lỗi (TA-10): dòng 2 thay bằng icon `alert` 16 + "Không truy cập được tài khoản này" [mới] `caption` màu `danger`; vẫn chọn được.
+    - Nhấn: phủ `surface-2`. Mục đang chọn trong sheet **không** đổi nền (chỉ có dấu `check`), giống OptionRow.
+- **Hàng Thêm tài khoản:** cao 56, padding 8/16. Vòng 40 nền `volt-soft` chứa icon `user-plus` 24 màu `volt-text`, cách chữ 12. Chữ "Thêm tài khoản" [mới] `body-strong` màu `volt-text`. Ở Cài đặt là NavRow (có `chevron-right` 20), trong sheet không có chevron.
+- **Sheet Chọn tài khoản (AC1 đến AC3):** Bottom sheet chuẩn (mục 4.2), tiêu đề `heading` "Chọn tài khoản" [mới].
+    - Thứ tự: hàng Tất cả tài khoản (nếu có), kẻ 1dp `line` lề 16, các AccountRow theo thứ tự thêm (TA-01), kẻ `line`, hàng Thêm tài khoản.
+    - Danh sách dài: sheet cao tối đa đến cách đỉnh màn 24 + thanh trạng thái; phần danh sách tài khoản cuộn bên trong, **tiêu đề và hàng Thêm tài khoản cố định** (hàng Thêm có kẻ trên `line` khi danh sách đang cuộn).
+    - Chạm một hàng: áp dụng ngay, sheet đóng trong 250ms (như OptionRow), rồi Snackbar "Đang xem Bao Lam" / "Đang xem tất cả tài khoản" [mới].
+- **Màn Thêm tài khoản (AC4 đến AC7):** màn con của Cài đặt (che thanh đáy), bố cục giống S1 Cập nhật Client Secret:
+    - Thanh tiêu đề: `arrow-left` "Quay lại", tiêu đề `title` "Thêm tài khoản" [mới].
+    - Padding 24/16/32. Đoạn giải thích `body` màu `ink-muted`: "Tài khoản mới dùng chung Tenant ID, Client ID và Client Secret đã kết nối. Chỉ cần nhập email (UPN) của một tài khoản cùng tenant." [mới]
+    - Cách 24: TextField nhãn "Email tài khoản (UPN)" [mới], không che ký tự, bàn phím email, tắt gợi ý và autofill (KN-04). Dòng trợ giúp "Ví dụ: ten@contoso.com" [mới].
+    - Lỗi dưới trường (trạng thái Lỗi của TextField): sai định dạng dùng lại câu lỗi UPN của màn Kết nối; trùng: "Tài khoản này đã có trong app" [mới].
+    - Nút primary md toàn chiều rộng "Thêm tài khoản" [mới], cách đáy 24–32 (đẩy lên trên bàn phím). Tắt (mờ 0.38) khi chưa hợp lệ.
+    - **Đang kiểm tra (AC6):** nút ở trạng thái Đang tải (mục 4.1: spinner 20 ở vị trí icon, kèm chữ "Đang kiểm tra…" [mới]), trường ở trạng thái Tắt, Back hệ thống vẫn dùng được và hủy việc kiểm tra. **Không** dùng FullScreenLoader (chỉ một lời gọi, nhanh).
+    - **Lỗi kèm mã (AC7):** Dialog danger như K5: tiêu đề "Không kết nối được" (chung cho mọi lỗi), nội dung là thông báo theo bảng lỗi KN-09, dòng mã lỗi `code` ("Mã lỗi: Graph 404"), một nút "Đóng" (ghost). Lỗi secret (TK-04) thì nút chính "Sửa Client Secret" như K5.
+- **Hộp thoại Xóa tài khoản (AC8):** mức "Cảnh báo, bước 1" (mục 4.6): icon `alert` tông warning.
+    - Tiêu đề: "Xóa tài khoản khỏi app?" [mới]
+    - Nội dung: "Dữ liệu đã đồng bộ, lịch sử xem và bộ nhớ đệm của <email> trên máy này sẽ bị xóa. Tệp trên OneDrive không bị ảnh hưởng." [mới]
+    - Nút: "Hủy" (ghost), "Xóa khỏi app" [mới] (danger).
+    - Nút xóa (IconButton `trash`) và chạm cả hàng đều mở AC8; hàng tài khoản đang xem không có nút xóa. Ở phạm vi Tất cả tài khoản thì mọi hàng đều có nút xóa (TA-08).
+    - Chạm hàng tài khoản đang xem: không mở hộp thoại, hiện Snackbar "Đổi sang tài khoản khác trước khi xóa tài khoản này" [mới]. Chỉ còn một tài khoản: Snackbar "Không xóa được tài khoản duy nhất. Dùng Ngắt kết nối nếu muốn bỏ kết nối." [mới]
+- **Nhãn TalkBack:** xem mục 7.
 
 ---
 
@@ -706,6 +760,10 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 | D4 | Tìm kiếm · Tối | 390×844 | `ListSearchDark` |
 | D7 | Đang lập chỉ mục · Tối | 390×844 | `ListIndexingDark` |
 | D9 | Thư mục · Banner secret sắp hết hạn (CD-06, Q4) | 390×844 | `ListExpireBanner` |
+| D10 | Thư mục · Gốc Tất cả tài khoản, một tài khoản lỗi (TA-05, TA-10) | 390×844 | `D10 Thư mục · Gốc Tất cả tài khoản, một tài khoản lỗi (TA-05, TA-10)` (thư mục `ODV List`) |
+| D10 | Thư mục · Gốc Tất cả tài khoản · Tối | 390×844 | `D10 Thư mục · Gốc Tất cả tài khoản · Tối` (thư mục `ODV List`) |
+
+**Nhiều tài khoản (2026-10-12, đã vẽ):** D1 đến D9 (kể cả bản tối) có nút tài khoản (AccountAvatar sm) ở bên phải AppBar, sau nút Tìm kiếm (mục 4.4, 4.9); D4 giữ ô tìm kiếm, không có avatar. D10 có bản sáng và tối.
 
 **Lát 8: toàn bộ artboard D1 đến D8 (kể cả bản tối) cần vẽ lại** theo bố cục mới dưới đây (mục 11). Cho tới khi vẽ lại, phần nội dung giữa AppBar và đáy vẫn so theo artboard cũ.
 
@@ -713,7 +771,7 @@ Mã B7 (`SecOff`, `SecOffDark`, màn thiết lập với công tắc đã tắt)
 1. Padding trên 24 (thanh trạng thái).
 2. AppBar (chỉ còn nút Tìm kiếm bên phải).
 3. Banner (offline, đang lập chỉ mục, hoặc secret sắp hết hạn), nếu có.
-4. Dải Xem tiếp (chỉ ở gốc Thư mục).
+4. Dải Xem tiếp (chỉ ở gốc Thư mục). **Từ 2026-10-13 không còn là khối đứng yên ở vị trí này**: dải là mục đầu của vùng cuộn (khối 7), nằm dưới Breadcrumb và SortBar.
 5. Breadcrumb.
 6. SortBar.
 7. Nội dung, cuộn được, kết thúc ở mép trên thanh đáy.
@@ -729,6 +787,14 @@ Bỏ khối **Tabs** (trước đây ở vị trí 3).
 - **D6 offline:** banner neutral `cloud-off`. Thẻ chưa cache có dấu `cloud-off`. Bấm tệp chưa cache thì hiện Snackbar "Cần kết nối mạng để mở tệp này" kèm nút "Đóng" (Snackbar nằm trên thanh đáy).
 - **D7 đang lập chỉ mục:** banner volt `sync` có ProgressBar 4 bên trong. Ô chưa tải là khối `surface-2`, không nhấp nháy. Thanh đáy là **bản 3 mục** N2 (Short chưa hiện vì đồng bộ lần đầu chưa xong).
 - **D9 secret sắp hết hạn:** dùng lại Banner C7 (tông warning, icon `clock`, nút "Cập nhật") ở vị trí 3; mục Cài đặt trên thanh đáy có chấm nhắc N3. Nút "Cập nhật" chuyển sang tab Cài đặt rồi mở luồng cập nhật secret.
+- **D10 gốc Tất cả tài khoản (TA-05):** tiêu đề AppBar "Tất cả tài khoản" [mới], nút tài khoản là avatar gộp. Không có Breadcrumb và SortBar ở cấp này (thứ tự tài khoản cố định theo TA-01). Dải Xem tiếp (gộp) vẫn ở vị trí 4.
+    - Lưới: mỗi tài khoản là một FolderCard, nhưng thay icon `folder` 36 bằng AccountAvatar 56 (nền `surface`, chữ `volt-text` để nổi trên ô `volt-soft`); tên `body-sm-strong` là tên hiển thị, meta `meta` là email.
+    - Danh sách: FileRow với thumbnail là AccountAvatar 56 (nền `volt-soft`), tên hiển thị `body-strong`, meta email, có `chevron-right`.
+    - Tài khoản lỗi (TA-10): meta thay bằng "Không truy cập được" [mới] màu `danger` kèm `alert` 16; vẫn mở được (xem dữ liệu đã đồng bộ).
+    - Vào một tài khoản: Breadcrumb bắt đầu "Tất cả tài khoản › Bao Lam › …", SortBar hiện lại.
+- **Tìm kiếm trong Thư viện (TV-07, thêm 2026-10-13, chưa có artboard):** AppBar của Thư viện thêm IconButton `search` "Tìm kiếm" trước nút tài khoản (như D1). Bấm vào thì AppBar chuyển (cross-fade `fast`) sang AppBar tìm kiếm của D4 (ô tìm 48 tròn `surface-2`, placeholder "Tìm tên ảnh hoặc video", tự nhận tiêu điểm). Bên dưới: hàng chip lọc Tất cả / Ảnh / Video như D3 (chỉ khi cả hai loại bật), rồi **lưới phẳng 4 cột, khe 2dp**, dùng đúng ô ảnh/video của D3 (có icon `video` và thời lượng), mới nhất trước, **không có tiêu đề nhóm ngày và không có cuộn nhanh**. Từ khóa rỗng: vùng trống. Không khớp: `EmptyState` icon `search`, "Không tìm thấy kết quả", "Không có ảnh hay video nào khớp “…”." (như D4 nhưng nói ảnh/video). Đang nạp: spinner 36 như D3. Không có Banner, thanh đáy ẩn khi bàn phím mở (DH-05). Không thêm màu, cỡ chữ hay khoảng cách mới.
+- **Tìm kiếm ở phạm vi gộp (D4):** dòng đường dẫn `meta` màu `ink-faint` có tên tài khoản ở đầu: "Bao Lam › Ảnh › 2026". Không cần vẽ lại D4.
+- **Đang lập chỉ mục ở phạm vi gộp (D7):** câu banner thêm tên tài khoản: "Đang lập chỉ mục Bao Lam, đã quét 12.480 mục" [mới]; hiện cho tới khi mọi tài khoản quét xong lần đầu (đã dựng, Lát T).
 
 ### 5.3 Màn xem
 
@@ -781,7 +847,7 @@ Page Màn xem **không đổi hình** ở Lát 8 (thanh điều hướng đáy �
 **Luồng:**
 - Mở video ở hướng theo Cài đặt › Video › Hướng màn hình khi mở video (mặc định **dọc**). Toàn app khóa dọc; riêng màn video xoay ngang bằng nút xoay, rời màn thì về dọc. Nút xoay đổi Dọc ↔ Ngang và không gián đoạn phát.
 - Back thoát ngay cả khi đang ngang, rồi trở về hướng dọc (VD-19), về đúng tab và vị trí đã mở (DH-02).
-- Mở lại video có vị trí đã lưu thì hiện Dialog V3 trước khi phát.
+- Mở lại video có vị trí đã lưu (từ Thư mục hoặc Thư viện, cài đặt "Khi mở lại video xem dở" là "Hỏi trước") thì hiện Dialog V3 trước khi phát: tiêu đề "Xem tiếp từ mm:ss?", dòng phụ "Bạn đã xem N% video này.", nút phụ Ghost "Xem từ đầu" và nút chính "Xem tiếp"; không đóng khi chạm ra ngoài, Back thoát màn xem. Hai lựa chọn còn lại ("Luôn xem tiếp", "Luôn phát từ đầu") và mở từ dải "Xem tiếp" không hiện V3.
 - Hết video: chế độ Không lặp, hoặc hết video cuối ở chế độ Tự phát tiếp, thì vào V19 (nút Phát lại, điều khiển không tự ẩn). Tự phát tiếp còn video sau thì vào V8.
 
 ### 5.4 Cài đặt (tab Cài đặt của Màn chính)
@@ -820,26 +886,46 @@ Page Màn xem **không đổi hình** ở Lát 8 (thanh điều hướng đáy �
 | S3 | Cập nhật Client Secret · Lỗi · Tối | 390×844 | `SecretErrorDark` |
 | S4 | Ngày hết hạn secret (CD-06) | 390×844 | `SecretExpiry` |
 | S5 | Đã cập nhật Client Secret | 390×844 | `SecretSaved` |
+| AC1 | Sheet Chọn tài khoản · nhiều tài khoản, đang xem một tài khoản (TA-04) | 390×844 | `AC1 Sheet Chọn tài khoản · 3 tài khoản, đang xem Bao Lam (TA-04)` |
+| AC2 | Sheet Chọn tài khoản · đang xem Tất cả, có một tài khoản lỗi (TA-04, TA-10) | 390×844 | `AC2 Sheet Chọn tài khoản · Đang xem Tất cả, một tài khoản lỗi (TA-04, TA-10)` |
+| AC3 | Sheet Chọn tài khoản · chỉ có một tài khoản, không có hàng Tất cả (TA-03, TA-04) | 390×844 | `AC3 Sheet Chọn tài khoản · Chỉ có một tài khoản (TA-03, TA-04)` |
+| AC4 | Thêm tài khoản · Trống (TA-07) | 390×844 | `AC4 Thêm tài khoản · Trống (TA-07)` |
+| AC5 | Thêm tài khoản · UPN trùng (TA-01, TA-07). **Lỗi sai định dạng chưa vẽ**: dùng lại câu lỗi UPN của màn Kết nối | 390×844 | `AC5 Thêm tài khoản · UPN trùng (TA-01, TA-07)` |
+| AC6 | Thêm tài khoản · Đang kiểm tra (TA-07) | 390×844 | `AC6 Thêm tài khoản · Đang kiểm tra (TA-07)` |
+| AC7 | Thêm tài khoản · Lỗi kèm mã (KN-09) | 390×844 | `AC7 Thêm tài khoản · Lỗi kèm mã (KN-09)` |
+| AC8 | Xác nhận · Xóa tài khoản khỏi app (TA-08) | 390×844 | `AC8 Xác nhận · Xóa tài khoản khỏi app (TA-08)` |
+| AC9 | Cài đặt · Tài khoản và kết nối, 3 tài khoản (TA-03, TA-08, TA-09; thay C4 cũ) | 390×844 | `AC9 Cài đặt · Tài khoản và kết nối, 3 tài khoản (TA-03, TA-08, TA-09)` |
+| AC9 | Cài đặt · Tài khoản và kết nối · Cuối màn (nhóm dài hơn một màn) | 390×844 | `AC9 Cài đặt · Tài khoản và kết nối · Cuối màn` |
+| AC1 | Sheet Chọn tài khoản · Tối | 390×844 | `AC1 Sheet Chọn tài khoản · Tối` |
+| AC4 | Thêm tài khoản · Tối | 390×844 | `AC4 Thêm tài khoản · Tối` |
+| AC9 | Cài đặt · Tài khoản và kết nối · Tối | 390×844 | `AC9 Cài đặt · Tài khoản và kết nối · Tối` |
 
 **Lát 8: C1 đến C7 (kể cả bản tối) cần vẽ lại** phần thanh tiêu đề và thêm thanh đáy N1 (mục 11). O1 đến O5, D1 đến D6 (trừ việc thanh đáy nằm dưới scrim), P1 đến P3, S1 đến S5 **không đổi hình**.
 
 **Bố cục:**
-- Cài đặt là **một màn cuộn**, 6 nhóm theo thứ tự: Hiển thị, Bảo mật, Video, PDF, Bộ nhớ đệm, Kết nối. Cuối màn có dòng phiên bản `meta` căn giữa.
+- Cài đặt là **một màn cuộn**, 6 nhóm theo thứ tự: Hiển thị, Bảo mật, Video, PDF, Bộ nhớ đệm, **Tài khoản và kết nối** (đổi tên từ "Kết nối", 2026-10-12) [mới]. Cuối màn có dòng phiên bản `meta` căn giữa.
 - C1 đến C4 là bốn vị trí cuộn của cùng màn đó.
 - **Thanh tiêu đề (từ Lát 8):** chỉ có chữ "Cài đặt" (`title`), lề trái 16, **không có nút quay lại** vì Cài đặt là tab (đã vẽ ở C1 đến C7 bản mới). Cao 56 cộng 24 thanh trạng thái. Khi đã cuộn thì có kẻ đáy `line`.
 - **Đáy:** thanh điều hướng đáy N1 với mục Cài đặt đang chọn. Nội dung cuộn kết thúc ở mép trên thanh.
 
 **Thứ tự hàng:**
 - **Hiển thị:** Loại tệp hiển thị (ChipsRow) → Giao diện → Ngôn ngữ. Hai hàng "Ẩn thư mục không có tệp phù hợp" và "Hiện tệp không hỗ trợ" có trong artboard nhưng **đã bỏ, không dựng** (TM-04, chốt 2026-10-07). Hàng Ngôn ngữ (CD-10) đã có artboard (2026-10-10), dựng theo kiểu ValueRow + sheet như Giao diện.
-- **Bảo mật:** Bảo vệ ứng dụng → Đổi mã PIN → Mở khóa bằng sinh trắc học → **Bảo vệ màn hình** (SwitchRow, CD-12, không phụ thuộc PIN nên luôn hiện kể cả khi bảo vệ ứng dụng tắt) → Tự khóa khi rời app → Xóa dữ liệu khi nhập sai quá nhiều. Sheet O2 Tự khóa có các mốc: Ngay lập tức / 10 giây / 30 giây / 1 / 5 / 15 phút (mặc định 1 phút; 10 và 30 giây thêm 2026-10-07).
-- **Video:** Bước tua khi chạm đúp → Tốc độ mặc định → Khung hình mặc định → Hướng màn hình khi mở video → Chế độ phát → Nhớ vị trí xem → **Thời lượng tối đa của Short** (ValueRow, giá trị "3 phút", mở sheet O6; chỉ hiện khi loại Video đang bật; thêm 2026-10-10, CD-13).
+- **Bảo mật:** Bảo vệ ứng dụng → Đổi mã PIN → Mở khóa bằng sinh trắc học → **Bảo vệ màn hình** (SwitchRow, CD-12, không phụ thuộc PIN nên luôn hiện kể cả khi bảo vệ ứng dụng tắt) → Tự khóa khi rời app → Xóa dữ liệu khi nhập sai quá nhiều. Sheet O2 Tự khóa có các mốc: Ngay lập tức / 10 giây / 30 giây / 1 / 5 / 15 phút (mặc định Ngay lập tức, đổi từ 1 phút ngày 2026-10-13; 10 và 30 giây thêm 2026-10-07).
+- **Video:** Bước tua khi chạm đúp → Tốc độ mặc định → Khung hình mặc định → Hướng màn hình khi mở video → Chế độ phát → **Khi mở lại video xem dở** (ValueRow, giá trị "Hỏi trước" / "Luôn xem tiếp" / "Luôn phát từ đầu", mở sheet chọn một trong ba như sheet Hướng màn hình; thay SwitchRow "Nhớ vị trí xem" cũ, 2026-10-13, VD-12; **chưa có artboard**, xem mục 11) → **Thời lượng tối đa của Short** (ValueRow, giá trị "3 phút", mở sheet O6; chỉ hiện khi loại Video đang bật; thêm 2026-10-10, CD-13).
 - **PDF:** Kiểu đọc.
 - **Bộ nhớ đệm:** CacheUsage (theo loại) → Giới hạn tối đa → **Tỉ lệ chia theo loại** → Xóa bộ nhớ đệm. Hai hàng giữa mở sheet (ValueRow), **ngoài thiết kế, chờ duyệt** (chốt Q1 2026-10-07, ADR-0021):
     - Giới hạn tối đa: thanh trượt `ODVSlider` từ 1 đến 10 GB, bước 1 GB (mặc định 2 GB), hiện giá trị đang kéo, nút Áp dụng chỉ bật khi giá trị đổi. Thiết kế gốc chỉ có 4 mốc 1/2/5/10 GB.
     - Tỉ lệ chia theo loại (board "Slider và tỉ lệ chia" của ODV Foundations, đã có thiết kế): dưới tiêu đề và câu hướng dẫn là **SplitBar** cao 12 (các đoạn cách 2, bo 3, tô màu loại; bên phải tổng "100%" kèm dấu check `success`), rồi 4 hàng slider (Thumbnail `line-strong`, Ảnh `kind-photo`, Video `kind-video`, PDF `kind-pdf`), mỗi hàng 0 đến 100%. Kéo một hàng thì ba hàng còn lại tự tính lại để tổng luôn 100. Hai nút: Mặc định (10/30/45/15, tắt khi đang là mặc định) và Áp dụng (tắt khi chưa đổi).
     - `ODVSlider`: rãnh cao 8 bo 4 màu `surface-2`, phần đã có tô màu loại; núm `volt` 24 viền 2 `volt-text`; **đang kéo** núm 32 kèm vòng 6 `volt-soft`; vùng chạm cao 48, hai đầu lùi 12; focus ring quanh núm; vô hiệu mờ 0.38. Không dùng bong bóng nổi (ngón tay che): giá trị hiện ở viên góc phải của hàng (`code` 13, "45%" đậm vừa + dung lượng mờ 75%), đổi sang nền `volt-soft` chữ `volt-text` khi đang kéo. TalkBack đọc "Video 45%, 921,6 MB"; slider giới hạn 1 đến 10 GB dùng cùng kiểu nhưng màu `volt-text`, không có ô loại (thiết kế chưa vẽ riêng).
-    - Giảm giới hạn hoặc đổi tỉ lệ làm loại nào vượt trần mới thì dọn ngay (D6 cho trường hợp giảm giới hạn, CD-07).
-- **Kết nối:** Tài khoản (UPN), Tenant ID, Client ID, Đồng bộ gần nhất (InfoRow) → Cập nhật Client Secret → Ngày hết hạn secret → Ngắt kết nối.
+    - Giảm giới hạn hoặc đổi tỉ lệ làm loại nào vượt trần mới thì dọn ngay (D6 cho trường hợp giảm giới hạn mà bất kỳ loại nào vượt trần riêng mới, không chỉ khi tổng vượt; đổi tỉ lệ thì dọn không hỏi, CD-07).
+- **Tài khoản và kết nối (AC9, 2026-10-12; thay thứ tự cũ "Tài khoản (UPN), Tenant ID, Client ID, Đồng bộ gần nhất → …"):**
+    1. **Đang xem** (ValueRow): giá trị là tên hiển thị của phạm vi hiện tại hoặc "Tất cả tài khoản"; mở sheet AC1.
+    2. Các **AccountRow** theo thứ tự thêm (mục 4.9, có dòng đồng bộ gần nhất; tài khoản đang xem có viên "Đang xem"). Tài khoản khác tài khoản đang xem có nút xóa `trash` ở cuối hàng; nút hoặc cả hàng mở AC8. Chạm hàng tài khoản đang xem hiện Snackbar giải thích (TA-08).
+    3. **Thêm tài khoản** (hàng Thêm tài khoản kiểu NavRow) → AC4.
+    4. Một hàng caption "Dùng chung cho mọi tài khoản" [mới] nằm **trong thẻ**, ngay sau hàng Thêm tài khoản, rồi Tenant ID, Client ID (InfoRow, che bớt).
+    5. Cập nhật Client Secret → Ngày hết hạn secret → Ngắt kết nối (DangerRow; hộp thoại D3 thêm câu "Mọi tài khoản trong app sẽ bị xóa." [mới] khi có từ 2 tài khoản).
+
+    Hàng "Đồng bộ gần nhất" chung không còn; mỗi AccountRow có dòng đồng bộ riêng.
 
 **O6 · Thời lượng tối đa của Short (đã vẽ `OptShortMax`, 2026-10-10; mô tả dưới đây cần đối chiếu lại với artboard, nhất là nút Áp dụng, trước khi dựng):** Bottom sheet cùng kiểu sheet Giới hạn tối đa của bộ nhớ đệm: tiêu đề `heading` "Thời lượng tối đa của Short", câu hướng dẫn `caption` màu `ink-muted` "Chỉ video dài tối đa bằng mốc này mới xuất hiện ở tab Short.", một `ODVSlider` màu `volt-text` từ 3 đến 10, bước 1, viên giá trị "3 phút" ở góc phải, nút Áp dụng (tắt khi chưa đổi). Mặc định 3 phút. Câu chữ là [mới]. TalkBack đọc "Thời lượng tối đa, 3 phút".
 
@@ -852,7 +938,11 @@ Page Màn xem **không đổi hình** ở Lát 8 (thanh điều hướng đáy �
 - Đổi PIN đi P1 → P2 → P3. PIN dễ đoán và PIN không khớp dùng cùng thông báo như B3 / B5.
 - Cập nhật secret đi S1 → S2 (loading toàn màn, không có Hủy) → S3 (lỗi, giữ secret cũ) hoặc quay về Cài đặt kèm Snackbar S5. Đã dựng (Lát 7e, 2026-10-08): S2 chỉ có tiêu đề và phụ đề, chưa có danh sách ba bước ("Đã lấy access token", "Đang kiểm tra OneDrive…", "Lưu secret mới") vì use case chạy một lần, không báo từng bước. Chuỗi lỗi hết hạn, mạng, lỗi khác, "hết hạn hôm nay", "đã hết hạn" và dòng báo ngày sai định dạng ở S4 là chuỗi [mới], thiết kế chưa có.
 - Khi bảo vệ đang **tắt** (kể cả khi người dùng chọn "Để sau" ở K6), công tắc "Bảo vệ ứng dụng" bật lên thì đi theo luồng B1 → … → B8 (CD-02). Hành động trong danh sách trên không cần P1 vì chưa có PIN.
-- Các màn con (P1 đến P3, S1 đến S5, B1 đến B8 mở từ Cài đặt) che thanh đáy; Back hoặc hoàn tất thì về tab Cài đặt đúng vị trí cuộn (DH-02, DH-05).
+- Các màn con (P1 đến P3, S1 đến S5, B1 đến B8 mở từ Cài đặt, AC4 đến AC7) che thanh đáy; Back hoặc hoàn tất thì về tab Cài đặt đúng vị trí cuộn (DH-02, DH-05).
+- **Tài khoản (TA-04 → TA-08):**
+    - Chọn: avatar trên AppBar Danh sách hoặc hàng "Đang xem" → AC1/AC2/AC3 → chạm một hàng → sheet đóng, Snackbar "Đang xem …". Từ Danh sách thì về gốc tab Thư mục; từ Cài đặt thì ở lại Cài đặt (TA-06).
+    - Thêm: hàng "Thêm tài khoản" (sheet hoặc Cài đặt) → AC4 → AC5 nếu trùng/sai → AC6 → thành công: đóng màn, đã chuyển sang tài khoản mới, Snackbar "Đã thêm Bao Lam" [mới]; thất bại: AC7, giữ giá trị đã nhập. **Không** đi qua P1 (không hỏi PIN) và không hiện K6. Mở từ sheet ở Danh sách thì thêm xong về gốc tab Thư mục; mở từ Cài đặt thì về Cài đặt.
+    - Xóa: hàng tài khoản khác tài khoản đang xem → AC8 → "Xóa khỏi app" → hàng biến mất, Snackbar "Đã xóa <email> khỏi app" [mới].
 
 ### 5.5 Short (tab Short của Màn chính, Lát 8)
 
@@ -869,6 +959,7 @@ Page mới **"Short"** trên canvas (page riêng, vì Short có thanh đáy còn
 | SH7 | Short · Không hỗ trợ định dạng (SV-14) | 390×844 | `ShortCodec` |
 | SH8 | Short · Mất mạng (SV-14) | 390×844 | `ShortNet` |
 | SH9 | Short · Không có video phù hợp (SV-15) | 390×844 | `ShortEmpty` |
+| SH10 | Short · Tất cả tài khoản, dòng thư mục có tên tài khoản (SV-09, TA-05) | 390×844 | `SH10 Short · Tất cả tài khoản, dòng thư mục có tên tài khoản (SV-09, TA-05)` (thư mục `ODV Short`) |
 
 Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy luôn là bản N4. Thành phần chi tiết ở mục 4.8.
 
@@ -908,6 +999,8 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 | Nhập sai PIN | Chấm đỏ, rung nhẹ, dòng lỗi. Bộ đếm theo KH-02 |
 | Đổi theme | Cross-fade toàn màn trong 250ms |
 | Lựa chọn trong sheet | Chạm là áp dụng ngay và đóng sheet trong 250ms |
+| Đổi phạm vi xem (TA-06) | Sheet đóng 250ms; nội dung tab cross-fade 250ms sang dữ liệu mới (không trượt), avatar trên AppBar cross-fade 150ms; Snackbar "Đang xem …". Mục Short hiện/ẩn theo hiệu ứng 3 ↔ 4 mục ở trên |
+| Thêm tài khoản thành công (TA-07) | Màn AC4 đóng như màn con khác, rồi hiện Snackbar "Đã thêm …"; tab đang hiện chuyển sang dữ liệu tài khoản mới (thường là D7 đang lập chỉ mục) |
 
 ---
 
@@ -933,6 +1026,9 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
   | AppBar | "Tìm kiếm", "Lên một cấp", "Quay lại" |
   | Thanh điều hướng đáy | "Thư mục, tab 1 trên 4, đang chọn"; "Cài đặt, tab 4 trên 4, có thông báo" |
   | Vùng video Short | "Video ngắn, mau-01.mp4, đang phát" / "..., đã tạm dừng"; hành động "Tạm dừng" / "Phát", "Video kế tiếp", "Video trước", "Xáo lại danh sách" (chỉ ở video đầu) |
+  | Nút tài khoản trên AppBar | "Tài khoản: Bao Lam, bao@contoso.com. Chọn tài khoản" / "Tài khoản: Tất cả tài khoản. Chọn tài khoản"; có lỗi thêm ", có tài khoản không truy cập được" [mới] |
+  | AccountRow trong sheet | "Bao Lam, bao@contoso.com, đang chọn" / "Tất cả tài khoản, 3 tài khoản"; lỗi thêm ", không truy cập được" [mới] |
+  | AccountRow ở Cài đặt | "Bao Lam, bao@contoso.com, đồng bộ lúc 14 giờ 5, đang xem"; hàng khác thêm hành động "Xóa khỏi app" [mới] |
 
 - **Thứ tự đọc** theo thứ tự thị giác. Banner và dòng lỗi là vùng live, đọc ngay khi xuất hiện. Thanh điều hướng đáy đọc sau cùng.
 - **Mọi cử chỉ có nút tương đương:**
@@ -983,6 +1079,12 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 10. **Short (Lát 8, đã vẽ, đã chốt):** page canvas riêng "Short"; video vẽ tràn dưới thanh trạng thái; tên tệp có dải gradient `media.scrim` phía sau; thanh tiến độ 3dp sát mép trên thanh đáy; vòng tạm dừng 72 nền `media.pill`.
 11. **Tab Cài đặt (đã vẽ, đã chốt):** thanh tiêu đề chỉ có chữ "Cài đặt", bỏ mũi tên quay lại. Tab Thư viện có tiêu đề "Thư viện".
 12. **O6 (đã vẽ `OptShortMax`; đối chiếu nút Áp dụng với artboard khi dựng):** chọn thời lượng tối đa bằng thanh trượt 3 đến 10 phút + nút Áp dụng (cùng kiểu sheet Giới hạn tối đa), không dùng danh sách radio.
+13. **Nhiều tài khoản (2026-10-12, đã vẽ):**
+    - Chọn tài khoản bằng **avatar trên AppBar** Danh sách (kiểu các app Google), cộng hàng "Đang xem" ở Cài đặt; không thêm mục trên thanh đáy.
+    - Avatar là chữ cái đầu, **một màu chung** `volt-soft`/`volt-text` cho mọi tài khoản (không thêm bảng màu theo tài khoản). Nếu người thiết kế muốn mỗi tài khoản một màu thì phải thêm token mới.
+    - Phạm vi **Tất cả tài khoản** có avatar gộp icon `users`; ở gốc Thư mục mỗi tài khoản là một ô thư mục (D10).
+    - Thêm tài khoản chỉ có một trường, kiểm tra bằng nút đang tải (không FullScreenLoader), không hỏi PIN.
+    - Câu chữ [mới] ở mục 4.9, 5.2, 5.4, 6, 7.
 
 ---
 
@@ -995,7 +1097,7 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 | 3 | Foundations ghi `display` cho tiêu đề Danh sách và Cài đặt | Màn thật dùng `title` (22/28) trên AppBar. Theo màn thật |
 | 4 | Foundations chỉ có 11 style chữ | Màn thật dùng thêm 10 style phụ (mục 2.3). Đã gộp vào token |
 | 5 | Mã màn trùng giữa page (D1, P1, P5…) | Luôn ghi kèm tên page |
-| 6 | Board "06 Icon" trên canvas đang hiện 37 icon. 5 icon `info`, `minus`, `fit`, `next`, `prev` đã dùng trên màn nhưng chưa có trên board; icon `short` (Lát 8) chưa có | Dùng đủ 43 icon như mục 3.1. Bản cập nhật board (42 icon) đã sẵn sàng, chờ đăng; `short` cần vẽ |
+| 6 | **Đã xử lý (2026-10-12):** board "06 Icon" nay có đủ 46 icon, gồm `info`, `minus`, `fit`, `next`, `prev`, `short`, `users`, `user-plus`, `trash` | Dùng đủ 46 icon như mục 3.1 |
 | 7 | Khi xem với font thật, các board Foundations 02, 03, 07, 11, 12 bị tràn hoặc cắt chữ | Chỉ ảnh hưởng canvas, không ảnh hưởng app. Bản sửa chiều cao đã sẵn sàng, chờ đăng |
 | 8 | Artboard K4 `ConnectSuccess` (bottom sheet "Đã kết nối OneDrive" có thanh dung lượng) vẫn còn trên canvas v22, nhưng KN-08 và KN-12 đã bỏ màn này | Không dựng K4. Cần xóa hoặc đánh dấu "đã bỏ" artboard này trên canvas |
 | 9 | Các artboard K1, K2, K3, K5 (kể cả bản tối) và B1 đến B6, B8 trên canvas v22 còn hiện StepBar "BƯỚC 1 / 2", "BƯỚC 2 / 2" | Không dựng StepBar. Cần gỡ StepBar khỏi các artboard này trên canvas; style `step-label` trong token gỡ theo |
@@ -1007,6 +1109,9 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 | 15 | Chưa có artboard K6 (hộp thoại hỏi thiết lập mã PIN, KN-13), cả bản sáng lẫn tối | Người thiết kế dựng theo mô tả ở mục 5.1. Trong lúc chờ, dev dựng theo mô tả và component Dialog (mục 4.2) |
 | 16 | **Lát 8 (đã xử lý 2026-10-10):** Danh sách (D1 đến D8, D9) và Cài đặt (C1 đến C7) đã vẽ lại với thanh đáy, bỏ Tabs, bánh răng và mũi tên quay lại; đã có NavBar N1 đến N4, page Short (SH1 đến SH9 và bản "Đã xáo lại"), O6 (kèm bản đang kéo), D9, icon `short` (43 icon). Hai hàng "Ẩn thư mục…" và "Hiện tệp không hỗ trợ" đã bỏ khỏi artboard. Sheet "Tỉ lệ chia theo loại" bỏ mã O6 để không trùng | Dựng theo artboard cùng mục 4.7, 4.8, 5.2, 5.4, 5.5; nếu số liệu artboard lệch mô tả thì hỏi lại, không tự chế giá trị |
 | 17 | Token `nav-bar`, `nav-indicator-width`, `nav-indicator-height`, `nav-dot` (mục 2.6): **đã có** trong `odv-tokens.json` và board Bố cục (2026-10-10); `tab-item` không còn dùng | Dùng token. Gỡ `tab-item` cùng lúc với `step-label` khi người thiết kế gỡ khỏi board |
+| 18 | **Nhiều tài khoản (2026-10-12), đã vẽ:** board Foundations 21, AC1 đến AC9, D10, SH10, AppBar D1 đến D9, icon `users`/`user-plus`/`trash`, token `account-avatar-*`. **Còn thiếu hình:** lỗi UPN sai định dạng (AC5 chỉ vẽ lỗi trùng), D4 và D7 ở phạm vi Tất cả tài khoản (có tên tài khoản), hàng "Tài khoản" trong bảng thông tin tệp (V15, V16, A4, P8) | Dựng theo mô tả mục 4.9, 5.2, 4.5; lỗi sai định dạng dùng lại câu lỗi UPN của màn Kết nối. Không thêm màu, cỡ hay khoảng cách mới |
+| 19 | **Lát 10 (2026-10-13):** (a) hàng "Khi mở lại video xem dở" ở Cài đặt › Video (ValueRow, thay SwitchRow "Nhớ vị trí xem") và sheet 3 lựa chọn (Hỏi trước / Luôn xem tiếp / Luôn phát từ đầu); artboard C2 `Cài đặt · Video` vẫn là công tắc cũ; (b) chuỗi VI/EN [mới] của hàng này và của dải (dòng phụ "Còn … · dừng ở …", "Trang x / y", mô tả nút X); (c) **dải Xem tiếp / Đọc tiếp cuộn chung với danh sách** (không còn đứng yên giữa Banner và Breadcrumb): artboard D1, D2, D10 (kể cả bản tối) cần vẽ lại, dải nằm dưới SortBar ở đầu vùng cuộn, ở D10 là mục đầu của lưới tài khoản | Dựng theo kiểu ValueRow + sheet như hàng "Hướng màn hình khi mở video" (mục 4.6). Không thêm màu, cỡ chữ hay khoảng cách mới. Cần người thiết kế vẽ C2 lại và sheet mới ở topic vẽ |
+| 20 | **Tìm kiếm trong Thư viện (TV-07, 2026-10-13):** chưa có artboard cho nút `search` trên AppBar D3 (kể cả D7 đang lập chỉ mục), màn tìm có kết quả (lưới phẳng), không có kết quả, bản tối; chuỗi VI/EN [mới] (`library_search_*`) | Dựng theo mô tả mục 5.2 (lưới 4 cột như D3, AppBar tìm như D4). Không thêm màu, cỡ chữ hay khoảng cách mới. Cần người thiết kế vẽ ở topic vẽ |
 
 ---
 
@@ -1068,11 +1173,21 @@ Tab Short không có bản sáng/tối riêng (luôn nền đen); thanh đáy lu
 - [ ] Chạm tạm dừng/phát; vuốt chuyển video; kéo ở video đầu xáo lại và video đầu mới khác video cũ
 - [ ] Đủ trạng thái SH1 đến SH9
 
+**Kiểm riêng nhiều tài khoản (2026-10-12, TA-01 → TA-12):**
+- [ ] Avatar trên AppBar đúng tài khoản đang xem, đổi sang avatar gộp ở phạm vi Tất cả; vùng chạm 48
+- [ ] Sheet: hàng Tất cả chỉ hiện khi có ≥ 2 tài khoản; danh sách dài cuộn được, tiêu đề và hàng Thêm cố định
+- [ ] Đổi phạm vi: Short dừng và xáo mới, tab Thư mục về gốc, không còn ảnh/video của tài khoản cũ trên màn (kể cả thumbnail đang tải dở)
+- [ ] D10: mỗi tài khoản một ô; breadcrumb "Tất cả tài khoản › …"; tìm kiếm có tên tài khoản trong đường dẫn
+- [ ] Thêm: UPN trùng (khác hoa thường) bị chặn; thành công thì chuyển sang tài khoản mới và lập chỉ mục; lỗi giữ giá trị đã nhập
+- [ ] Xóa: không xóa được tài khoản đang xem hay tài khoản duy nhất; xóa xong dữ liệu của tài khoản đó biến mất khỏi Thư viện gộp
+- [ ] Tên hiển thị thiếu thì dùng phần trước `@` của UPN; email dài cắt giữa, giữ tên miền
+- [ ] Khóa rồi mở khóa, hệ điều hành thu hồi tiến trình: vẫn đúng phạm vi xem
+
 ---
 
 ## 11. Việc cần làm trên Claude Design (bàn giao cho topic vẽ)
 
-Danh sách này là nhiệm vụ của topic vẽ Claude Design (chốt 2026-10-10). Vẽ đúng theo các mục được dẫn; giá trị nào chưa có trong tài liệu thì ghi lại và hỏi, không tự chế. **Trạng thái (2026-10-10): 11.1 đến 11.4 đã vẽ xong và đã cập nhật mục 5, 9, `odv-tokens.json`;** còn lại 11.5 (K6 và các việc tồn).
+Danh sách này là nhiệm vụ của topic vẽ Claude Design (chốt 2026-10-10). Vẽ đúng theo các mục được dẫn; giá trị nào chưa có trong tài liệu thì ghi lại và hỏi, không tự chế. **Trạng thái (2026-10-10): 11.1 đến 11.4 đã vẽ xong và đã cập nhật mục 5, 9, `odv-tokens.json`;** còn lại 11.5 (K6 và các việc tồn) và **11.6 nhiều tài khoản** (thêm 2026-10-12, **đã vẽ 2026-10-12**, còn vài trạng thái chưa có hình).
 
 **11.1 Foundations**
 | Việc | Artboard | Theo |
@@ -1112,4 +1227,17 @@ Danh sách này là nhiệm vụ của topic vẽ Claude Design (chốt 2026-10-
 - Xóa hoặc đánh dấu "đã bỏ": K4 `ConnectSuccess`, B7 `SecOff`/`SecOffDark`, StepBar trên K1 đến K5 và B1 đến B8, thẻ công tắc trên B1 đến B6 (mục 9, #8, #9, #14).
 - Artboard cho phần Cài đặt đã dựng mà chưa có hình (mục 9, #10, #11).
 
-**Không đổi:** page Khởi động và page Màn xem.
+**11.6 Nhiều tài khoản (thêm 2026-10-12, đặc tả mục 3.9): đã vẽ xong 2026-10-12**
+
+Đã có: icon `users`, `user-plus`, `trash` (board Icon, 46 icon); board Foundations 21 "Components · Tài khoản" (AccountAvatar, AccountRow, hàng Thêm tài khoản, sheet kể cả danh sách dài, hộp thoại xóa, các Snackbar, ô tài khoản D10); AC1 đến AC9 (kèm bản tối AC1, AC4, AC9 và AC9 "Cuối màn"); avatar trên AppBar D1 đến D9; D10 sáng/tối; SH10; token `account-avatar-sm`, `account-avatar-md`.
+
+Còn thiếu hình (dựng theo mô tả, không cần chờ vẽ; vẽ bổ sung nếu tiện):
+
+| Việc | Artboard | Theo |
+|---|---|---|
+| Lỗi UPN sai định dạng ở màn Thêm tài khoản (dùng lại câu lỗi UPN của màn Kết nối) | AC5 bản sai định dạng | Mục 4.9 |
+| Tìm kiếm ở phạm vi Tất cả tài khoản: dòng đường dẫn có tên tài khoản ở đầu | D4 bản Tất cả | Mục 5.2 |
+| Banner đang lập chỉ mục ghi tên tài khoản | D7 bản Tất cả | Mục 5.2 |
+| Hàng "Tài khoản" trong bảng thông tin tệp khi có từ 2 tài khoản | V15, V16, A4, P8 | Mục 4.5 |
+
+**Không đổi:** page Khởi động và page Màn xem (bảng thông tin tệp chỉ thêm một hàng "Tài khoản", không cần vẽ lại).

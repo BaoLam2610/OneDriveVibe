@@ -16,6 +16,13 @@ class OpenPdfUseCase(
     operator fun invoke(ref: CachedFileRef): Flow<CachedFileState> = pdfs.open(ref)
 }
 
+/** Bỏ bản PDF đã cache của [CachedFileRef] vì không mở được (hỏng, PD-07), để "Thử lại" tải bản mới. */
+class DiscardCachedPdfUseCase(
+    private val pdfs: PdfRepository,
+) {
+    suspend operator fun invoke(ref: CachedFileRef) = pdfs.discard(ref)
+}
+
 /** Bản ghi và thư mục chứa của một PDF (tên, cTag cho khóa cache, thông tin ở PD-08). Null nếu không còn trong Room. */
 class GetPdfFileUseCase(
     private val pdfs: PdfRepository,

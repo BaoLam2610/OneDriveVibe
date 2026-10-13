@@ -96,8 +96,10 @@
     <string name="settings_mode_repeat_one_desc">Phát lại từ đầu ngay</string>
     <string name="settings_mode_repeat_list">Lặp danh sách</string>
     <string name="settings_mode_repeat_list_desc">Hết video cuối thì quay về video đầu</string>
-    <string name="settings_remember_position">Nhớ vị trí xem</string>
-    <string name="settings_remember_position_desc">Hỏi “Xem tiếp từ…?” khi mở lại</string>
+    <string name="settings_resume">Khi mở lại video xem dở</string> <!-- [mới] -->
+    <string name="settings_resume_ask">Hỏi trước</string> <!-- [mới] -->
+    <string name="settings_resume_always">Luôn xem tiếp</string> <!-- [mới] -->
+    <string name="settings_resume_start_over">Luôn phát từ đầu</string> <!-- [mới] -->
 
     <!-- Nhóm PDF. [mới] Thiết kế chỉ có hàng "Kiểu đọc: Cuộn dọc"; tên lựa chọn thứ hai lấy từ đặc tả (Cuộn dọc / Lật trang ngang), không có artboard sheet -->
     <string name="settings_group_pdf" translatable="false">PDF</string>
@@ -129,8 +131,25 @@
     <string name="settings_cache_shrink_confirm">Giảm và dọn</string>
 
     <!-- Nhóm Kết nối -->
-    <string name="settings_group_connection">Kết nối</string>
-    <string name="settings_account">Tài khoản (UPN)</string>
+    <string name="settings_group_connection">Tài khoản và kết nối</string> <!-- đổi từ "Kết nối" (Lát T, AC9) -->
+    <!-- Nhiều tài khoản (Lát T, thiet-ke-ui.md mục 4.9, 5.4, AC9; TA-03, TA-08). Chuỗi [mới] do người dùng viết trong đặc tả, chờ duyệt. -->
+    <string name="settings_viewing">Đang xem</string>
+    <string name="settings_viewing_all">Tất cả tài khoản</string>
+    <string name="settings_account_current_badge">Đang xem</string>
+    <string name="settings_account_synced_at">Đồng bộ lúc %1$s</string>
+    <string name="settings_account_never_synced">Chưa đồng bộ</string>
+    <string name="settings_account_indexing">Đang lập chỉ mục, đã quét %1$s mục</string>
+    <string name="settings_account_inaccessible">Không truy cập được tài khoản này</string>
+    <string name="settings_account_remove">Xóa %1$s khỏi app</string>
+    <string name="settings_account_add">Thêm tài khoản</string>
+    <string name="settings_shared_caption">Dùng chung cho mọi tài khoản</string>
+    <string name="settings_remove_account_title">Xóa tài khoản khỏi app?</string>
+    <string name="settings_remove_account_body">Dữ liệu đã đồng bộ, lịch sử xem và bộ nhớ đệm của %1$s trên máy này sẽ bị xóa. Tệp trên OneDrive không bị ảnh hưởng.</string>
+    <string name="settings_remove_account_confirm">Xóa khỏi app</string>
+    <string name="settings_account_cannot_remove_current">Đổi sang tài khoản khác trước khi xóa tài khoản này</string>
+    <string name="settings_account_cannot_remove_last">Không xóa được tài khoản duy nhất. Dùng Ngắt kết nối nếu muốn bỏ kết nối.</string>
+    <string name="settings_account_removed">Đã xóa %1$s khỏi app</string>
+    <string name="settings_account_remove_failed">Không xóa được tài khoản này</string> <!-- [mới] -->
     <string name="settings_tenant_id" translatable="false">Tenant ID</string>
     <string name="settings_client_id" translatable="false">Client ID</string>
     <string name="settings_last_sync">Đồng bộ gần nhất</string>
@@ -165,12 +184,35 @@
     <string name="settings_disconnect">Ngắt kết nối</string>
     <string name="settings_disconnect_desc">Xóa toàn bộ dữ liệu trên máy</string>
     <string name="settings_disconnect_title">Ngắt kết nối OneDrive?</string>
-    <string name="settings_disconnect_body">Cách duy nhất để dùng lại là kết nối từ đầu. Các tệp trên OneDrive không bị ảnh hưởng.</string>
+    <string name="settings_disconnect_body">Cách duy nhất để dùng lại là kết nối từ đầu. Mọi tài khoản trong app sẽ bị xóa. Các tệp trên OneDrive không bị ảnh hưởng.</string>
     <string name="settings_disconnect_final_title">Xóa dữ liệu và ngắt kết nối?</string> <!-- [mới] D4, cùng lời với KH-03 -->
     <string name="settings_disconnect_final_body">Thông tin kết nối, lịch sử xem và cài đặt trên máy sẽ bị xóa. Các tệp trên OneDrive không bị ảnh hưởng.</string> <!-- [mới] -->
     <string name="settings_disconnect_final_confirm">Xóa dữ liệu</string> <!-- [mới] -->
 
     <!-- Màn Cập nhật Client Secret (S1 đến S3, S5) -->
+    <!-- Thêm tài khoản (Lát T, TA-07, AC4 đến AC7). Câu chữ khớp thiết kế; lỗi theo bảng KN-09. -->
+    <string name="account_add_title">Thêm tài khoản</string>
+    <string name="account_add_description">Tài khoản mới dùng chung Tenant ID, Client ID và Client Secret đã kết nối. Chỉ cần nhập email (UPN) của một tài khoản cùng tenant.</string>
+    <string name="account_add_label">Email tài khoản (UPN)</string>
+    <string name="account_add_hint">Ví dụ: ten@contoso.com</string>
+    <string name="account_add_format_error">Email chưa đúng định dạng</string>
+    <string name="account_add_duplicate">Tài khoản này đã có trong app</string>
+    <string name="account_add_submit">Thêm tài khoản</string>
+    <string name="account_add_checking">Đang kiểm tra…</string>
+    <string name="account_add_checking_description">Đang kiểm tra tài khoản</string>
+    <string name="account_add_error_title">Không kết nối được</string>
+    <string name="account_add_error_code">Mã lỗi: %1$s</string>
+    <string name="account_add_error_close">Đóng</string>
+    <string name="account_add_error_fix_secret">Sửa Client Secret</string> <!-- [mới] TK-04, như K5 -->
+    <string name="account_add_error_secret_invalid">Client Secret không đúng. Kiểm tra đã copy cột Value, không phải Secret ID.</string>
+    <string name="account_add_error_secret_expired">Client Secret đã hết hạn, hãy tạo secret mới.</string>
+    <string name="account_add_error_app_disabled">Ứng dụng trên Entra đang bị vô hiệu hóa.</string>
+    <string name="account_add_error_forbidden">Ứng dụng chưa được cấp quyền Files.Read.All hoặc chưa Grant admin consent.</string>
+    <string name="account_add_error_drive_not_found">Không tìm thấy OneDrive của UPN này (sai UPN, chưa có license hoặc OneDrive chưa khởi tạo). Lưu ý: ứng dụng chỉ hỗ trợ tài khoản OneDrive for Business, không hỗ trợ tài khoản Microsoft cá nhân.</string>
+    <string name="account_add_error_network">Không kết nối được, kiểm tra mạng và thử lại.</string>
+    <string name="account_add_error_save">Không lưu được tài khoản trên máy.</string> <!-- [mới] -->
+    <string name="account_add_error_other">Đã xảy ra lỗi. Dùng mã lỗi bên dưới để tra cứu.</string>
+
     <string name="secret_title">Cập nhật Client Secret</string>
     <string name="secret_description">Tạo secret mới trên Entra admin center, sau đó dán giá trị vào đây. OneDriveVibe chỉ lưu khi kiểm tra kết nối thành công.</string>
     <string name="secret_label">Client Secret mới</string>

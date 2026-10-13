@@ -1,13 +1,15 @@
 package com.lambao.odv.feature.pdfviewer
 
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
 import android.util.LruCache
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.toArgb
+import com.lambao.odv.core.designsystem.theme.ODVMediaColors
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,10 +23,13 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
+/** Vì sao `PdfRenderer` không mở được tệp (PD-07): có mật khẩu thì giữ tệp, hỏng thì xóa khỏi cache để tải lại. */
+internal enum class PdfOpenFailure { Password, Corrupt }
+
 /** Kết quả mở tệp PDF đã tải về bằng `PdfRenderer` (PD-07: có mật khẩu hoặc hỏng thì [Failed]). */
 internal sealed interface PdfOpenState {
     data object Loading : PdfOpenState
-    data object Failed : PdfOpenState
+    data class Failed(val reason: PdfOpenFailure) : PdfOpenState
     data class Opened(val document: PdfDocument) : PdfOpenState
 }
 
@@ -98,8 +103,8 @@ internal class PdfDocument private constructor(
                             height = (height * scale).toInt().coerceAtLeast(1)
                         }
                         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                        // PdfRenderer chỉ vẽ nội dung, nền trang trong suốt nên tô trắng trước.
-                        bitmap.eraseColor(Color.WHITE)
+                        // PdfRenderer chỉ vẽ nội dung, nền trang trong suốt nên tô giấy trắng trước (token cố định, không đổi theo theme, L3).
+                        bitmap.eraseColor(ODVMediaColors.pdfPaper.toArgb())
                         page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                         cache.put(key, bitmap)
                         bitmap
@@ -150,8 +155,11 @@ internal class PdfDocument private constructor(
             (Runtime.getRuntime().maxMemory() / PdfViewerConstants.PAGE_CACHE_MEMORY_DIVISOR)
                 .coerceIn(PdfViewerConstants.MAX_ZOOMED_PAGE_BITMAP_BYTES.toLong(), Int.MAX_VALUE.toLong()).toInt()
 
-        /** Chặn luồng, gọi trên luồng I/O. Null nếu không mở được (có mật khẩu, hỏng, không có trang, PD-07). */
-        fun open(path: String): PdfDocument? {
+        /**
+         * Chặn luồng, gọi trên luồng I/O. [PdfOpenState.Opened] hoặc [PdfOpenState.Failed] kèm lý do (PD-07): `SecurityException` là có mật
+         * khẩu (giữ tệp), mọi lỗi khác (IOException, không có trang...) là hỏng (xóa khỏi cache để tải lại, M3).
+         */
+        fun open(path: String): PdfOpenState {
             var descriptor: ParcelFileDescriptor? = null
             var renderer: PdfRenderer? = null
             return try {
@@ -159,13 +167,15 @@ internal class PdfDocument private constructor(
                 renderer = PdfRenderer(descriptor)
                 if (renderer.pageCount <= 0) {
                     cleanUp(renderer, descriptor)
-                    return null
+                    return PdfOpenState.Failed(PdfOpenFailure.Corrupt)
                 }
-                PdfDocument(descriptor, renderer).also { it.measureFirstPage() }
-            } catch (e: Exception) {
-                // IOException (hỏng), SecurityException (có mật khẩu), IllegalArgumentException... đều là "không mở được" (PD-07).
+                PdfOpenState.Opened(PdfDocument(descriptor, renderer).also { it.measureFirstPage() })
+            } catch (e: SecurityException) {
                 cleanUp(renderer, descriptor)
-                null
+                PdfOpenState.Failed(PdfOpenFailure.Password)
+            } catch (e: Exception) {
+                cleanUp(renderer, descriptor)
+                PdfOpenState.Failed(PdfOpenFailure.Corrupt)
             }
         }
 
@@ -183,15 +193,21 @@ internal class PdfDocument private constructor(
 @Composable
 internal fun rememberPdfDocument(path: String): PdfOpenState {
     val state by produceState<PdfOpenState>(PdfOpenState.Loading, path) {
-        val document = withContext(Dispatchers.IO) { PdfDocument.open(path) }
+        // `open` chặn luồng và không hủy được: composition bị hủy giữa chừng thì `withContext` vẫn chạy hết khối rồi ném CancellationException
+        // lúc trả về, làm mất tài liệu vừa mở (rò descriptor + PdfRenderer, CloseGuard). Nên giữ tài liệu trong holder ngay khi mở xong, và
+        // đóng nó ở đường bị hủy trước khi ném lại CancellationException (M2).
+        var opened: PdfDocument? = null
         try {
+            val result = withContext(Dispatchers.IO) {
+                PdfDocument.open(path).also { if (it is PdfOpenState.Opened) opened = it.document }
+            }
             ensureActive()
-        } catch (e: Exception) {
-            document?.closeAsync()
+            value = result
+        } catch (e: CancellationException) {
+            opened?.closeAsync()
             throw e
         }
-        value = if (document != null) PdfOpenState.Opened(document) else PdfOpenState.Failed
-        awaitDispose { document?.closeAsync() }
+        awaitDispose { opened?.closeAsync() }
     }
     return state
 }

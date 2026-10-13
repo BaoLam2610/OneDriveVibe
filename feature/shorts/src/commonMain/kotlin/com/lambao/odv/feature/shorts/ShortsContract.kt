@@ -34,6 +34,11 @@ data class ShortsState(
     val resumePositionMs: Long = 0L,
     /** Vừa khôi phục sau khi tiến trình bị thu hồi: video nằm chờ ở trạng thái tạm dừng (DH-06, SV-11). */
     val startPaused: Boolean = false,
+    /**
+     * Tên hiển thị theo drive id của tài khoản, **chỉ có ở phạm vi Tất cả tài khoản khi có từ 2 tài khoản**; rỗng thì dòng thư mục không
+     * có tên tài khoản (SV-09, TA-05). Không bị xóa khi tab bị bỏ trạng thái: không phải trạng thái của danh sách đang xáo.
+     */
+    val accountNames: Map<String, String> = emptyMap(),
 )
 
 sealed interface ShortsIntent {

@@ -1,7 +1,7 @@
 # ADR-0024: Phát và tải trước video ở tab Short bằng một ExoPlayer và PreloadManager
 
 **Ngày**: 2026-10-10
-**Trạng thái**: accepted
+**Trạng thái**: accepted (mục 1 về cơ chế tải trước được ADR-0026 thay thế: `CacheWriter` thay `DefaultPreloadManager`; poster bổ sung ở ADR-0027)
 **Người quyết định**: LamBao
 
 ## Bối cảnh

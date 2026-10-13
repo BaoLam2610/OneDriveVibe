@@ -7,6 +7,7 @@ import com.lambao.odv.core.domain.model.CachedFileState
 import com.lambao.odv.core.domain.model.PdfFile
 import com.lambao.odv.core.domain.settings.SettingsPreferences
 import com.lambao.odv.core.domain.usecase.folder.GetFolderPathUseCase
+import com.lambao.odv.core.domain.usecase.pdf.DiscardCachedPdfUseCase
 import com.lambao.odv.core.domain.usecase.pdf.GetPdfFileUseCase
 import com.lambao.odv.core.domain.usecase.pdf.GetReadingProgressUseCase
 import com.lambao.odv.core.domain.usecase.pdf.OpenPdfUseCase
@@ -28,6 +29,7 @@ class PdfViewerViewModel(
     private val getReadingProgress: GetReadingProgressUseCase,
     private val saveReadingProgress: SaveReadingProgressUseCase,
     private val openPdf: OpenPdfUseCase,
+    private val discardCachedPdf: DiscardCachedPdfUseCase,
     private val getFolderPath: GetFolderPathUseCase,
     private val settings: SettingsPreferences,
 ) : BaseMviViewModel<PdfViewerState, PdfViewerIntent, PdfViewerEffect>(PdfViewerState()) {
@@ -40,6 +42,12 @@ class PdfViewerViewModel(
     private var resumed = false
     private var noticeGiven = false
 
+    /** Người dùng đã đổi trang thật kể từ lần ghi cuối; mở hoặc khôi phục trang đầu không đặt cờ này (M1, PD-05). */
+    private var pageDirty = false
+
+    /** Việc xóa tệp cache hỏng (PD-07); lần Thử lại chờ nó xong để không tải trúng tệp cũ. */
+    private var discardJob: Job? = null
+
     init {
         viewModelScope.launch { settings.pdfReadingStyle.collect { style -> setState { copy(readingStyle = style) } } }
         loadFile()
@@ -48,7 +56,7 @@ class PdfViewerViewModel(
     override fun onIntent(intent: PdfViewerIntent) {
         when (intent) {
             is PdfViewerIntent.Opened -> onOpened(intent.pageCount)
-            PdfViewerIntent.OpenFailed -> setState { copy(openFailed = true) }
+            is PdfViewerIntent.OpenFailed -> onOpenFailed(intent.corrupted)
             is PdfViewerIntent.PageChanged -> onPageChanged(intent.page)
             PdfViewerIntent.Persist -> persistNow()
             PdfViewerIntent.ToggleControls -> setState { copy(controlsVisible = !controlsVisible) }
@@ -102,15 +110,38 @@ class PdfViewerViewModel(
 
     private fun startDownload(file: PdfFile) {
         downloadJob?.cancel()
-        setState { copy(download = CachedFileState.Downloading(0L, null), openFailed = false) }
+        setState { copy(download = CachedFileState.Downloading(0L, null), openFailed = false, openCorrupted = false) }
         downloadJob = viewModelScope.launch {
+            // Tệp hỏng vừa bị xóa (M3) thì đợi xóa xong rồi mới tải, nếu không `open` lại thấy bản hỏng và trả Ready ngay.
+            discardJob?.join()
             openPdf(CachedFileRef(file.item.id, file.item.cTag)).collect { state -> setState { copy(download = state) } }
+        }
+    }
+
+    /**
+     * `PdfRenderer` không mở được tệp đã tải đủ (PD-07). Có mật khẩu: giữ tệp, chỉ có Quay lại. Hỏng: xóa tệp khỏi cache để "Thử lại" tải
+     * lại bản mới thay vì mở lại đúng bản hỏng mãi. (L6: máy chủ không báo Content-Length có thể làm tệp cụt bị coi là đủ, nên tệp hỏng
+     * kiểu này cũng đi qua đường này; chưa xử lý riêng.)
+     */
+    private fun onOpenFailed(corrupted: Boolean) {
+        setState { copy(openFailed = true, openCorrupted = corrupted) }
+        val file = currentState.file
+        if (!corrupted || file == null) return
+        discardJob?.cancel()
+        discardJob = viewModelScope.launch {
+            try {
+                discardCachedPdf(CachedFileRef(file.item.id, file.item.cTag))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Không xóa được thì Thử lại sẽ mở lại bản cũ và lỗi lại; không làm sập màn.
+            }
         }
     }
 
     private fun onOpened(pageCount: Int) {
         if (pageCount <= 0) {
-            setState { copy(openFailed = true) }
+            onOpenFailed(corrupted = true)
             return
         }
         // Trang đã lưu có thể vượt số trang thật nếu tệp đổi mà cTag không đổi; kẹp lại để không cuộn ra ngoài.
@@ -124,6 +155,7 @@ class PdfViewerViewModel(
         val count = currentState.pageCount
         if (count <= 0 || page !in 0 until count || page == currentState.currentPage) return
         setState { copy(currentPage = page) }
+        pageDirty = true
         scheduleSave()
     }
 
@@ -143,6 +175,8 @@ class PdfViewerViewModel(
     }
 
     private fun persistNow() {
+        // Chưa đổi trang thì không ghi (M1, PD-05): mở lại tệp đã `finished` rồi thoát ngay mà ghi trang 1 sẽ hạ `finished` về false.
+        if (!pageDirty) return
         saveJob?.cancel()
         if (currentState.pageCount <= 0) return
         viewModelScope.launch { save() }
@@ -151,13 +185,17 @@ class PdfViewerViewModel(
     private suspend fun save() {
         val state = currentState
         val file = state.file ?: return
-        if (state.pageCount <= 0) return
+        if (state.pageCount <= 0 || !pageDirty) return
+        // Hạ cờ trước khi ghi để trang đổi trong lúc ghi vẫn giữ cờ; ghi lỗi thì đặt lại để lần sau thử tiếp.
+        pageDirty = false
         try {
             saveReadingProgress(file.item.id, file.item.cTag, state.currentPage, state.pageCount)
         } catch (e: CancellationException) {
+            pageDirty = true
             throw e
         } catch (e: Exception) {
             // Không ghi được tiến độ chỉ làm lần sau mở lại ở trang cũ, không đáng làm sập màn đọc.
+            pageDirty = true
         }
     }
 

@@ -36,10 +36,11 @@ import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.CancellationException
 
 /**
- * Microsoft Graph, chỉ đọc (ADR-0006). Mọi đường dẫn đi qua `/users/{upn}/drive` vì app-only không có `/me` (ADR-0005).
+ * Microsoft Graph, chỉ đọc (ADR-0006). Mọi đường dẫn đi qua `/users/{upn}/drive` vì app-only không có `/me` (ADR-0005). Mọi lời gọi
+ * nhận `upn` của tài khoản sở hữu dữ liệu: nhiều tài khoản cùng tenant dùng chung một token (ADR-0030).
  * Token, thử lại `401`, ghi lưu lượng nằm ở [ApiService]; lớp này chỉ biết các endpoint của OneDrive và dạng lỗi của Graph.
- * Credentials đến từ [GraphCredentialsSource] ở mỗi lời gọi nên nơi gọi không phải load config rồi truyền vào; ngoại lệ duy nhất
- * là [getDrive] (kiểm tra kết nối KN-07) vì dùng config chưa lưu.
+ * Credentials (Tenant ID, Client ID, Client Secret) đến từ [GraphCredentialsSource] ở mỗi lời gọi nên nơi gọi không phải load config rồi
+ * truyền vào; ngoại lệ duy nhất là [getDrive] có tham số credentials (kiểm tra kết nối KN-07) vì dùng config chưa lưu.
  */
 class GraphApi internal constructor(
     http: HttpClient,
@@ -47,7 +48,7 @@ class GraphApi internal constructor(
     recorder: HttpTrafficRecorder? = null,
     /** Client không bearer, dành cho URL đã ký sẵn do Graph trả (thumbnail). Xem `createDownloadHttpClient` (package `http`). */
     private val signedDownloads: HttpClient,
-    /** Credentials của người dùng hiện tại, lấy lại ở mỗi lời gọi (trừ [getDrive], nhận credentials chưa lưu). */
+    /** Credentials dùng chung của app, lấy lại ở mỗi lời gọi (trừ [getDrive] có tham số credentials, nhận config chưa lưu). */
     private val credentialsSource: GraphCredentialsSource,
 ) : ApiService(http, recorder, GraphConstants.BASE_URL) {
 
@@ -62,19 +63,28 @@ class GraphApi internal constructor(
         override suspend fun invalidate(rejected: String) = tokens.invalidate(rejected)
     }
 
-    /** Kiểm tra kết nối: `GET /users/{upn}/drive?$select=id,driveType` (KN-07). Không xin `quota` (KN-12). */
-    suspend fun getDrive(credentials: GraphCredentials): AppResult<DriveDto> =
+    /**
+     * Kiểm tra kết nối bằng config **chưa lưu**: `GET /users/{upn}/drive?$select=id,driveType,owner` (KN-07). Không xin `quota` (KN-12).
+     * `owner` để lấy tên hiển thị và email của tài khoản (TA-02).
+     */
+    suspend fun getDrive(credentials: GraphCredentials, upn: String): AppResult<DriveDto> =
         authorizedGet(credentials.bearer()) {
-            url { appendDrivePath(credentials) }
+            url { appendDrivePath(upn) }
             parameter("\$select", GraphConstants.DRIVE_SELECT)
         }.decode()
 
+    /** Như trên nhưng với credentials **đã lưu**: kiểm tra một UPN mới cùng Tenant ID, Client ID, Client Secret (TA-07). */
+    suspend fun getDrive(upn: String): AppResult<DriveDto> {
+        val credentials = credentialsSource.current().getOrElse { return AppResult.Failure(it) }
+        return getDrive(credentials, upn)
+    }
+
     /**
-     * Mọi mục con của thư mục [folderId] (null = gốc), gom đủ các trang `@odata.nextLink`.
+     * Mọi mục con của thư mục [folderId] (null = gốc) trong drive của [upn], gom đủ các trang `@odata.nextLink`.
      * Chỉ theo `nextLink` trỏ về Graph: bearer không được gửi tới máy chủ khác. Nếu một trang trỏ ra ngoài thì bỏ cả
      * kết quả (không trả dữ liệu dở dang) và báo lỗi.
      */
-    suspend fun listChildren(folderId: String?): AppResult<List<DriveItemDto>> {
+    suspend fun listChildren(upn: String, folderId: String?): AppResult<List<DriveItemDto>> {
         val credentials = credentialsSource.current().getOrElse { return AppResult.Failure(it) }
         val items = mutableListOf<DriveItemDto>()
         var nextLink: String? = null
@@ -83,7 +93,7 @@ class GraphApi internal constructor(
             val response = authorizedGet(credentials.bearer()) {
                 if (link == null) {
                     url {
-                        appendDrivePath(credentials)
+                        appendDrivePath(upn)
                         if (folderId == null) appendPathSegments("root", "children") else appendPathSegments("items", folderId, "children")
                     }
                     parameter("\$select", GraphConstants.CHILDREN_SELECT)
@@ -101,20 +111,20 @@ class GraphApi internal constructor(
     }
 
     /**
-     * Một trang delta (DB-01, DB-02, DB-04). [link] null = bắt đầu quét lại từ `/root/delta`; không null = `nextLink`
+     * Một trang delta của drive của [upn] (DB-01, DB-02, DB-04). [link] null = bắt đầu quét lại từ `/root/delta`; không null = `nextLink`
      * (tiếp tục trang dở) hoặc `deltaLink` (lần đồng bộ sau). [link] đọc từ CSDL nên coi như không tin cậy: chỉ gửi
      * bearer khi nó trỏ về Graph. Mốc hết hiệu lực trả `AppError.Http(410, "resyncRequired")` (DB-03).
      *
      * `$select` chỉ gắn ở request đầu: Graph mang nó sẵn trong `nextLink`/`deltaLink` nên các trang sau và các lần đồng
      * bộ sau giữ cùng tập trường. Đổi [GraphConstants.DELTA_SELECT] thì mốc cũ vẫn chạy với tập trường cũ cho tới lần quét đầy đủ sau.
      */
-    suspend fun deltaPage(link: String?): AppResult<DeltaPageDto> {
+    suspend fun deltaPage(upn: String, link: String?): AppResult<DeltaPageDto> {
         if (link != null && !isOwnUrl(link)) return AppResult.Failure(AppError.Unknown())
         val credentials = credentialsSource.current().getOrElse { return AppResult.Failure(it) }
         return authorizedGet(credentials.bearer()) {
             if (link == null) {
                 url {
-                    appendDrivePath(credentials)
+                    appendDrivePath(upn)
                     appendPathSegments("root", "delta")
                 }
                 parameter("\$select", GraphConstants.DELTA_SELECT)
@@ -132,11 +142,11 @@ class GraphApi internal constructor(
      * (bản debug, ADR-0013); bước hai (ảnh nhị phân, URL đã ký) thì không.
      * Tệp không có thumbnail trả `AppError.Http(404, ...)` để nơi gọi giữ ô giữ chỗ.
      */
-    suspend fun fetchThumbnail(itemId: String, size: String): AppResult<ByteArray> {
+    suspend fun fetchThumbnail(upn: String, itemId: String, size: String): AppResult<ByteArray> {
         val credentials = credentialsSource.current().getOrElse { return AppResult.Failure(it) }
         val response = authorizedGet(credentials.bearer(), acceptRedirect = true) {
             url {
-                appendDrivePath(credentials)
+                appendDrivePath(upn)
                 appendPathSegments("items", itemId, "thumbnails", "0", size, "content")
             }
         }.getOrElse { return AppResult.Failure(it) }
@@ -154,11 +164,11 @@ class GraphApi internal constructor(
      * Thông tin ảnh để hiện ở bảng thông tin (AN-05): kích thước, thiết bị chụp, ngày. Lấy theo yêu cầu thay vì đồng bộ
      * hàng loạt vì chỉ cần khi người dùng mở bảng cho đúng một ảnh (quyết định 2026-10-04, không đổi schema Room).
      */
-    suspend fun getItemInfo(itemId: String): AppResult<DriveItemDto> {
+    suspend fun getItemInfo(upn: String, itemId: String): AppResult<DriveItemDto> {
         val credentials = credentialsSource.current().getOrElse { return AppResult.Failure(it) }
         return authorizedGet(credentials.bearer()) {
             url {
-                appendDrivePath(credentials)
+                appendDrivePath(upn)
                 appendPathSegments("items", itemId)
             }
             parameter("\$select", GraphConstants.ITEM_INFO_SELECT)
@@ -175,6 +185,7 @@ class GraphApi internal constructor(
      * thì lỗi `Http(416)`: nơi gọi tải lại từ đầu.
      */
     suspend fun downloadContent(
+        upn: String,
         itemId: String,
         offset: Long,
         onStart: suspend (resumed: Boolean, totalBytes: Long?) -> Unit,
@@ -183,7 +194,7 @@ class GraphApi internal constructor(
         val credentials = credentialsSource.current().getOrElse { return AppResult.Failure(it) }
         val redirect = authorizedGet(credentials.bearer(), acceptRedirect = true) {
             url {
-                appendDrivePath(credentials)
+                appendDrivePath(upn)
                 appendPathSegments("items", itemId, "content")
             }
         }.getOrElse { return AppResult.Failure(it) }
@@ -226,14 +237,14 @@ class GraphApi internal constructor(
      * Link chứa `tempauth` nên coi là bí mật: không ghi log (CH-06). Chỉ nhận `https` vì giá trị do máy chủ trả.
      * Tệp đã bị xóa trả `AppError.Http(404, ...)`.
      */
-    suspend fun getDownloadUrl(itemId: String): AppResult<String> {
+    suspend fun getDownloadUrl(upn: String, itemId: String): AppResult<String> {
         val credentials = credentialsSource.current().getOrElse { return AppResult.Failure(it) }
         // Dùng `/content` (302 → link ký ở header Location) thay vì `$select=@microsoft.graph.downloadUrl`: cách này đã chạy ở
         // ảnh gốc (`downloadContent`), còn `$select` có chứa `@` đã trả phản hồi không có link khi thử ở Lát 6 (log 2026-10-04).
         // Không gọi link ở đây: chỉ đọc header, nên không tải byte nào của video.
         val response = authorizedGet(credentials.bearer(), acceptRedirect = true) {
             url {
-                appendDrivePath(credentials)
+                appendDrivePath(upn)
                 appendPathSegments("items", itemId, "content")
             }
         }.getOrElse { return AppResult.Failure(it) }
@@ -259,8 +270,8 @@ class GraphApi internal constructor(
             AppResult.Failure(toGraphError())
         }
 
-    private fun URLBuilder.appendDrivePath(credentials: GraphCredentials) {
+    private fun URLBuilder.appendDrivePath(upn: String) {
         takeFrom(baseUrl)
-        appendPathSegments("users", credentials.upn, "drive")
+        appendPathSegments("users", upn, "drive")
     }
 }

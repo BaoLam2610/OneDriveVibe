@@ -10,6 +10,7 @@ import com.lambao.odv.core.domain.model.CacheKind
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.PdfReadingStyle
 import com.lambao.odv.core.domain.model.PlayMode
+import com.lambao.odv.core.domain.model.ResumeBehavior
 import com.lambao.odv.core.domain.model.ThemeMode
 import com.lambao.odv.core.domain.model.VideoFit
 
@@ -119,6 +120,15 @@ internal fun videoFitDescription(fit: VideoFit?): String = stringResource(
 @Composable
 internal fun orientationLabel(landscape: Boolean): String =
     stringResource(if (landscape) R.string.settings_orientation_landscape else R.string.settings_orientation_portrait)
+
+@Composable
+internal fun ResumeBehavior.label(): String = stringResource(
+    when (this) {
+        ResumeBehavior.Ask -> R.string.settings_resume_ask
+        ResumeBehavior.Resume -> R.string.settings_resume_always
+        ResumeBehavior.StartOver -> R.string.settings_resume_start_over
+    },
+)
 
 @Composable
 internal fun PdfReadingStyle.label(): String = stringResource(

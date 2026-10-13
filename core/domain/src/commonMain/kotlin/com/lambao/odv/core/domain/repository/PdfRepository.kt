@@ -13,6 +13,9 @@ interface PdfRepository {
      */
     fun open(ref: CachedFileRef): Flow<CachedFileState>
 
+    /** Xóa tệp (cả bản dở) của [ref] khỏi cache, để lần `open` sau tải lại từ đầu. Dùng khi tệp tải đủ nhưng hỏng, không mở được (PD-07). */
+    suspend fun discard(ref: CachedFileRef)
+
     /** Bản ghi và thư mục chứa của PDF [itemId] từ Room (dùng được offline). Null nếu không còn trong Room (đã xóa trên OneDrive, DS-06). */
     suspend fun getFile(itemId: String): PdfFile?
 }

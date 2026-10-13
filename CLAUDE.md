@@ -6,16 +6,18 @@ App Android chỉ đọc OneDrive for Business qua Microsoft Graph: xem video, �
 
 | File | Dùng khi |
 |---|---|
-| `.claude/docs/dac-ta-nghiep-vu.md` | Nghiệp vụ: cái gì xảy ra. Các mã KN, BM, KH, DH, TM, TV, DS, SV, VD, AN, PD, CD, CH, TK, DB, BN... |
-| `.claude/docs/thiet-ke-ui.md` + `odv-tokens.json` | Giao diện: token, component, màn hình. Mục 1 là quy tắc bắt buộc khi dựng. Thanh điều hướng đáy và tab Short (Lát 8) đã có mô tả (mục 4.7, 4.8, 5.5) và **đã có artboard** (Foundations board 20, page Short SH1 đến SH9, Danh sách D1 đến D9, Cài đặt C1 đến C7 và O6); mục 11 là danh sách việc vẽ, còn lại 11.5 |
+| `.claude/docs/dac-ta-nghiep-vu.md` | Nghiệp vụ: cái gì xảy ra. Các mã KN, BM, KH, DH, TM, TV, DS, SV, VD, AN, PD, CD, TA (tài khoản, mục 3.9), CH, TK, DB, BN... |
+| `.claude/docs/thiet-ke-ui.md` + `odv-tokens.json` | Giao diện: token, component, màn hình. Mục 1 là quy tắc bắt buộc khi dựng. Thanh điều hướng đáy và tab Short (Lát 8) đã có mô tả (mục 4.7, 4.8, 5.5) và **đã có artboard** (Foundations board 20, page Short SH1 đến SH9, Danh sách D1 đến D9, Cài đặt C1 đến C7 và O6); mục 11 là danh sách việc vẽ, còn lại 11.5 và 11.6 (nhiều tài khoản, mục 4.9, chưa có artboard) |
 | `.claude/docs/onedrive-graph-api.md` | Endpoint Graph, token, delta, mã lỗi |
 | `.claude/docs/onedrive-graph-responses.md` | Mẫu response thật (giá trị đã thay bằng mẫu) |
-| `.claude/adr/` | 27 quyết định kiến trúc (mục lục ở `README.md`). Muốn đổi thì viết ADR mới, không sửa ADR cũ |
+| `.claude/adr/` | 30 quyết định kiến trúc (mục lục ở `README.md`). Muốn đổi thì viết ADR mới, không sửa ADR cũ |
 | `.claude/docs/ke-hoach-mvp1.md` | Kế hoạch triển khai MVP1 theo lát cắt dọc, thứ tự Lát hiện hành, thư viện đã chọn |
 | `.claude/docs/ke-hoach-refactor-kien-truc.md` | Refactor nền móng R0 đến R7 và nợ kỹ thuật A1 đến A3: **đã xong** (2026-10-07). Đọc để biết lý do cấu trúc hiện tại |
 | `.claude/docs/tien-do-mvp1.md` | Đang ở lát nào, bước nào. Đọc đầu mỗi phiên, cập nhật khi bắt đầu hoặc xong một bước |
+| `.claude/docs/nghien-cuu-kien-truc-player-short.md` | Nghiên cứu một player + tải trước so với hai player cho tab Short (2026-10-11); lý do của ADR-0026, ADR-0027 |
+| `.claude/design/*.html` và các thư mục PNG | Bản xuất Claude Design. HTML (Foundations, Start app, Image/Video/PDF detail) rất lớn (3 đến 16 MB, nén lồng base64 + gzip): giải nén bằng script để lấy chữ, đừng `Read` thẳng. **Từ 2026-10-12 page List, Short, Settings xuất ra thư mục PNG** (`ODV List/`, `ODV Short/`, `ODV Settings/`, mỗi artboard một ảnh, đọc bằng `Read`); file `ODV List.html`, `ODV Short.html`, `ODV Settings.html` cũ không còn cập nhật |
 
-**Thứ tự Lát hiện hành (chốt 2026-10-10):** 7 Cài đặt → 8 Thanh điều hướng đáy và tab Short → 9 PDF → 10 Xem tiếp / Đọc tiếp. Comment cũ trong code ghi số Lát khác thì đọc theo bảng ở `ke-hoach-mvp1.md`.
+**Thứ tự Lát hiện hành (chốt 2026-10-10):** 7 Cài đặt → 8 Thanh điều hướng đáy và tab Short → **T Nhiều tài khoản (chen 2026-10-12, ADR-0030, làm trước phần kiểm còn lại của Lát 9)** → 9 PDF → 10 Xem tiếp / Đọc tiếp. Comment cũ trong code ghi số Lát khác thì đọc theo bảng ở `ke-hoach-mvp1.md`.
 
 Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệu UI quyết định hình thức. Không tự chế màu, cỡ chữ, khoảng cách hay câu chữ chưa có trong thiết kế; hỏi lại.
 

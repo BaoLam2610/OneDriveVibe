@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Nền cửa sổ trước khi Compose vẽ khung đầu (theme cửa sổ và splash hệ thống). Khớp token `bg` của ODVTheme
+        (odv-tokens.json): sáng #f4f5f7, tối #0c0e12 ở values-night. Đây là theme cửa sổ XML, không phải màn hình Compose nên
+        không áp quy tắc "không viết hex trong màn hình"; giá trị phải đổi cùng token `bg`.
+    -->
+    <color name="odv_window_bg">#f4f5f7</color>
+
+    <!--
+        Hai màu nền cố định, không đổi theo giao diện của máy. Dùng cho Theme.OneDriveVibe.Light/Dark: ép nền cửa sổ và nền splash theo giao diện
+        CHỌN TRONG APP (ThemeBootCache). Cũng phải đổi cùng token `bg`.
+    -->
+    <color name="odv_bg_light">#f4f5f7</color>
+    <color name="odv_bg_dark">#0c0e12</color>
+</resources>

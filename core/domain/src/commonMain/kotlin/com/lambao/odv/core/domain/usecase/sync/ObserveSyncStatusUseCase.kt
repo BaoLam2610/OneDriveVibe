@@ -20,6 +20,7 @@ class ObserveSyncStatusUseCase(
             scannedCount = s.scannedCount,
             initialSyncDone = s.initialSyncDone,
             failed = s.error != null && s.error != AppError.AppLocked,
+            scanningAccountId = s.scanningAccountId,
         )
     }
 }

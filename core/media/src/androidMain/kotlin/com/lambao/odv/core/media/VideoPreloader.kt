@@ -9,7 +9,6 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.CacheWriter
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
-import com.lambao.odv.core.domain.usecase.viewer.GetStreamUrlUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -41,15 +40,17 @@ class PreloadTarget(
  * mục, buộc viết lại cách dựng player đang dùng chung với màn Xem video; `CacheWriter` đạt cùng mục đích tải trước (byte và link) mà không đụng tới player.
  * Chưa chuẩn bị track hay giải mã sẵn. Nơi gọi tự kiểm tra mạng trước khi gọi [update] (SV-13: không tải trước khi mất mạng).
  *
- * Link ký lấy qua [StreamUrlProvider] riêng của lớp này, nên [cancelAll] vừa dừng tải vừa xóa link (CH-03, khi app khóa). Mọi hàm gọi được từ bất kỳ luồng.
+ * Link ký lấy qua bản dùng chung của tab Short ([SharedStreamUrls], ADR-0029) nên một video chỉ lấy link một lần dù bộ tải trước, player và poster cùng cần.
+ * [cancelAll] chỉ dừng việc tải, **không** xóa link (mất mạng thì player vẫn đang dùng chúng); khi app khóa thì `ShortPlayerHolder` xóa link chung một lần
+ * (CH-03). Mọi hàm gọi được từ bất kỳ luồng.
  */
 class VideoPreloader(
     private val videoCache: VideoCache,
-    getStreamUrl: GetStreamUrlUseCase,
+    sharedUrls: SharedStreamUrls,
     dispatchers: DispatcherProvider,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.io)
-    private val urls = StreamUrlProvider(getStreamUrl)
+    private val urls = sharedUrls.provider
     private val lock = Any()
 
     /** Việc tải trước theo id video. Giữ cả việc đã xong để khỏi tải lại khi video vẫn là hàng xóm; việc lỗi thì tự gỡ để lần sau thử lại. */
@@ -78,9 +79,10 @@ class VideoPreloader(
     }
 
     /**
-     * Dừng mọi việc tải trước và xóa link ký đang giữ (mất mạng, app bị khóa, Màn chính bị bỏ; CH-03). Rời tab Short thì **không** gọi: việc đang
-     * tải chạy nốt (tối đa 4 MB mỗi video). Một việc đang chờ lấy link lúc gọi vẫn có thể ghi lại một link vào bộ nhớ sau khi xóa (TTL 45 phút,
-     * không ghi đĩa); chưa chặn vì cửa sổ hẹp, ghi ở review 2026-10-11.
+     * Dừng mọi việc tải trước (mất mạng, app bị khóa, Màn chính bị bỏ). Rời tab Short thì **không** gọi: việc đang tải chạy nốt (tối đa 4 MB mỗi
+     * video). Không xóa link: link nằm ở [SharedStreamUrls] dùng chung với player và poster, do `ShortPlayerHolder` xóa một lần khi khóa app (CH-03).
+     * Khe hở cũ (việc đang chờ lấy link lúc khóa vẫn ghi lại link sau khi xóa, review 2026-10-11) đã được đóng bằng `epoch` trong
+     * [StreamUrlProvider.clear] (ADR-0029).
      */
     fun cancelAll() {
         synchronized(lock) {
@@ -88,7 +90,6 @@ class VideoPreloader(
             jobs.values.forEach { it.cancel() }
             jobs.clear()
         }
-        urls.clear()
     }
 
     private fun start(target: PreloadTarget): Job = scope.launch {

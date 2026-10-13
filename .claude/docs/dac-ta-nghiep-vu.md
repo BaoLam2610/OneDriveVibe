@@ -1,9 +1,9 @@
 # Đặc tả nghiệp vụ: Ứng dụng xem OneDrive (Phim, Ảnh, Truyện PDF)
 
 - **Nền tảng**: Android (Kotlin)
-- **Người dùng**: cá nhân chủ sở hữu tenant, không có nhiều tài khoản
+- **Người dùng**: cá nhân chủ sở hữu tenant. Có thể đưa **nhiều tài khoản cùng tenant** vào app (mục 3.9, thêm 2026-10-12)
 - **Nguồn dữ liệu**: OneDrive for Business qua Microsoft Graph, xác thực Client Credentials (xem `.claude/docs/onedrive-graph-api.md`)
-- **Phạm vi tài khoản (MVP1, đã chốt)**: **chỉ hỗ trợ OneDrive for Business** (tài khoản work/school). Người dùng chỉ cần nhập **4 trường: Tenant ID, Client ID, Client Secret, UPN** là kết nối được. **Không hỗ trợ** OneDrive cá nhân (tài khoản Microsoft cá nhân như `@outlook.com`, `@hotmail.com`, `@live.com`) và không có đăng nhập Microsoft tương tác trong MVP1.
+- **Phạm vi tài khoản (MVP1, đã chốt)**: **chỉ hỗ trợ OneDrive for Business** (tài khoản work/school). Lần kết nối đầu, người dùng chỉ cần nhập **4 trường: Tenant ID, Client ID, Client Secret, UPN** là kết nối được. Các tài khoản thêm sau **dùng chung** Tenant ID, Client ID, Client Secret và chỉ khác UPN (mục 3.9). **Không hỗ trợ** OneDrive cá nhân (tài khoản Microsoft cá nhân như `@outlook.com`, `@hotmail.com`, `@live.com`), tài khoản thuộc tenant khác, và không có đăng nhập Microsoft tương tác trong MVP1.
 - **Ngôn ngữ (MVP1, đã chốt)**: **Tiếng Việt + English**. Văn bản trong tài liệu này viết bằng tiếng Việt và là chuỗi mặc định; bản English được dịch tương ứng khi xây dựng. Có thể thêm ngôn ngữ khác sau này mà không đổi nghiệp vụ.
 - **Quyền**: chỉ đọc (`Files.Read.All`). App **không** xóa, đổi tên hay upload tệp trên OneDrive. Mọi dữ liệu do app tạo ra (lịch sử xem, cài đặt, cache) chỉ lưu trên máy.
 
@@ -13,8 +13,10 @@
 
 | Thuật ngữ | Nghĩa |
 |---|---|
-| Config | Bộ thông tin kết nối gồm đúng 4 trường: Tenant ID, Client ID, Client Secret, UPN. Không có trường nào khác |
+| Config | Bộ thông tin kết nối gồm **phần dùng chung** (Tenant ID, Client ID, Client Secret) và **danh sách tài khoản** (mỗi tài khoản là một UPN, kèm tên hiển thị và email lấy từ OneDrive, TA-02). Lần kết nối đầu nhập đúng 4 trường; không có trường nào khác (đổi 2026-10-12, mục 3.9) |
 | UPN | User Principal Name: email tài khoản OneDrive for Business cần đọc (vd. `user@contoso.com`). Bắt buộc vì xác thực app-only không có `/me`, app gọi `/users/{UPN}/drive` |
+| Tài khoản | Một UPN đã thêm vào app. Mọi tài khoản dùng chung một access token (cùng Tenant ID, Client ID, Client Secret). Thêm 2026-10-12 |
+| Phạm vi xem | Thứ app đang hiển thị: **một tài khoản** hoặc **Tất cả tài khoản** (dữ liệu của mọi tài khoản gộp lại, TA-05). Chọn ở sheet Chọn tài khoản (TA-04). Thêm 2026-10-12 |
 | Mã PIN | Mã gồm **đúng 6 chữ số** do người dùng tự đặt để mở app khi bật bảo mật |
 | Chế độ thiết bị | Bảo mật **tắt**: config chỉ được mã hóa bằng khóa phần cứng (Keystore), không cần PIN để mở app. Đây là chế độ mặc định ngay sau khi kết nối |
 | Delta sync | Đồng bộ danh sách tệp từ OneDrive về CSDL trên máy (mục 6 của tài liệu API) |
@@ -43,7 +45,9 @@ Mở app
   │                     chọn ảnh ───► [Xem ảnh]
   │                     chọn PDF ───► [Xem PDF]
   ├─ Short: xem video ngắn vuốt dọc ngay trong tab (không mở màn riêng)
-  └─ Cài đặt: các màn con (đổi PIN, cập nhật secret...) mở đè lên, Ngắt kết nối ─► [Kết nối]
+  ├─ Avatar trên AppBar (Thư mục, Thư viện) ─► sheet [Chọn tài khoản] ─► đổi phạm vi xem (TA-04)
+  │                                                                  └─ Thêm tài khoản ─► [Thêm tài khoản] (TA-07)
+  └─ Cài đặt: các màn con (đổi PIN, cập nhật secret, thêm tài khoản...) mở đè lên, Ngắt kết nối ─► [Kết nối]
 
 App ở nền quá thời gian tự khóa (khi bảo mật BẬT) ─► [Khóa]
 ```
@@ -79,8 +83,8 @@ Nút **Kết nối**, biểu tượng ẩn/hiện ký tự (hình con mắt) ở
 - **KN-06**: Nút Kết nối chỉ bật khi cả 4 trường hợp lệ về định dạng; trường sai hiện lỗi ngay dưới trường.
 - **KN-07**: Bấm Kết nối: hiện trạng thái đang kết nối, khóa các trường, lần lượt:
   1. Lấy access token (Client Credentials, `scope=https://graph.microsoft.com/.default`).
-  2. Gọi `GET /users/{upn}/drive?$select=id,driveType`.
-- **KN-08** (tiêu chí thành công): Kết nối **thành công khi cả hai bước ở KN-07 trả HTTP 2xx** (token hợp lệ, đã có quyền, drive tồn tại). Khi thành công, app **lưu config ngay** ở chế độ thiết bị (mã hóa bằng khóa Keystore, xem CH-01) rồi hiện **hộp thoại hỏi thiết lập mã PIN** (KN-13) ngay trên màn Kết nối. App **không** hiện thẻ "Đã kết nối", **không** hiện thông tin tài khoản hay drive, **không** hiện dung lượng.
+  2. Gọi `GET /users/{upn}/drive?$select=id,driveType,owner` (`owner` để lấy tên hiển thị và email của tài khoản, TA-02; thêm 2026-10-12).
+- **KN-08** (tiêu chí thành công): Kết nối **thành công khi cả hai bước ở KN-07 trả HTTP 2xx** (token hợp lệ, đã có quyền, drive tồn tại). Khi thành công, app **lưu config ngay** ở chế độ thiết bị (mã hóa bằng khóa Keystore, xem CH-01) rồi hiện **hộp thoại hỏi thiết lập mã PIN** (KN-13) ngay trên màn Kết nối. App **không** hiện thẻ "Đã kết nối", **không** hiện thông tin tài khoản hay drive, **không** hiện dung lượng. UPN nhập ở đây trở thành **tài khoản đầu tiên** và là phạm vi xem ban đầu (TA-04); tài khoản khác thêm sau ở Cài đặt (TA-07).
 - **KN-12** (không hiển thị dung lượng): App **không** đọc, không lưu và không hiển thị `quota` ở bất kỳ màn nào (kể cả `used`, `total`, `state`). Vì vậy `used` lớn hơn `total` (`state = exceeded`) không ảnh hưởng đến kết nối hay bất kỳ thao tác nào của app.
 - **KN-13** (hộp thoại thiết lập mã PIN): hiện ngay sau KN-08, gồm tiêu đề, một đoạn giải thích, **cảnh báo** như BM-03 (không đặt PIN thì bất kỳ ai cầm máy đang mở khóa đều xem được OneDrive của bạn) và **hai nút**:
   - **Thiết lập mã PIN**: mở màn Thiết lập bảo mật (mục 3.2).
@@ -89,7 +93,7 @@ Nút **Kết nối**, biểu tượng ẩn/hiện ký tự (hình con mắt) ở
   Hộp thoại **bắt buộc chọn một trong hai nút**: chạm ra ngoài hoặc bấm Back của hệ thống không đóng được. Hộp thoại chỉ hiện **một lần cho mỗi lần kết nối mới** (kết nối lại sau khi Ngắt kết nối thì hiện lại). Nếu app bị đóng khi hộp thoại đang hiện, config đã được lưu (KN-08), lần mở sau vào thẳng Màn chính ở chế độ thiết bị và hộp thoại **không** hiện lại.
 - **KN-09**: Thất bại: hiện thông báo theo bảng dưới, giữ nguyên giá trị đã nhập để sửa; **không lưu config**. Thông báo được chọn theo **mã lỗi** và hiển thị theo ngôn ngữ đang dùng (CD-10), không hiển thị nguyên văn thông báo lỗi của máy chủ.
 - **KN-10**: Màn này chặn chụp màn hình và ẩn nội dung trong danh sách ứng dụng gần đây.
-- **KN-11** (phạm vi tài khoản): UPN phải là tài khoản **work/school** thuộc đúng tenant đã nhập. App không hỗ trợ tài khoản Microsoft cá nhân; nếu nhập UPN cá nhân (vd. `@outlook.com`) thì kết nối sẽ thất bại theo bảng lỗi dưới (thường là Graph `404`).
+- **KN-11** (phạm vi tài khoản): UPN phải là tài khoản **work/school** thuộc đúng tenant đã nhập. App không hỗ trợ tài khoản Microsoft cá nhân; nếu nhập UPN cá nhân (vd. `@outlook.com`) thì kết nối sẽ thất bại theo bảng lỗi dưới (thường là Graph `404`). Quy tắc này áp cho cả tài khoản thêm sau (TA-07).
 
 | Lỗi (xem tài liệu API mục 1.4, 9) | Thông báo |
 |---|---|
@@ -132,7 +136,7 @@ Màn này chỉ mở khi người dùng chọn **Thiết lập mã PIN** ở h�
 Màn chính dùng **thanh điều hướng đáy** thay cho 2 tab Thư mục / Thư viện trước đây (đổi 2026-10-10, ADR-0023). Cài đặt cũng là một tab trên thanh này, không còn nút bánh răng trên AppBar.
 
 - **DH-01** (các mục): thanh có tối đa 4 mục theo thứ tự **Thư mục, Thư viện, Short, Cài đặt**.
-  - Mục **Short** chỉ hiện khi **cả hai** điều kiện đúng: loại **Video** đang bật (CD-01) và **đồng bộ lần đầu đã xong** (DB-01). Thiếu một trong hai thì mục Short ẩn và thanh còn 3 mục. Quét lại toàn bộ do `410` (DB-03) **không** làm ẩn lại Short, vì danh sách cũ vẫn dùng được trong lúc quét.
+  - Mục **Short** chỉ hiện khi **cả hai** điều kiện đúng: loại **Video** đang bật (CD-01) và **đồng bộ lần đầu đã xong** (DB-01) với tài khoản đang xem; ở phạm vi Tất cả tài khoản thì chỉ cần **ít nhất một** tài khoản đã đồng bộ xong lần đầu (TA-05). Thiếu một trong hai thì mục Short ẩn và thanh còn 3 mục. Quét lại toàn bộ do `410` (DB-03) **không** làm ẩn lại Short, vì danh sách cũ vẫn dùng được trong lúc quét.
   - Tắt loại Video ở Cài đặt thì mục Short biến mất ngay và trạng thái của tab Short (DH-02) bị bỏ; bật lại thì Short xáo danh sách mới (SV-02).
 - **DH-02** (mỗi tab giữ trạng thái riêng): chuyển tab rồi quay lại, hoặc mở một màn xem rồi Back về, thì tab hiện **đúng trạng thái và vị trí** trước đó:
 
@@ -143,7 +147,7 @@ Màn chính dùng **thanh điều hướng đáy** thay cho 2 tab Thư mục / T
   | Short | Thứ tự đã xáo, video đang xem, vị trí phát |
   | Cài đặt | Vị trí cuộn |
 
-  Trạng thái này cũng được giữ khi app bị khóa rồi mở khóa (KH-07) và khi hệ điều hành thu hồi tiến trình lúc app ở nền rồi mở lại. Chỉ bị xóa khi Ngắt kết nối (CD-05) hoặc khi tắt hẳn app (vuốt bỏ khỏi danh sách gần đây).
+  Trạng thái này cũng được giữ khi app bị khóa rồi mở khóa (KH-07) và khi hệ điều hành thu hồi tiến trình lúc app ở nền rồi mở lại. Chỉ bị xóa khi Ngắt kết nối (CD-05), khi **đổi phạm vi xem** (TA-06; trạng thái của tab Thư mục, Thư viện, Short bị bỏ, tab Cài đặt giữ nguyên) hoặc khi tắt hẳn app (vuốt bỏ khỏi danh sách gần đây).
 - **DH-03** (nút Back):
   1. Trong một tab, Back lùi trong chính tab đó trước: Thư mục lên một cấp (TM-01), thoát chế độ tìm kiếm; đóng bảng hoặc hộp thoại đang mở.
   2. Ở gốc của tab Thư viện, Short hoặc Cài đặt: Back chuyển về tab **Thư mục** (giữ nguyên trạng thái của Thư mục).
@@ -152,14 +156,14 @@ Màn chính dùng **thanh điều hướng đáy** thay cho 2 tab Thư mục / T
   - Thư mục: cuộn lên đầu; nếu đã ở đầu thì về thư mục gốc.
   - Thư viện, Cài đặt: cuộn lên đầu.
   - Short (sửa 2026-10-11): đang ở video **không phải đầu** thì cuộn mượt về video đầu rồi xáo lại toàn bộ danh sách (như SV-03; video đầu mới khác video đang xem). Hoạt ảnh cuộn là một đường liên tục theo quãng thật, thời gian tăng chậm theo chỉ số (320ms + 90ms × ln(1 + số video), tối đa 900ms) nên chỉ số rất cao vẫn mượt; chạm vào màn giữa chừng thì dừng và không xáo lại. Đang ở video đầu thì không làm gì (xáo lại bằng kéo xuống).
-- **DH-05** (khi nào thanh ẩn): thanh chỉ hiện ở Màn chính. Thanh **ẩn** ở các màn Xem video, Xem ảnh, Xem PDF, màn Khóa, Kết nối, Thiết lập bảo mật, các màn con mở từ Cài đặt (đổi PIN, nhập PIN để tắt bảo mật, cập nhật Client Secret...) và khi bàn phím đang mở để tìm kiếm.
+- **DH-05** (khi nào thanh ẩn): thanh chỉ hiện ở Màn chính. Thanh **ẩn** ở các màn Xem video, Xem ảnh, Xem PDF, màn Khóa, Kết nối, Thiết lập bảo mật, các màn con mở từ Cài đặt (đổi PIN, nhập PIN để tắt bảo mật, cập nhật Client Secret, Thêm tài khoản...) và khi bàn phím đang mở để tìm kiếm. Sheet Chọn tài khoản (TA-04) phủ lên thanh như các sheet khác.
 - **DH-06** (mở app): vào tab **Thư mục hoặc Thư viện**, tùy tab nào dùng gần nhất trong hai tab này. App **không** mở thẳng vào Short (tránh video tự phát có tiếng ngay khi mở) hay Cài đặt. Khôi phục sau khi hệ điều hành thu hồi tiến trình thì theo DH-02 (quay lại đúng tab đang mở, kể cả Short, nhưng Short ở trạng thái **tạm dừng**).
 - **DH-07** (chấm nhắc trên Cài đặt): khi banner nhắc hết hạn secret đang hiện (CD-06), mục Cài đặt trên thanh có một chấm nhỏ tông cảnh báo; đã hết hạn thì chấm tông lỗi.
 - **DH-08** (chặn chụp màn hình): chính sách CH-05 và CD-12 áp theo **tab đang hiện**: chuyển sang tab Cài đặt hay rời tab đó thì app áp lại chế độ chặn tương ứng ngay.
 
 #### 3.4.1 Tab Thư mục
 
-- **TM-01**: Duyệt theo cây thư mục OneDrive, bắt đầu từ thư mục gốc; thanh breadcrumb cho phép quay lại cấp bất kỳ; nút Back quay lên một cấp.
+- **TM-01**: Duyệt theo cây thư mục OneDrive, bắt đầu từ thư mục gốc; thanh breadcrumb cho phép quay lại cấp bất kỳ; nút Back quay lên một cấp. Ở phạm vi Tất cả tài khoản, cấp gốc là danh sách tài khoản, mỗi tài khoản hiện như một thư mục (TA-05).
 - **TM-02**: Thư mục luôn hiển thị trước, sau đó đến tệp.
 - **TM-03**: Chỉ hiển thị tệp hỗ trợ thuộc loại tệp được bật. Tệp không hỗ trợ ẩn đi (hoặc hiện mờ, không mở được, nếu bật tùy chọn trong Cài đặt).
 - **TM-04**: ~~Tùy chọn "Ẩn thư mục không có tệp phù hợp" (xét cả thư mục con) chỉ áp dụng sau khi đồng bộ lần đầu hoàn tất.~~ **Không làm** (chốt 2026-10-07: tốn công, không cần thiết); thư mục luôn hiện đủ.
@@ -169,19 +173,24 @@ Màn chính dùng **thanh điều hướng đáy** thay cho 2 tab Thư mục / T
 
 #### 3.4.2 Tab Thư viện
 
-- **TV-01**: Hiển thị toàn bộ **ảnh và video** trong drive (mọi thư mục), dạng lưới, nhóm theo ngày, mới nhất ở trên, có tiêu đề nhóm theo ngày/tháng (định dạng theo ngôn ngữ đang dùng, CD-10).
+- **TV-01**: Hiển thị toàn bộ **ảnh và video** trong drive (mọi thư mục; ở phạm vi Tất cả tài khoản là mọi drive gộp lại, TA-05), dạng lưới, nhóm theo ngày, mới nhất ở trên, có tiêu đề nhóm theo ngày/tháng (định dạng theo ngôn ngữ đang dùng, CD-10).
 - **TV-02**: Ngày dùng để xếp: ngày chụp (`photo.takenDateTime`) nếu có; nếu không có thì ngày tạo tệp gốc (`fileSystemInfo.createdDateTime`); cuối cùng là ngày tải lên OneDrive (`createdDateTime`).
 - **TV-03**: Chip lọc nhanh: Tất cả / Ảnh / Video. Hàng chip chỉ hiện khi **cả Ảnh và Video** đang bật trong Cài đặt (chỉ còn một loại thì không cần lọc). Bộ lọc đang chọn mà bị tắt ở Cài đặt thì tự về "Tất cả".
 - **TV-04**: Thanh cuộn nhanh có nhãn tháng/năm để nhảy nhanh trong thư viện lớn.
 - **TV-05**: PDF **không** xuất hiện trong Thư viện; PDF xem qua tab Thư mục và mục "Đọc tiếp".
 - **TV-06**: Khi đồng bộ lần đầu chưa xong: hiện trạng thái "Đang lập chỉ mục, đã quét N mục" và nội dung đã quét được đến thời điểm đó, kèm lối tắt sang tab Thư mục.
+- **TV-07** (thêm 2026-10-13): **Tìm kiếm trong Thư viện.** Nút Tìm kiếm trên AppBar, trước nút tài khoản. Chỉ tìm trong phạm vi Thư viện: ảnh và video (PDF và thư mục không bao giờ xuất hiện, TV-05), thuộc loại tệp đang bật (CD-01), theo chip lọc đang chọn (TV-03) và trong phạm vi tài khoản đang xem (TA-05). Tìm theo tên như DS-03 (không phân biệt hoa thường và dấu tiếng Việt, đọc dữ liệu đã đồng bộ nên dùng được khi offline, chờ ngừng gõ rồi mới tìm). Kết quả hiện **dạng lưới phẳng** cùng 4 cột và cùng ô ảnh/video với Thư viện, mới nhất trước (TV-02), không nhóm theo ngày, không có cuộn nhanh, không giới hạn số kết quả (nạp theo trang). Hàng chip lọc giữ nguyên (khi cả ảnh và video bật) và áp ngay lên kết quả. Từ khóa rỗng thì để trống; có từ khóa mà không khớp thì hiện trạng thái "Không tìm thấy kết quả". Chạm một ô mở tệp trong màn xem; màn xem **chỉ vuốt trong các kết quả khớp từ khóa đó**, theo thứ tự của lưới (AN-03). Quay lại từ màn xem thì vẫn ở chế độ tìm với từ khóa cũ. Back (hệ thống) hoặc nút quay lại đóng tìm kiếm trước khi áp DH-03. Đổi phạm vi tài khoản (TA-06) thì đóng tìm kiếm. Thanh đáy ẩn khi bàn phím mở (DH-05).
 
 #### 3.4.3 Thành phần chung của Danh sách (tab Thư mục và Thư viện)
 
 - **DS-01**: Mỗi tệp hiển thị thumbnail, tên, dung lượng. Video có nhãn thời lượng; tệp đang xem/đọc dở có thanh tiến độ nhỏ.
-- **DS-02**: Dải "Xem tiếp / Đọc tiếp" ở đầu màn: tối đa 10 video và PDF xem dở gần nhất. Bấm vào mở đúng vị trí đã dừng. Có thể xóa từng mục khỏi dải.
-- **DS-03**: Tìm kiếm theo tên tệp/thư mục trên dữ liệu đã đồng bộ (không gọi API, dùng được khi offline), chỉ trả về loại tệp được bật.
-- **DS-04**: Kéo xuống để đồng bộ thay đổi mới nhất. App cũng tự đồng bộ khi mở (sau khi mở khóa) nếu lần đồng bộ trước đã quá 15 phút. Quy tắc này cũng áp dụng khi **quay lại app từ nền** (kể cả ở chế độ thiết bị, không PIN, khi tiến trình app còn sống nhiều giờ ở nền).
+- **DS-02**: Dải "Xem tiếp / Đọc tiếp" ở đầu vùng cuộn của màn: tối đa **10 video và PDF xem dở gần nhất mỗi tài khoản** (phạm vi Tất cả tài khoản gộp các tài khoản, tổng tối đa 20 mục, xếp theo lần xem gần nhất; chốt 2026-10-13). Dải **cuộn chung với danh sách** (không đứng yên phía trên); Breadcrumb và SortBar vẫn đứng yên. Bấm vào mở đúng vị trí đã dừng. Có thể xóa từng mục khỏi dải. Chi tiết (chốt 2026-10-13, Lát 10):
+  - Chỉ hiện ở gốc tab Thư mục (kể cả gốc Tất cả tài khoản) và khi không tìm kiếm; trong thư mục con thì ẩn; dải rỗng thì ẩn cả tiêu đề. Theo phạm vi xem (TA-05: một tài khoản hoặc gộp) và chỉ gồm loại tệp đang bật (CD-01).
+  - Nút X **chỉ ẩn thẻ khỏi dải**, vẫn giữ vị trí xem hoặc trang đọc đã lưu (mở lại video vẫn được hỏi xem tiếp, PDF vẫn vào đúng trang). Xem hoặc đọc tiếp thì thẻ hiện lại.
+  - Mở video từ dải **vào thẳng vị trí đã dừng, không hỏi** và không xét cài đặt "Khi mở lại video xem dở"; danh sách phát là các video cùng thư mục chứa nó (VD-10). PDF mở lại đúng trang đã lưu (PD-05).
+  - Video chạy hết hoặc PDF đọc tới trang cuối thì rời dải (video dừng ở bất kỳ chỗ nào khác, kể cả sát cuối, vẫn là xem dở); tệp đổi nội dung (cTag đổi) thì không còn vị trí cũ nên rời dải; tệp bị xóa trên OneDrive thì biến mất (DS-06).
+- **DS-03**: Tìm kiếm theo tên tệp/thư mục trên dữ liệu đã đồng bộ (không gọi API, dùng được khi offline), chỉ trả về loại tệp được bật, trong phạm vi xem đang chọn (TA-05).
+- **DS-04**: Kéo xuống để đồng bộ thay đổi mới nhất của các tài khoản trong phạm vi xem (TA-05). App cũng tự đồng bộ khi mở (sau khi mở khóa) nếu lần đồng bộ trước đã quá 15 phút. Quy tắc này cũng áp dụng khi **quay lại app từ nền** (kể cả ở chế độ thiết bị, không PIN, khi tiến trình app còn sống nhiều giờ ở nền).
 - **DS-05**: Không có mạng: vẫn hiển thị dữ liệu đã đồng bộ, có thanh báo "Đang offline"; tệp đã có trong cache vẫn mở được, tệp chưa có thì báo cần kết nối mạng.
 - **DS-06**: Tệp đã bị xóa trên OneDrive (phát hiện qua đồng bộ) bị gỡ khỏi danh sách, lịch sử xem và cache.
 
@@ -191,7 +200,7 @@ Xem video ngắn theo kiểu vuốt dọc (giống TikTok, YouTube Shorts) **nga
 
 **Nguồn và thứ tự**
 
-- **SV-01** (nguồn video): **toàn bộ video trong drive** (mọi thư mục) thuộc định dạng hỗ trợ (5.1) và có thời lượng **nhỏ hơn hoặc bằng** "Thời lượng tối đa của Short" (Cài đặt › Video, 3 đến 10 phút, mặc định 3 phút). Video không có thời lượng trong dữ liệu đồng bộ (`video.duration` trống) bị loại. Danh sách lấy từ CSDL trên máy (DB-05), không gọi API để liệt kê.
+- **SV-01** (nguồn video): **toàn bộ video trong drive** (mọi thư mục; ở phạm vi Tất cả tài khoản là video của mọi tài khoản đã đồng bộ xong lần đầu, TA-05) thuộc định dạng hỗ trợ (5.1) và có thời lượng **nhỏ hơn hoặc bằng** "Thời lượng tối đa của Short" (Cài đặt › Video, 3 đến 10 phút, mặc định 3 phút). Video không có thời lượng trong dữ liệu đồng bộ (`video.duration` trống) bị loại. Danh sách lấy từ CSDL trên máy (DB-05), không gọi API để liệt kê.
 - **SV-02** (thứ tự ngẫu nhiên): danh sách được **xáo ngẫu nhiên một lần** khi mở tab Short lần đầu sau khi app khởi động. Thứ tự giữ nguyên khi chuyển tab, mở màn khác, khóa/mở khóa và khi hệ điều hành thu hồi tiến trình rồi khôi phục (DH-02). Tắt hẳn app rồi mở lại thì xáo mới.
 - **SV-03** (kéo để xáo lại): **chỉ khi đang ở video đầu tiên**, kéo xuống thì xáo lại **toàn bộ** danh sách và phát từ đầu một video ngẫu nhiên mới; video đầu mới phải **khác** video đang xem (khi danh sách có từ 2 video). Ở video khác video đầu, vuốt xuống là về video trước (SV-04).
 - **SV-04** (chuyển video): vuốt lên sang video sau, vuốt xuống về video trước. Ở video cuối danh sách, vuốt lên không chuyển (không quay vòng).
@@ -207,7 +216,7 @@ Xem video ngắn theo kiểu vuốt dọc (giống TikTok, YouTube Shorts) **nga
   - Video **ngang** hoặc vuông: **Vừa khung**, nằm giữa theo chiều dọc như hiển thị thông thường.
 
   Không theo cài đặt "Khung hình mặc định" của màn Xem video (VD-06). Tab Short luôn ở hướng dọc.
-- **SV-09** (tên tệp): góc dưới bên trái luôn hiện **tên tệp** và **thư mục chứa tệp** bằng chữ mờ, một dòng mỗi thứ, cắt "…" khi dài. Không phải nút bấm.
+- **SV-09** (tên tệp): góc dưới bên trái luôn hiện **tên tệp** và **thư mục chứa tệp** bằng chữ mờ, một dòng mỗi thứ, cắt "…" khi dài. Ở phạm vi Tất cả tài khoản, dòng thư mục có thêm tên tài khoản ở đầu ("Bao Lam · Du lịch 2026", TA-05). Không phải nút bấm.
 - **SV-10** (nền): tab Short dùng nền đen của màn xem, thanh điều hướng đáy chuyển sang **nền tối** khi đang ở tab này, không phụ thuộc giao diện Sáng/Tối.
 
 **Vòng đời và dữ liệu**
@@ -251,7 +260,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 **Quy tắc nghiệp vụ**
 
 - **VD-11**: Video phát dạng stream, không cần tải hết; phần đã xem được giữ trong cache video.
-- **VD-12**: Lưu vị trí xem khi đã xem trên 5% và chưa tới 95% thời lượng. Mở lại video có vị trí đã lưu: hỏi *"Xem tiếp từ mm:ss?"* (Xem tiếp / Xem từ đầu). Xem quá 95%: coi là đã xem xong và xóa khỏi dải "Xem tiếp". Ở chế độ Lặp một video, các vòng lặp sau không lưu lại vị trí; video được tính là xem xong từ lần đầu chạy tới cuối.
+- **VD-12**: Lưu vị trí xem ở **mọi thời điểm, không có ngưỡng** (chốt 2026-10-13, bỏ luật cũ "trên 5% và chưa tới 95%"; chỉ không lưu vị trí 0 vì chưa xem gì). Vị trí **luôn được lưu** (không còn công tắc tắt), ghi theo nhịp khoảng 10 giây khi đang phát, khi xuống nền, khi chuyển video và khi rời màn. Mở lại video có vị trí đã lưu (từ Thư mục hoặc Thư viện) thì theo Cài đặt › Video › "Khi mở lại video xem dở" (chốt 2026-10-13, thay công tắc "Nhớ vị trí xem"): **Hỏi trước** (mặc định) hiện hộp thoại *"Xem tiếp từ mm:ss?"* kèm dòng *"Bạn đã xem N% video này."* (Xem tiếp / Xem từ đầu); **Luôn xem tiếp** vào thẳng vị trí đã dừng; **Luôn phát từ đầu** phát từ đầu và xóa vị trí đã lưu. "Xem từ đầu" ở hộp thoại cũng xóa vị trí đã lưu. Chuyển video bằng Trước / Sau hoặc tự phát tiếp luôn phát từ đầu và không hỏi. Chạy hết video: coi là đã xem xong và xóa khỏi dải "Xem tiếp" (mở lại phát từ đầu, không hỏi); dừng ở bất kỳ chỗ nào khác, kể cả sát cuối, vẫn là xem dở. Ở chế độ Lặp một video, các vòng lặp sau không lưu lại vị trí; video được tính là xem xong từ lần đầu chạy tới cuối.
 - **VD-13** (khi video chạy hết, theo Chế độ phát):
 
   | Chế độ | Khi video chạy hết |
@@ -278,6 +287,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
   | Độ phân giải, tốc độ khung hình | `video.width`, `height`, `frameRate` |
   | Codec, bitrate | `video.fourCC`, `bitRate` |
   | Thư mục chứa tệp | dựng từ chuỗi thư mục cha trong CSDL |
+  | Tài khoản | tên hiển thị và email của tài khoản chứa tệp (TA-02); chỉ hiện khi app có từ 2 tài khoản. Thêm 2026-10-12 |
 
   Trường nào không có dữ liệu thì ẩn dòng đó. Không dùng `photo.alternateTakenDateTime` làm ngày quay vì giá trị này có thể chỉ trùng ngày tải lên. OneDrive không có khái niệm "ngày đăng", nên app dùng ngày tải lên.
 - **VD-18** (zoom tự do): dùng hai ngón tay để zoom từ 1x đến 4x; khi đang zoom lớn hơn 1x thì một ngón kéo để di chuyển video, và hiện nút "Đặt lại zoom". Zoom theo điểm giữa hai ngón (điểm video dưới hai ngón đứng yên khi zoom). Video phóng ra **tràn cả màn hình**, không bị cắt ở mép khung 16:9 của chế độ Vừa khung hướng dọc; kéo tới đúng mép video, theo chiều nào video đã phóng còn nhỏ hơn màn thì giữ ở giữa chứ không kéo vào vùng viền đen. Khi đang zoom lớn hơn 1x, thanh tiến độ mảnh (hiện lúc điều khiển ẩn) cũng ẩn đi; về 1x thì hiện lại. Chạm đúp vẫn là tua (VD-03), không dùng để zoom. Zoom được đặt lại về 1x khi chuyển sang video khác hoặc khi đổi hướng màn hình.
@@ -294,7 +304,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **AN-02**: Zoom bằng hai ngón tay; chạm đúp để zoom tới điểm chạm, chạm đúp lần nữa để về vừa khung; khi đang zoom thì kéo để di chuyển.
 - **AN-03**: Vuốt ngang để chuyển ảnh trước/sau theo đúng ngữ cảnh mở (cùng thư mục, hoặc cùng bộ lọc trong Thư viện). Khi đang zoom, vuốt ngang chỉ di chuyển ảnh.
 - **AN-04**: Chạm một lần để ẩn/hiện thanh công cụ (chế độ xem toàn màn hình).
-- **AN-05**: Nút Thông tin: tên tệp, kích thước ảnh, dung lượng, ngày chụp, thiết bị chụp (nếu có), đường dẫn thư mục.
+- **AN-05**: Nút Thông tin: tên tệp, kích thước ảnh, dung lượng, ngày chụp, thiết bị chụp (nếu có), đường dẫn thư mục, tài khoản chứa tệp (khi có từ 2 tài khoản, như VD-17).
 - **AN-06**: Hỗ trợ GIF động. Ảnh độ phân giải rất lớn được hiển thị theo vùng để không bị tràn bộ nhớ.
 - **AN-07**: Ảnh lỗi định dạng: hiện biểu tượng lỗi kèm tên tệp, vẫn vuốt sang ảnh khác được.
 
@@ -307,7 +317,7 @@ Chọn một video trong Danh sách (Thư mục, Thư viện hoặc dải "Xem t
 - **PD-05**: Lưu trang đang đọc theo từng tệp; mở lại thì vào thẳng trang đó (có thông báo nhỏ "Đang ở trang X"). Đọc đến trang cuối thì coi là đã đọc xong và xóa khỏi dải "Đọc tiếp".
 - **PD-06**: Chạm một lần để ẩn/hiện thanh công cụ; giữ màn hình luôn sáng khi đang đọc.
 - **PD-07**: PDF có mật khẩu hoặc bị hỏng: báo *"Không mở được tệp PDF này"*.
-- **PD-08** (thông tin tệp): nút Thông tin (ⓘ) mở bảng trượt từ dưới lên gồm: tên tệp, dung lượng, số trang (chỉ có sau khi tệp đã mở được), ngày tải lên, ngày sửa gần nhất, thư mục chứa tệp. Các trường từ OneDrive lấy từ CSDL trên máy như VD-17.
+- **PD-08** (thông tin tệp): nút Thông tin (ⓘ) mở bảng trượt từ dưới lên gồm: tên tệp, dung lượng, số trang (chỉ có sau khi tệp đã mở được), ngày tải lên, ngày sửa gần nhất, thư mục chứa tệp, tài khoản chứa tệp (khi có từ 2 tài khoản, như VD-17). Các trường từ OneDrive lấy từ CSDL trên máy như VD-17.
 
 ### 3.8 Tab Cài đặt
 
@@ -324,22 +334,25 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
 | | Đổi mã PIN | Khi đang bật |
 | | Mở khóa bằng sinh trắc học | Khi đang bật |
 | | Bảo vệ màn hình | Bật/Tắt (mặc định Tắt): bật thì **mọi màn** của app chặn chụp và quay màn hình, ẩn nội dung ở danh sách app gần đây (FLAG_SECURE toàn app). Không phụ thuộc có bật PIN hay không. Thêm 2026-10-07 |
-| | Tự khóa khi rời app | Ngay lập tức / 10 giây / 30 giây / 1 / 5 / 15 phút (mặc định 1 phút; 10 giây và 30 giây thêm 2026-10-07) |
+| | Tự khóa khi rời app | Ngay lập tức / 10 giây / 30 giây / 1 / 5 / 15 phút (mặc định **Ngay lập tức**, đổi từ 1 phút ngày 2026-10-13; 10 giây và 30 giây thêm 2026-10-07) |
 | | Xóa dữ liệu khi nhập sai quá nhiều (10 lần) | Tắt; chỉ hiện khi đang bật bảo mật |
 | Video | Bước tua khi chạm đúp | 5 / 10 / 15 giây (mặc định 10) |
 | | Tốc độ mặc định | 0.25x / 0.5x / 0.75x / 1x / 1.25x / 1.5x / 2x (mặc định 1x); áp dụng khi mở video, người xem vẫn đổi được trong lúc xem |
 | | Khung hình mặc định | Vừa khung / Cắt đầy / Kéo giãn (mặc định: nhớ lựa chọn gần nhất) |
 | | Hướng màn hình khi mở video | Dọc / Ngang (mặc định Dọc) |
 | | Chế độ phát | Không lặp / Tự phát tiếp / Lặp một video / Lặp danh sách (mặc định Tự phát tiếp). Cùng giá trị với nút Chế độ phát (VD-20) |
-| | Nhớ vị trí xem | Bật |
+| | Khi mở lại video xem dở | Hỏi trước / Luôn xem tiếp / Luôn phát từ đầu (mặc định Hỏi trước), VD-12. Thay công tắc "Nhớ vị trí xem" cũ (2026-10-13). Chỉ áp cho video mở từ Thư mục hoặc Thư viện; mở từ dải "Xem tiếp" luôn vào đúng vị trí đã dừng (DS-02) |
 | | Thời lượng tối đa của Short | 3 đến 10 phút, bước 1 phút (mặc định 3 phút). Chỉ video dài tối đa bằng giá trị này mới vào tab Short (SV-01). Chỉ hiện khi loại Video đang bật. Thêm 2026-10-10 |
 | PDF | Kiểu đọc | Cuộn dọc / Lật trang ngang |
 | Bộ nhớ đệm | Dung lượng đang dùng | Hiển thị theo loại (thumbnail, ảnh, video, PDF) |
 | | Giới hạn tối đa | Tùy chỉnh từ 1 đến 10 GB (mặc định 2 GB); chốt 2026-10-07, thay cho 4 mốc 1/2/5/10 |
 | | Tỉ lệ chia theo loại | Thumbnail / Ảnh / Video / PDF: mỗi mốc 0 đến 100%, tổng luôn 100% (chỉnh một mốc thì phần còn lại tự tính lại). Mặc định 10% / 30% / 45% / 15%. Mỗi loại có trần riêng = giới hạn tối đa × tỉ lệ, dọn tệp lâu không dùng nhất trước. Chốt 2026-10-07 |
 | | Xóa bộ nhớ đệm | Có xác nhận |
-| Kết nối | Thông tin | UPN, Tenant ID và Client ID (che bớt, vd. `a1b2••••9f0e`), thời điểm đồng bộ gần nhất. Loại tài khoản: OneDrive for Business |
-| | Cập nhật Client Secret | |
+| Tài khoản và kết nối (đổi tên từ "Kết nối", 2026-10-12) | Đang xem | Phạm vi xem hiện tại (TA-04): tên hiển thị và email của tài khoản, hoặc "Tất cả tài khoản"; chạm mở sheet Chọn tài khoản |
+| | Danh sách tài khoản | Mỗi tài khoản một hàng: tên hiển thị, email, thời điểm đồng bộ gần nhất của tài khoản đó; chạm mở tùy chọn Xóa khỏi app (TA-08). Tài khoản không truy cập được hiện trạng thái lỗi (TA-10) |
+| | Thêm tài khoản | Mở màn Thêm tài khoản (TA-07) |
+| | Thông tin | Tenant ID và Client ID (che bớt, vd. `a1b2••••9f0e`), dùng chung cho mọi tài khoản. Loại tài khoản: OneDrive for Business |
+| | Cập nhật Client Secret | Áp cho mọi tài khoản (TA-11) |
 | | Ngày hết hạn secret | Người dùng tự nhập (không bắt buộc) |
 | | Ngắt kết nối | |
 
@@ -348,10 +361,10 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
 - **CD-01** (loại tệp): Thay đổi áp dụng ngay cho Thư mục, Thư viện, Short, tìm kiếm và dải "Xem tiếp / Đọc tiếp". Tắt loại Video thì ẩn mục Short trên thanh điều hướng đáy (DH-01). Tắt một loại **không** xóa lịch sử xem hay cache của loại đó; bật lại thì hiện lại như cũ. Không cho tắt cả 3 loại.
 - **CD-02** (bật bảo mật): đặt mã PIN 6 số (nhập 2 lần, áp dụng BM-05 đến BM-07), hỏi bật sinh trắc học, mã hóa lại config.
 - **CD-03** (tắt bảo mật): **bắt buộc nhập mã PIN hiện tại**, hiện cảnh báo như BM-03, mã hóa lại config ở chế độ thiết bị. Tùy chọn "Xóa dữ liệu khi nhập sai quá nhiều" (CD-08) cũng tự tắt.
-- **CD-04** (cập nhật Client Secret): yêu cầu xác thực lại (mã PIN / sinh trắc học nếu bảo mật bật); kiểm tra kết nối với secret mới (như KN-07) thành công mới lưu, thất bại thì giữ secret cũ. Chỉ đổi Client Secret; Tenant ID, Client ID và UPN muốn đổi thì phải ngắt kết nối và kết nối lại (CD-05). Chế độ bảo mật (thiết bị hay PIN) và sinh trắc học giữ nguyên: ở chế độ PIN, config được mã hóa lại bằng khóa phiên đang giữ, không cần dẫn xuất lại từ PIN. Cũng mở được từ nút "Cập nhật" của banner CD-06 và đi qua cùng bước xác thực lại.
-- **CD-05** (ngắt kết nối): xác nhận 2 bước, sau đó xóa config, khóa mã hóa, dữ liệu đồng bộ, lịch sử xem, cache và cài đặt, bỏ trạng thái của mọi tab (DH-02), rồi quay về màn Kết nối.
+- **CD-04** (cập nhật Client Secret): yêu cầu xác thực lại (mã PIN / sinh trắc học nếu bảo mật bật); kiểm tra kết nối với secret mới (như KN-07) thành công mới lưu, thất bại thì giữ secret cũ. Chỉ đổi Client Secret; Tenant ID và Client ID muốn đổi thì phải ngắt kết nối và kết nối lại (CD-05). UPN không sửa tại chỗ: thêm tài khoản mới (TA-07) rồi xóa tài khoản cũ (TA-08). Secret mới được kiểm tra bằng tài khoản nào theo TA-11. Chế độ bảo mật (thiết bị hay PIN) và sinh trắc học giữ nguyên: ở chế độ PIN, config được mã hóa lại bằng khóa phiên đang giữ, không cần dẫn xuất lại từ PIN. Cũng mở được từ nút "Cập nhật" của banner CD-06 và đi qua cùng bước xác thực lại.
+- **CD-05** (ngắt kết nối): xác nhận 2 bước, sau đó xóa config (**mọi tài khoản**, TA-12), khóa mã hóa, dữ liệu đồng bộ, lịch sử xem, cache và cài đặt, bỏ trạng thái của mọi tab (DH-02), rồi quay về màn Kết nối.
 - **CD-06** (nhắc hết hạn secret): nếu có nhập ngày hết hạn, hiện thông báo trong app từ 14 ngày trước ngày đó. Thông báo (banner) hiện ở **cả tab Cài đặt và Danh sách (tab Thư mục, Thư viện)**, không chỉ ở Cài đặt (chốt 2026-10-07); mục Cài đặt trên thanh điều hướng đáy có chấm nhắc (DH-07). Ngày hết hạn nhập theo định dạng ngày của ngôn ngữ đang dùng (CD-10), có nút chọn nhanh +6 tháng, +1 năm, +2 năm và nút Xóa ngày; chỉ chấp nhận năm 2000 đến 2099. Còn 0 ngày thì banner ghi "hết hạn hôm nay"; đã qua ngày thì ghi "đã hết hạn" và đổi sang tông lỗi. Ngày hết hạn không phải bí mật nên lưu cùng cài đặt và bị xóa khi Ngắt kết nối (CD-05).
-- **CD-07** (giảm giới hạn cache): nếu dung lượng hiện tại vượt giới hạn mới thì hỏi xác nhận (D6) rồi dọn ngay theo nguyên tắc tệp lâu không dùng bị xóa trước. Dọn theo **từng loại**: mỗi loại có trần riêng = giới hạn chung × tỉ lệ của loại đó, nên đổi tỉ lệ cũng dọn loại nào vượt trần mới (không hỏi). Riêng thumbnail không dọn chọn lọc được: vượt trần thì xóa hết thumbnail (tải lại khi cuộn tới), và trần mới của thumbnail có hiệu lực từ lần mở app sau (ADR-0021).
+- **CD-07** (giảm giới hạn cache): khi người dùng **hạ** giới hạn chung, nếu **bất kỳ loại nào** đang dùng vượt trần riêng mới của nó (giới hạn mới × tỉ lệ của loại đó; không chỉ khi tổng vượt giới hạn) thì hỏi xác nhận (D6) rồi dọn ngay theo nguyên tắc tệp lâu không dùng bị xóa trước; không loại nào vượt thì đổi luôn, không hỏi (chốt 2026-10-12). Dọn theo **từng loại**: mỗi loại có trần riêng = giới hạn chung × tỉ lệ của loại đó, nên đổi tỉ lệ cũng dọn loại nào vượt trần mới (không hỏi). Riêng thumbnail không dọn chọn lọc được: vượt trần thì xóa hết thumbnail (tải lại khi cuộn tới), và trần mới của thumbnail có hiệu lực từ lần mở app sau (ADR-0021).
 - **CD-08** (xóa dữ liệu khi nhập sai quá nhiều): khi bật, hiện cảnh báo *"Sau 10 lần nhập sai liên tiếp, toàn bộ dữ liệu và kết nối sẽ bị xóa"*, yêu cầu xác nhận bằng mã PIN. Tùy chọn này chỉ chống đoán PIN qua giao diện app, không thay thế được việc khóa màn hình thiết bị.
 - **CD-09** (đổi mã PIN): nhập PIN hiện tại, rồi nhập PIN mới 2 lần (áp dụng BM-06); mã hóa lại config bằng PIN mới. Ghi ra tệp tạm rồi mới thay tệp cũ, để lỗi giữa chừng không làm mất config. Sau khi đổi, mở khóa bằng sinh trắc học bị **tắt** (khóa dẫn xuất mới), người dùng bật lại ở Cài đặt.
 - **CD-11** (tự khóa khi rời app): chỉ có tác dụng khi bảo mật BẬT. Tính từ lúc **cả app** không còn màn nào hiển thị (xoay màn hình, hộp thoại sinh trắc học của hệ thống không tính). Quay lại trước mốc đã chọn thì không khóa; quá mốc thì khóa (CH-03). "Ngay lập tức" khóa ngay khi rời app. Hệ điều hành thu hồi app trong lúc chờ thì lần mở sau luôn vào màn Khóa. Trong thời gian chờ, ảnh app ở danh sách ứng dụng gần đây vẫn bị ẩn (CH-05).
@@ -366,6 +379,73 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
   - Lựa chọn ngôn ngữ thuộc nhóm cài đặt nên bị xóa khi Ngắt kết nối (CD-05); khi đó app quay về "Theo hệ thống". Màn Kết nối, hộp thoại KN-13 và màn Thiết lập bảo mật lần đầu luôn dùng "Theo hệ thống".
   - Thêm ngôn ngữ mới sau này chỉ cần bổ sung bộ chuỗi và một lựa chọn trong danh sách; không đổi quy tắc nghiệp vụ.
 
+### 3.9 Tài khoản (thêm 2026-10-12)
+
+Cho phép đưa nhiều tài khoản OneDrive for Business **cùng tenant** vào app, xem từng tài khoản hoặc gộp tất cả. Mọi tài khoản dùng chung Tenant ID, Client ID, Client Secret và **một access token**; chỉ khác UPN. Lý do gộp được: token app-only (Client Credentials) đọc được drive của mọi người dùng trong tenant đã cấp quyền `Files.Read.All`, app chỉ đổi `{UPN}` trong đường dẫn `/users/{UPN}/drive`.
+
+**Cấu trúc và hiển thị**
+
+- **TA-01** (cấu trúc): config gồm phần dùng chung (Tenant ID, Client ID, Client Secret) và danh sách tài khoản (UPN). **Không giới hạn** số tài khoản. Thứ tự trong danh sách là thứ tự thêm; tài khoản đầu là tài khoản nhập ở màn Kết nối (KN-08). UPN so trùng **không phân biệt hoa thường**.
+- **TA-02** (tên hiển thị): mỗi tài khoản hiện **tên hiển thị** và **email**, lấy từ `owner.user.displayName` và `owner.user.email` trong response `GET /users/{upn}/drive?$select=id,driveType,owner` (KN-07 bước 2, TA-07). Không cần thêm quyền ngoài `Files.Read.All`. Hai giá trị được cập nhật lại mỗi lần đồng bộ thành công của tài khoản đó. Thiếu tên hiển thị thì dùng phần trước `@` của UPN; thiếu email thì dùng UPN. Avatar là **chữ cái đầu của tên hiển thị** trên nền tròn (không tải ảnh đại diện, vì ảnh cần quyền `User.Read.All`). Tên, email và UPN được mã hóa cùng config (CH-01), không lưu dạng rõ.
+- **TA-03** (hiển thị tài khoản đang xem): phạm vi xem hiện tại luôn thấy được ở hai chỗ:
+  - **Avatar ở bên phải AppBar** tab Thư mục và Thư viện (cạnh nút Tìm kiếm). Phạm vi là một tài khoản: avatar chữ cái của tài khoản đó. Phạm vi Tất cả tài khoản: avatar gộp (biểu tượng nhiều người). Chạm vào mở sheet Chọn tài khoản (TA-04). App chỉ có một tài khoản thì avatar vẫn hiện; sheet khi đó chỉ có tài khoản đó và nút Thêm tài khoản.
+  - **Hàng "Đang xem"** đầu nhóm Tài khoản và kết nối ở Cài đặt (bảng 3.8).
+
+  Tab Short không có AppBar nên không hiện avatar; tên tài khoản chỉ có ở dòng thư mục khi xem gộp (SV-09).
+
+**Chọn và đổi phạm vi xem**
+
+- **TA-04** (sheet Chọn tài khoản): mở từ avatar (TA-03) hoặc hàng "Đang xem" ở Cài đặt. Gồm:
+  1. **Tất cả tài khoản** (mô tả "N tài khoản"): chỉ hiện khi có **từ 2 tài khoản**, nằm đầu danh sách.
+  2. Từng tài khoản: avatar, tên hiển thị, email. Tài khoản không truy cập được có dòng lỗi thay cho email (TA-10).
+  3. Nút **Thêm tài khoản** ở cuối, mở màn Thêm tài khoản (TA-07).
+
+  Mục đang chọn có dấu chọn. Chạm một mục là đổi phạm vi ngay và đóng sheet (như OptionRow), không có nút Lưu. Chạm lại mục đang chọn thì chỉ đóng sheet. Không hỏi PIN (app đã mở khóa). Phạm vi đã chọn được nhớ qua các lần mở app.
+- **TA-05** (phạm vi Tất cả tài khoản): dữ liệu của mọi tài khoản hiện chung, mỗi mục vẫn thuộc đúng một tài khoản:
+
+  | Chỗ | Cách gộp |
+  |---|---|
+  | Thư mục (TM-01) | Cấp gốc là danh sách tài khoản theo thứ tự TA-01, mỗi tài khoản là một ô thư mục (tên hiển thị, meta là email). Vào một tài khoản thì duyệt như thường; breadcrumb bắt đầu bằng "Tất cả tài khoản › <tên tài khoản> › …". Dải Xem tiếp chỉ ở cấp gốc này |
+  | Thư viện (TV-01) | Ảnh và video của mọi tài khoản trộn chung, nhóm theo ngày (TV-02) |
+  | Short (SV-01) | Video của mọi tài khoản đã đồng bộ xong lần đầu, xáo chung một danh sách (SV-02) |
+  | Tìm kiếm (DS-03) | Tìm trên mọi tài khoản; dòng đường dẫn kết quả có tên tài khoản ở đầu |
+  | Xem tiếp / Đọc tiếp (DS-02) | Gộp, xếp theo lần xem gần nhất; mỗi tài khoản tối đa 10 mục, tổng tối đa 20 (đổi 2026-10-13, trước đó tối đa 10 mục cả dải) |
+  | Danh sách phát (VD-10), vuốt ảnh (AN-03) | Theo ngữ cảnh mở: cùng thư mục thì cùng tài khoản; từ Thư viện thì theo thứ tự gộp của Thư viện |
+  | Đồng bộ (DS-04) | **Mọi tài khoản luôn được đồng bộ, không phụ thuộc phạm vi xem** (chốt 2026-10-12, ADR-0030): kéo xuống đồng bộ tất cả; tự đồng bộ khi mở app hoặc quay lại từ nền áp cho từng tài khoản quá 15 phút. Chạy **lần lượt**, tài khoản đang xem chạy trước, rồi các tài khoản còn lại theo thứ tự TA-01 |
+  | Đang lập chỉ mục (TV-06) | Banner hiện khi còn tài khoản đang quét lần đầu, ghi tên tài khoản đó và số mục của nó ("Đang lập chỉ mục Bao Lam, đã quét N mục"); dù tài khoản khác đã xong. Phạm vi một tài khoản giữ câu không có tên |
+
+  Hai tệp trùng tên ở hai tài khoản là hai mục riêng, không gộp làm một.
+- **TA-06** (khi đổi phạm vi xem):
+  1. Dừng player ở tab Short, dừng tải trước, bỏ link tải đã ký đang giữ (như CH-03).
+  2. Bỏ trạng thái của tab Thư mục, Thư viện, Short (DH-02); tab Cài đặt giữ nguyên. Short xáo danh sách mới.
+  3. Đang ở tab Thư mục, Thư viện hoặc Short thì về **gốc tab Thư mục**; đang ở tab Cài đặt thì ở lại Cài đặt.
+  4. Mục Short ẩn/hiện lại theo DH-01 với phạm vi mới.
+  5. Tài khoản mới được chọn **chuyển lên đầu hàng đợi đồng bộ**: chưa đồng bộ lần đầu thì quét ngay (DB-01), đã đồng bộ quá 15 phút thì đồng bộ thay đổi (DS-04). Đồng bộ đang chạy dở ở tài khoản khác thì chạy tiếp đến hết rồi mới tới lượt tài khoản này, không bị hủy.
+  6. Hiện Snackbar "Đang xem <tên tài khoản>" hoặc "Đang xem tất cả tài khoản".
+
+  Không có mạng vẫn đổi được: tài khoản đã có dữ liệu thì xem như DS-05; tài khoản chưa đồng bộ lần nào thì tab Thư mục báo cần kết nối mạng (TM-07 không gọi được API).
+
+**Thêm, xóa, lỗi**
+
+- **TA-07** (thêm tài khoản): mở từ sheet Chọn tài khoản hoặc Cài đặt › Thêm tài khoản. Màn con (ẩn thanh đáy, DH-05) chỉ có **một trường UPN**: hiển thị bình thường, kiểm tra định dạng email, áp dụng KN-04 và KN-05. Nút **Thêm** chỉ bật khi UPN hợp lệ và **chưa có** trong danh sách; trùng thì báo ngay dưới trường "Tài khoản này đã có trong app". Không hỏi PIN. Bấm Thêm:
+  1. Hiện trạng thái đang kiểm tra, khóa trường.
+  2. Dùng access token đang có (lấy mới nếu cần, TK-01) và gọi `GET /users/{upn}/drive?$select=id,driveType,owner`.
+  3. Thành công (HTTP 2xx): lưu tài khoản vào config (mã hóa lại bằng khóa phiên đang giữ như CD-04, ghi tệp tạm rồi thay như CD-09), **chuyển phạm vi xem sang tài khoản mới** (TA-06), đóng màn và bắt đầu đồng bộ lần đầu cho nó. Snackbar ghi "Đã thêm <tên tài khoản>" thay cho câu "Đang xem…" của TA-06. Không hiện hộp thoại K6.
+  4. Thất bại: giữ giá trị đã nhập, **không lưu**; thông báo theo bảng lỗi KN-09 (thường gặp: Graph `404` sai UPN hoặc tài khoản chưa có OneDrive, mạng). Lỗi secret sai/hết hạn (AADSTS7000215, AADSTS7000222) xử lý như TK-04: dialog lỗi có hai nút "Đóng" và "Sửa Client Secret" (như K5); nút sau đóng màn Thêm tài khoản rồi mở cập nhật Client Secret, qua P1 nếu bảo vệ đang bật (CD-04).
+
+  Thêm tài khoản không đổi chế độ bảo mật, sinh trắc học hay cài đặt.
+- **TA-08** (xóa tài khoản khỏi app): ở Cài đặt, mỗi hàng tài khoản có **nút xóa** (IconButton `trash` 48, `ink-muted`) ở cuối hàng; chạm nút hoặc chạm cả hàng → hộp thoại xác nhận 1 bước (mức "Cảnh báo, bước 1"). Chỉ xóa trên máy: UPN khỏi config, dữ liệu đồng bộ, lịch sử xem và cache của tài khoản đó (ảnh gốc, PDF, video đã tải và thumbnail; thumbnail được gỡ theo chỉ mục khóa ghi lại lúc tải, nên thumbnail tải trước khi có chỉ mục nằm lại tới khi bị dọn theo LRU); **không** đụng gì trên OneDrive. Ràng buộc:
+  - Không xóa được tài khoản **đang là phạm vi xem**: hàng đó **không có nút xóa**; chạm hàng thì hiện Snackbar "Đổi sang tài khoản khác trước khi xóa tài khoản này". Ở phạm vi Tất cả tài khoản thì mọi hàng đều có nút xóa.
+  - Đang đồng bộ tài khoản bị xóa thì hủy đồng bộ đó trước khi xóa dữ liệu.
+  - Còn **một** tài khoản thì không xóa được; muốn bỏ thì dùng Ngắt kết nối (CD-05).
+  - Xóa xong mà chỉ còn một tài khoản thì mục Tất cả tài khoản biến mất; nếu đang ở phạm vi đó thì phạm vi tự về tài khoản còn lại (TA-06).
+- **TA-09** (dữ liệu riêng và dùng chung):
+  - **Riêng từng tài khoản**: dữ liệu đồng bộ, mốc `deltaLink`, tiến độ đồng bộ lần đầu (DB-04), vị trí xem và trang đọc (VD-12, PD-05), dải Xem tiếp. Đổi qua lại giữa các tài khoản không phải quét lại.
+  - **Dùng chung**: access token, mọi cài đặt ở 3.8 (loại tệp, giao diện, ngôn ngữ, bảo mật, video, PDF, bộ nhớ đệm), ngày hết hạn secret (CD-06). Bộ nhớ đệm có một trần chung cho mọi tài khoản (BN-01).
+- **TA-10** (một tài khoản lỗi): đồng bộ hay mở tệp của một tài khoản bị Graph `403`/`404` (vd. tài khoản bị gỡ license, OneDrive bị xóa) thì **chỉ tài khoản đó** báo lỗi: hàng của nó ở Cài đặt và sheet hiện "Không truy cập được tài khoản này" tông lỗi; dữ liệu đã đồng bộ vẫn xem được như offline. Các tài khoản khác chạy bình thường. Đồng bộ lần sau thành công thì tự hết lỗi. Lỗi secret (TK-04) là lỗi chung, chặn mọi tài khoản.
+- **TA-11** (Client Secret dùng chung): cập nhật secret (CD-04) áp cho mọi tài khoản. Secret mới được kiểm tra như KN-07 với **tài khoản đang xem**; ở phạm vi Tất cả tài khoản thì với **tài khoản đầu danh sách**. Một banner hết hạn (CD-06) cho cả app.
+- **TA-12** (ngắt kết nối và quên PIN): Ngắt kết nối (CD-05), Quên mã PIN (KH-03) và Xóa dữ liệu khi nhập sai (KH-06) xóa **mọi tài khoản** cùng toàn bộ dữ liệu, rồi về màn Kết nối.
+
 ---
 
 ## 4. Quy tắc nghiệp vụ chung
@@ -376,7 +456,7 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
   - Bảo mật **bật**: mã hóa bằng khóa dẫn xuất từ mã PIN kết hợp khóa phần cứng của thiết bị (Android Keystore).
   - Bảo mật **tắt** (chế độ thiết bị): mã hóa bằng khóa phần cứng của thiết bị. Đây là chế độ config được lưu ngay sau khi kết nối thành công (KN-08), cho tới khi người dùng thiết lập PIN (BM-04, CD-02).
 - **CH-02**: Không lưu mã PIN hay mã băm của mã PIN. PIN đúng hay sai được xác định bằng việc giải mã config thành công hay không.
-- **CH-03**: Access token chỉ giữ trong bộ nhớ, không ghi xuống đĩa; khi app bị khóa thì xóa token và config đã giải mã khỏi bộ nhớ. Link tải đã ký (chứa `tempauth`, cho phép tải tệp mà không cần token) cũng bị xóa khi khóa: ở tab Short thì dừng player, bỏ nguồn đang nạp, dừng tải trước và xóa link; sau khi mở khóa nạp lại đúng video và vị trí (thêm 2026-10-11, ADR-0026).
+- **CH-03**: Access token chỉ giữ trong bộ nhớ, không ghi xuống đĩa; khi app bị khóa thì xóa token và config đã giải mã khỏi bộ nhớ. Link tải đã ký (chứa `tempauth`, cho phép tải tệp mà không cần token) cũng bị xóa khi khóa: ở tab Short thì dừng player, bỏ nguồn đang nạp, dừng tải trước và xóa link; sau khi mở khóa nạp lại đúng video và vị trí (thêm 2026-10-11, ADR-0026). Đổi phạm vi xem (TA-06) cũng bỏ link đã ký theo cùng cách, nhưng không xóa token vì token dùng chung.
 - **CH-04**: Dữ liệu app không được đưa vào sao lưu tự động của Android.
 - **CH-05**: Các màn Kết nối, Khóa, Thiết lập bảo mật và nhập PIN luôn chặn chụp màn hình. Tab Cài đặt **không** luôn chặn (đổi 2026-10-08, ADR-0022): chỉ chặn khi bật "Bảo vệ màn hình". Mục "Bảo vệ màn hình" ở Cài đặt › Bảo mật mở rộng việc chặn ra toàn app.
 - **Hướng màn hình (2026-10-07)**: toàn app chỉ hiển thị **dọc** (cấu hình toàn app, không có trong Cài đặt). Riêng màn xem video cho xoay ngang bằng nút xoay (VD-07), rời màn thì về dọc. Tab Short luôn dọc (SV-08).
@@ -385,7 +465,7 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
 
 ### 4.2 Token
 
-- **TK-00** (cơ chế xác thực, MVP1): chỉ dùng **Client Credentials (app-only)** với 4 trường config (Tenant ID, Client ID, Client Secret, UPN). Mọi lời gọi Graph đi qua `/users/{UPN}/drive`. Không có đăng nhập tương tác và không hỗ trợ OneDrive cá nhân.
+- **TK-00** (cơ chế xác thực, MVP1): chỉ dùng **Client Credentials (app-only)** với config ở mục 1 (Tenant ID, Client ID, Client Secret dùng chung, cộng danh sách UPN). Mọi lời gọi Graph đi qua `/users/{UPN}/drive` với UPN của tài khoản sở hữu dữ liệu; **một access token** dùng cho mọi tài khoản (TA-01), nên TK-01 đến TK-06 áp chung, không tính riêng từng tài khoản. Không có đăng nhập tương tác và không hỗ trợ OneDrive cá nhân.
 - **TK-01**: App tự lấy token khi cần; làm mới chủ động khi còn dưới 5 phút là hết hạn.
 - **TK-02**: Nhận `401` từ Graph: lấy token mới và thử lại đúng 1 lần.
 - **TK-03**: Nhiều yêu cầu cùng lúc cần token mới thì chỉ gọi lấy token 1 lần, các yêu cầu khác dùng chung kết quả.
@@ -395,7 +475,7 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
 
 ### 4.3 Đồng bộ dữ liệu
 
-- **DB-01**: Lần đầu: quét toàn bộ drive bằng delta, lưu danh sách tệp và thư mục vào CSDL trên máy, lưu mốc `deltaLink`. Quét xong lần đầu thì mục Short mới hiện trên thanh điều hướng đáy (DH-01).
+- **DB-01**: Lần đầu: quét toàn bộ drive bằng delta, lưu danh sách tệp và thư mục vào CSDL trên máy, lưu mốc `deltaLink`. Quét xong lần đầu thì mục Short mới hiện trên thanh điều hướng đáy (DH-01). Mỗi tài khoản có lần đồng bộ lần đầu, mốc `deltaLink` và tiến độ riêng (TA-09); DB-02 đến DB-04 áp cho từng tài khoản. **Mọi tài khoản đều được đồng bộ, không phụ thuộc phạm vi xem**, chạy **lần lượt** (tài khoản đang xem trước, rồi theo thứ tự TA-01); tài khoản đang lỗi (TA-10) không chặn các tài khoản sau. Mục Short hiện khi tài khoản trong phạm vi xem đã đồng bộ xong lần đầu (DH-01, TA-05).
 - **DB-02**: Các lần sau: chỉ lấy thay đổi kể từ mốc trước (thêm, sửa, xóa).
 - **DB-03**: Nhận `410` (mốc không còn hợp lệ): bỏ mốc cũ và quét lại toàn bộ ở nền; danh sách hiện tại vẫn dùng được trong lúc quét.
 - **DB-04**: Đồng bộ lần đầu bị gián đoạn (tắt app, mất mạng): lần sau tiếp tục từ trang đang quét dở, không quét lại từ đầu. Nếu gián đoạn do **app bị khóa** (CH-03, config bị xóa khỏi bộ nhớ) thì đồng bộ tự chạy tiếp ngay khi mở khóa, người dùng không phải kéo làm mới.
@@ -404,7 +484,7 @@ Cài đặt là **một tab trên thanh điều hướng đáy** (DH-01, đổi 
 ### 4.4 Bộ nhớ đệm
 
 - **BN-01**: Cache gồm 4 phần: thumbnail, ảnh gốc, đoạn video đã xem (kể cả phần tải trước ở tab Short, SV-13), tệp PDF. Tổng dung lượng không vượt giới hạn trong Cài đặt. **Mỗi phần có trần riêng** = giới hạn chung × tỉ lệ của phần đó (Cài đặt › Bộ nhớ đệm › Tỉ lệ chia theo loại, mặc định 10% / 30% / 45% / 15%); phần nào vượt trần riêng thì xóa tệp lâu không dùng nhất **trong phần đó** trước, không lấy dung lượng của phần khác. Phần chưa dùng hết trần không nhường cho phần khác. Riêng thumbnail không dọn chọn lọc được (xem CD-07). Chốt 2026-10-07 (ADR-0021).
-- **BN-02**: Tệp trong cache được nhận diện theo mã tệp và phiên bản nội dung (`cTag`). Tệp đổi nội dung trên OneDrive thì bản cũ trong cache bị bỏ; đổi tên hay di chuyển thì vẫn dùng lại cache.
+- **BN-02**: Tệp trong cache được nhận diện theo drive, mã tệp và phiên bản nội dung (`cTag`); có thêm drive để hai tài khoản không bao giờ dùng nhầm cache của nhau (TA-09, thêm 2026-10-12). Tệp đổi nội dung trên OneDrive thì bản cũ trong cache bị bỏ; đổi tên hay di chuyển thì vẫn dùng lại cache.
 - **BN-03**: Tải dở bị gián đoạn thì lần sau tải tiếp phần còn thiếu, không tải lại từ đầu; tệp chỉ được dùng sau khi tải đủ và đúng dung lượng.
 
 ---
@@ -428,6 +508,8 @@ Nhận diện theo `file.mimeType`; nếu không có thì theo đuôi tên tệp
 | Tính năng | Bản 1 | Bản 2 |
 |---|---|---|
 | Kết nối **OneDrive for Business** bằng Tenant ID / Client ID / Client Secret / UPN (Client Credentials) | ✓ | |
+| Nhiều tài khoản **cùng tenant** (chung Tenant ID, Client ID, Client Secret, khác UPN): thêm, chọn, xóa khỏi app, xem gộp Tất cả tài khoản (mục 3.9). Thêm 2026-10-12 | ✓ | |
+| Tài khoản thuộc tenant khác, hoặc mỗi tài khoản một bộ Client ID/Secret riêng | | Chưa lên kế hoạch |
 | Đa ngôn ngữ **Tiếng Việt + English**, chọn trong Cài đặt (CD-10) | ✓ | |
 | Hộp thoại hỏi thiết lập PIN sau kết nối (KN-13), thiết lập bảo mật (mã PIN 6 số), màn Khóa | ✓ | |
 | Thanh điều hướng đáy: Thư mục, Thư viện, Short, Cài đặt; mỗi tab giữ trạng thái riêng (mục 3.4) | ✓ | |
@@ -457,4 +539,5 @@ Nhận diện theo `file.mimeType`; nếu không có thì theo đuôi tên tệp
 
 - Có cần "Kệ truyện" (danh sách mọi PDF trong drive, giống tab Thư viện cho ảnh/video) không, hay chỉ duyệt PDF qua Thư mục?
 - Có cho phép mở tệp không hỗ trợ bằng ứng dụng khác trên máy không (cần tải tệp về trước).
+- Tài khoản (mục 3.9, 2026-10-12): `owner.user.displayName` / `owner.user.email` của drive (TA-02) **đã kiểm chứng** với token app-only (có cả tên và email), không cần quyền `User.Read.All`. Phần dự phòng (tên lấy từ UPN) vẫn giữ cho trường hợp thiếu. Còn lại: ghi một response mẫu (đã thay giá trị) vào `onedrive-graph-responses.md`.
 - Ngưỡng "tỉ lệ gần" để video dọc ở tab Short dùng Cắt đầy (SV-08, đang đề xuất phần bị cắt không quá khoảng 20% mỗi chiều): chốt khi thử máy ở Lát 8.

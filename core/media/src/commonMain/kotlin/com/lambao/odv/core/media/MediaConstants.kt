@@ -47,6 +47,12 @@ object MediaConstants {
     /** Giữ lại chừng này đã phát phía sau để tua lùi ngắn không phải tải lại. */
     const val BACK_BUFFER_MS = 30_000
 
+    /**
+     * Tab Short chuẩn bị sẵn trong RAM chừng này mili giây đầu của video kế tiếp (nguồn đã mở, track đã chọn, mẫu đã tách; ADR-0028).
+     * Chỉ video +1: mỗi video giữ thêm bộ nhớ, và video trước đã có phần đầu trong cache đĩa nhờ [VideoPreloader].
+     */
+    const val NEXT_PRELOAD_MS = 3_000L
+
     // --- Phân loại lỗi ---
 
     /** Số tầng nguyên nhân duyệt khi phân loại và ghi log một lỗi phát. */

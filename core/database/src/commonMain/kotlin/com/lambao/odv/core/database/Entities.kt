@@ -7,17 +7,21 @@ import androidx.room3.PrimaryKey
 /**
  * Một mục của drive (thư mục hoặc tệp) đã đồng bộ về máy (DB-01). Chỉ lưu thứ UI cần; không lưu quota (KN-12).
  *
- * `parentId` là id cha theo Graph. Mục ngay dưới gốc có `parentId` bằng [SyncStateEntity.rootId]; không có khóa ngoại vì
- * delta có thể gửi con trước cha. `nameKey` là tên đã hạ chữ thường và bỏ dấu (tìm kiếm DS-03, sắp xếp theo tên TM-05).
- * `scanId` là số lần quét đầy đủ đã ghi mục này: dùng để dọn mục không còn tồn tại sau khi quét lại vì `410` (DB-03).
+ * **`id` và `parentId` có tiền tố tài khoản** (`<drive id>|<id Graph>`, `ItemKey` ở domain, ADR-0030): id Graph chỉ duy nhất trong một
+ * drive. [accountId] là drive id (cùng giá trị với tiền tố) để lọc theo phạm vi xem bằng chỉ mục thay vì so chuỗi.
+ *
+ * `parentId` là id cha theo Graph (đã có tiền tố). Mục ngay dưới gốc có `parentId` bằng [SyncStateEntity.rootId] của tài khoản đó;
+ * không có khóa ngoại vì delta có thể gửi con trước cha. `nameKey` là tên đã hạ chữ thường và bỏ dấu (tìm kiếm DS-03, sắp xếp theo tên TM-05).
+ * `scanId` là số lần quét đầy đủ **của tài khoản đó** đã ghi mục này: dùng để dọn mục không còn tồn tại sau khi quét lại vì `410` (DB-03).
  */
 @Entity(
     tableName = "drive_item",
     // (mediaKind, sortDate) và sortDate phục vụ tab Thư viện (TV-01, TV-02): lọc theo loại rồi xếp theo ngày giảm dần.
-    indices = [Index("parentId"), Index("nameKey"), Index("mediaKind", "sortDate"), Index("sortDate")],
+    indices = [Index("parentId"), Index("nameKey"), Index("mediaKind", "sortDate"), Index("sortDate"), Index("accountId")],
 )
 data class DriveItemEntity(
     @PrimaryKey val id: String,
+    val accountId: String,
     val parentId: String?,
     val name: String,
     val nameKey: String,
@@ -46,7 +50,7 @@ data class DriveItemEntity(
 )
 
 /**
- * Trạng thái đồng bộ, đúng một dòng (`id = 0`).
+ * Trạng thái đồng bộ của **một tài khoản**: một dòng cho mỗi tài khoản, khóa là drive id (ADR-0030, DB-01).
  *
  * - `deltaLink`: mốc để lấy thay đổi lần sau (DB-02). Null cho tới khi quét đầy đủ xong lần đầu, và bị xóa khi gặp `410`.
  * - `pendingNextLink`: trang đang quét dở, ghi cùng transaction với dữ liệu của trang trước nên tắt app lúc nào cũng
@@ -55,7 +59,8 @@ data class DriveItemEntity(
  */
 @Entity(tableName = "sync_state")
 data class SyncStateEntity(
-    @PrimaryKey val id: Int = SINGLE_ROW_ID,
+    @PrimaryKey val accountId: String,
+    /** Id của thư mục gốc drive, **đã có tiền tố tài khoản**. */
     val rootId: String? = null,
     val deltaLink: String? = null,
     val pendingNextLink: String? = null,
@@ -64,11 +69,7 @@ data class SyncStateEntity(
     val initialSyncDone: Boolean = false,
     /** Epoch mili giây. */
     val lastSyncedAt: Long? = null,
-) {
-    companion object {
-        const val SINGLE_ROW_ID = 0
-    }
-}
+)
 
 /** Số mục của một ngày trong Thư viện; [dayNumber] là số ngày từ 1970-01-01 theo độ lệch múi giờ đã truyền vào truy vấn. */
 data class DayCount(

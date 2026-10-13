@@ -179,10 +179,47 @@ internal class ResumableFileStore(
         }
     }
 
+    /**
+     * Xóa tệp cuối và bản dở của [ref] (tệp tải đủ nhưng hỏng, PD-07). Lấy cùng khóa với [open] nên không xóa giữa lúc một lượt tải khác
+     * của cùng tệp đang ghi. Không ném ngoại lệ.
+     */
+    suspend fun invalidate(ref: CachedFileRef) {
+        val key = fileKey(ref)
+        try {
+            withContext(dispatchers.io) {
+                locks[(key.hashCode() and Int.MAX_VALUE) % ResumableFileConstants.LOCK_STRIPES].withLock {
+                    File(directory, key).delete()
+                    File(directory, key + ResumableFileConstants.PART_SUFFIX).delete()
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log.w(e) { "Không xóa được tệp cache hỏng" }
+        }
+    }
+
     /** Dọn tệp lâu không dùng nhất trước cho tới khi không quá [limit] (CD-07). Không ném ngoại lệ. */
     suspend fun trimTo(limit: Long) {
         withContext(dispatchers.io) {
             runCatching { evictOldest(limit) { false } }.onFailure { log.w(it) { "Không dọn được cache tệp" } }
+        }
+    }
+
+    /**
+     * Xóa tệp đã tải của một tài khoản (TA-08). Mọi tệp của tài khoản có tên bắt đầu bằng drive id đã đổi ký tự lạ thành `_` rồi `_`
+     * (id của mục có tiền tố `<drive id>|`, ADR-0030). Không đụng generation: tải của tài khoản khác đang bay không bị hủy. Không ném ngoại lệ.
+     */
+    suspend fun purgeAccount(accountId: String) {
+        val prefix = ResumableFileConstants.NON_ALPHANUMERIC.replace(accountId, "_") + "_"
+        try {
+            withContext(dispatchers.io) {
+                directory.listFiles().orEmpty().filter { it.name.startsWith(prefix) }.forEach { it.delete() }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log.w(e) { "Không xóa được tệp cache của tài khoản" }
         }
     }
 

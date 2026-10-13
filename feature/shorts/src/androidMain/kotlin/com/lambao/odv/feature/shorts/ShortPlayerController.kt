@@ -23,13 +23,14 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.media.ExoPlayerHandle
+import com.lambao.odv.core.media.NextVideoPreload
 import com.lambao.odv.core.media.PlayerFailure
 import com.lambao.odv.core.media.VideoCache
 import com.lambao.odv.core.media.VideoDecoders
 import com.lambao.odv.core.media.codecExceptionDetail
 import com.lambao.odv.core.media.describe
 import com.lambao.odv.core.media.failedDecoderName
-import com.lambao.odv.core.media.streamUri
+import com.lambao.odv.core.media.streamMediaItem
 import com.lambao.odv.core.media.toFailure
 import com.lambao.odv.core.media.videoCacheKey
 
@@ -47,6 +48,15 @@ internal class ShortPlayerController(
     val player: ExoPlayer = handle.player
     private val decoders: VideoDecoders = handle.decoders
     private val streamUrls = handle.streamUrls
+
+    /** Tải trước video kế tiếp vào RAM (ADR-0028); null khi player không dựng kèm manager. Do [ShortPlayerHolder] điều khiển, đây chỉ để lấy nguồn ở [load]. */
+    private val nextPreload = handle.nextPreload
+
+    /** `MediaItem` thường của video đang nạp, để mở lại khi nguồn tải trước không dùng được nữa ([fallbackToPlainSource]). */
+    private var plainItem: MediaItem? = null
+
+    /** Video đang nạp bằng nguồn lấy từ [NextVideoPreload] (true) hay `setMediaItem` thường (false); chỉ để ghi log và quyết định đường lùi. */
+    private var usingPreloaded = false
 
     /**
      * Có mạng hay không, do [ShortPlayerHolder] cập nhật từ `NetworkMonitor`. Nút "Tiếp tục" ở thẻ mất mạng chỉ bật khi `true` (VD-16, SV-14).
@@ -147,13 +157,20 @@ internal class ShortPlayerController(
         loadStartedAt = SystemClock.elapsedRealtime()
         userPaused = !autoPlay
         val key = videoCacheKey(item.id, item.cTag)
-        shortsLog.i { "[Short] nạp id=${item.id.takeLast(ID_LOG_LENGTH)} bắt đầu=${startPositionMs}ms tự phát=$autoPlay thời lượng(Room)=${item.durationMs}ms" }
-        val mediaItem = MediaItem.Builder()
-            .setMediaId(item.id)
-            .setUri(streamUri(item.id))
-            .setCustomCacheKey(key)
-            .build()
-        player.setMediaItem(mediaItem, startPositionMs.coerceAtLeast(0L))
+        val mediaItem = streamMediaItem(item.id, item.cTag)
+        // Nguồn tải trước (ADR-0028) chỉ chuẩn bị từ đầu video, nên bắt đầu giữa chừng (khôi phục, mở khóa) thì mở như thường.
+        val preloaded = if (startPositionMs <= 0L) nextPreload?.takeSource(item.id) else null
+        plainItem = mediaItem
+        usingPreloaded = preloaded != null
+        shortsLog.i {
+            "[Short] nạp id=${item.id.takeLast(ID_LOG_LENGTH)} bắt đầu=${startPositionMs}ms tự phát=$autoPlay thời lượng(Room)=${item.durationMs}ms " +
+                "nguồn=${if (usingPreloaded) "ram" else "thường"}"
+        }
+        if (preloaded != null) {
+            player.setMediaSource(preloaded, 0L)
+        } else {
+            player.setMediaItem(mediaItem, startPositionMs.coerceAtLeast(0L))
+        }
         player.playWhenReady = autoPlay
         player.prepare()
         shortsLog.d { "[Short] đã prepare id=${item.id.takeLast(ID_LOG_LENGTH)} gen=$generation" }
@@ -292,6 +309,7 @@ internal class ShortPlayerController(
         shortsLog.i { "[Short] thử lại sau lỗi $failure, vị trí=${player.currentPosition}ms" }
         failure = null
         failedItemId = null
+        fallbackToPlainSource()
         player.prepare()
         player.play()
         userPaused = false
@@ -361,8 +379,21 @@ internal class ShortPlayerController(
         }
         decoderRetries++
         shortsLog.w { "[Decoder] bộ $decoderName chết khi giải mã, chặn và phát lại bằng bộ khác (lần $decoderRetries)" }
+        fallbackToPlainSource()
         player.prepare()
         return true
+    }
+
+    /**
+     * Nguồn tải trước đã chọn track theo bộ giải mã lúc đó nên không đổi được sang bộ khác khi `prepare()` lại: thử lại hoặc đổi bộ giải mã thì mở lại bằng
+     * `MediaItem` thường, giữ vị trí. Không làm gì nếu video đang nạp không dùng nguồn tải trước.
+     */
+    private fun fallbackToPlainSource() {
+        val item = plainItem ?: return
+        if (!usingPreloaded) return
+        usingPreloaded = false
+        shortsLog.i { "[Short] bỏ nguồn tải trước, mở lại bằng nguồn thường ở ${player.currentPosition}ms" }
+        player.setMediaItem(item, player.currentPosition)
     }
 
     override fun onTracksChanged(tracks: Tracks) {
@@ -378,7 +409,8 @@ internal class ShortPlayerController(
     override fun onRenderedFirstFrame() {
         renderedItemId = player.currentMediaItem?.mediaId
         shortsLog.i {
-            "[Short] đã vẽ khung hình đầu id=${renderedItemId?.takeLast(ID_LOG_LENGTH)} sau ${SystemClock.elapsedRealtime() - loadStartedAt}ms kể từ lúc nạp"
+            "[Short] đã vẽ khung hình đầu id=${renderedItemId?.takeLast(ID_LOG_LENGTH)} sau ${SystemClock.elapsedRealtime() - loadStartedAt}ms kể từ lúc nạp " +
+                "(nguồn=${if (usingPreloaded) "ram" else "thường"})"
         }
     }
 

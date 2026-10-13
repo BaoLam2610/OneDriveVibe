@@ -30,5 +30,6 @@
     <string name="image_info_taken">Ngày chụp</string> <!-- [mới] -->
     <string name="image_info_camera">Thiết bị chụp</string> <!-- [mới] -->
     <string name="image_info_folder">Thư mục</string> <!-- [mới] -->
+    <string name="image_info_account">Tài khoản</string> <!-- [mới] Lát T: hàng cuối khi có từ 2 tài khoản -->
     <string name="image_info_root" translatable="false">OneDrive</string>
 </resources>

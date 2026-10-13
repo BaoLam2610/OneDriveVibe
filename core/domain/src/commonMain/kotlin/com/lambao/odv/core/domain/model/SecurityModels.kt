@@ -137,7 +137,7 @@ enum class ProtectionSetupResult {
 
 /**
  * Thời gian chờ trước khi tự khóa khi rời app (CH-03, CD, mục Bảo mật). Tính từ lúc cả app xuống nền; quay lại trước mốc này thì
- * không khóa. Mặc định [OneMinute] (đặc tả); [Immediately] là hành vi trước Lát 7c. Thứ tự khai báo là thứ tự trong bảng chọn;
+ * không khóa. Mặc định [Immediately] (đặc tả, đổi từ [OneMinute] ngày 2026-10-13). Thứ tự khai báo là thứ tự trong bảng chọn;
  * giá trị lưu bằng tên nên không đổi tên.
  */
 enum class AutoLockDelay(val millis: Long) {

@@ -2,6 +2,7 @@ package com.lambao.odv.core.domain.settings
 
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.PdfReadingStyle
+import com.lambao.odv.core.domain.model.ResumeBehavior
 import com.lambao.odv.core.domain.model.ThemeMode
 import com.lambao.odv.core.domain.model.VideoFit
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,13 @@ interface SettingsPreferences {
     val enabledKinds: Flow<Set<MediaKind>>
 
     suspend fun setEnabledKinds(kinds: Set<MediaKind>)
+
+    /**
+     * Đọc rồi ghi **nguyên tử** (một lần `edit`) tập loại tệp, để hai lần chạm chip nhanh không ghi đè lên nhau (đọc-sửa-ghi rời rạc
+     * sẽ mất cập nhật). [transform] nhận tập hiện tại và trả tập mới, hoặc `null` để từ chối (vd. tắt loại cuối, CD-01). Trả `true`
+     * nếu [transform] chấp nhận (kể cả khi tập không đổi), `false` nếu từ chối hoặc trả tập rỗng.
+     */
+    suspend fun updateEnabledKinds(transform: (Set<MediaKind>) -> Set<MediaKind>?): Boolean
 
     /** Bước tua khi chạm đúp, giây; một trong `VideoSettingOptions.SEEK_STEPS` (mặc định 10). */
     val seekStepSeconds: Flow<Int>
@@ -53,10 +61,13 @@ interface SettingsPreferences {
 
     suspend fun setShortMaxMinutes(minutes: Int)
 
-    /** Nhớ vị trí xem video (mặc định bật). Lát 9 (VD-12) dùng; hiện chỉ lưu. */
-    val rememberVideoPosition: Flow<Boolean>
+    /**
+     * Khi mở lại video đã xem dở (VD-12, Lát 10): hỏi trước, luôn xem tiếp hoặc luôn phát từ đầu (mặc định hỏi trước). Thay công tắc
+     * "Nhớ vị trí xem" cũ; vị trí xem luôn được lưu vì dải "Xem tiếp" cần nó.
+     */
+    val videoResumeBehavior: Flow<ResumeBehavior>
 
-    suspend fun setRememberVideoPosition(enabled: Boolean)
+    suspend fun setVideoResumeBehavior(behavior: ResumeBehavior)
 
     /** Kiểu đọc PDF (mặc định cuộn dọc). Lát 8 (PD-02) dùng; hiện chỉ lưu. */
     val pdfReadingStyle: Flow<PdfReadingStyle>

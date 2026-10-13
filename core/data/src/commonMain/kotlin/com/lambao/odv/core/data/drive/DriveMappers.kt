@@ -1,18 +1,28 @@
 package com.lambao.odv.core.data.drive
 
 import com.lambao.odv.core.database.DriveItemEntity
+import com.lambao.odv.core.domain.model.Account
 import com.lambao.odv.core.domain.model.ConnectionConfig
+import com.lambao.odv.core.domain.model.ConnectionProfile
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.ImageInfo
+import com.lambao.odv.core.domain.model.ItemKey
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.VideoMeta
 import com.lambao.odv.core.domain.model.libraryDateOf
 import com.lambao.odv.core.domain.model.mediaKindOf
 import com.lambao.odv.core.network.auth.GraphCredentials
+import com.lambao.odv.core.network.graph.dto.DriveDto
 import com.lambao.odv.core.network.graph.dto.DriveItemDto
 import kotlin.time.Instant
 
-internal fun ConnectionConfig.toCredentials() = GraphCredentials(tenantId, clientId, clientSecret, upn)
+internal fun ConnectionConfig.toCredentials() = GraphCredentials(tenantId, clientId, clientSecret)
+
+internal fun ConnectionProfile.toCredentials() = GraphCredentials(tenantId, clientId, clientSecret)
+
+/** Tài khoản từ response của drive (TA-02): drive id làm khóa, `owner.user` làm tên và email; thiếu thì dự phòng theo [Account.of]. */
+internal fun DriveDto.toAccount(upn: String): Account =
+    Account.of(id, upn, owner?.user?.displayName, owner?.user?.email)
 
 /** Ngày Graph trả là ISO 8601 UTC; giá trị lạ hoặc thiếu thì null thay vì làm hỏng cả trang đồng bộ. */
 private fun parseInstantMs(value: String?): Long? =
@@ -20,17 +30,19 @@ private fun parseInstantMs(value: String?): Long? =
 
 /**
  * Ánh xạ sang hàng Room cho delta (DB-01); null với mục không duyệt được (sổ tay OneNote, như [toDomain]).
- * Gọi sau khi đã loại mục `deleted` và `root`. [scanId] là lần quét đầy đủ đang chạy.
+ * Gọi sau khi đã loại mục `deleted` và `root`. [scanId] là lần quét đầy đủ đang chạy của tài khoản [accountId]; id và id cha được
+ * gắn tiền tố tài khoản ([ItemKey], ADR-0030).
  */
-internal fun DriveItemDto.toEntity(scanId: Long): DriveItemEntity? {
+internal fun DriveItemDto.toEntity(accountId: String, scanId: Long): DriveItemEntity? {
     if (packageFacet != null) return null
     val isFolder = folder != null
     val createdAt = parseInstantMs(fileSystemInfo?.createdDateTime) ?: parseInstantMs(createdDateTime)
     val takenAt = parseInstantMs(photo?.takenDateTime)
     val modifiedAt = parseInstantMs(lastModifiedDateTime)
     return DriveItemEntity(
-        id = id,
-        parentId = parentReference?.id,
+        id = ItemKey.of(accountId, id),
+        accountId = accountId,
+        parentId = parentReference?.id?.let { ItemKey.of(accountId, it) },
         name = name,
         nameKey = searchKey(name),
         sizeBytes = size ?: 0,
@@ -89,13 +101,13 @@ private fun videoMetaOf(width: Int?, height: Int?, frameRate: Double?, bitRate: 
 
 /**
  * Null cho mục không duyệt được: sổ tay OneNote (`package`) có `folder` nhưng không phải thư mục thật.
- * Tệp không hỗ trợ vẫn được giữ (mediaKind = null) để tầng trên quyết định ẩn hay hiện mờ (TM-03).
+ * Tệp không hỗ trợ vẫn được giữ (mediaKind = null) để tầng trên quyết định ẩn hay hiện mờ (TM-03). Id có tiền tố tài khoản [accountId].
  */
-internal fun DriveItemDto.toDomain(): DriveItem? {
+internal fun DriveItemDto.toDomain(accountId: String): DriveItem? {
     if (packageFacet != null) return null
     val isFolder = folder != null
     return DriveItem(
-        id = id,
+        id = ItemKey.of(accountId, id),
         name = name,
         sizeBytes = size ?: 0,
         isFolder = isFolder,

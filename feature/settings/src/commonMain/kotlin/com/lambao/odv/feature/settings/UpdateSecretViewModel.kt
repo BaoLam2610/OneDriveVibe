@@ -3,7 +3,9 @@ package com.lambao.odv.feature.settings
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.usecase.connection.UpdateClientSecretUseCase
+import com.lambao.odv.core.domain.usecase.security.ObserveLockStateUseCase
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -15,7 +17,18 @@ import kotlinx.coroutines.withContext
 class UpdateSecretViewModel(
     private val updateClientSecret: UpdateClientSecretUseCase,
     private val events: SecretUpdateEvents,
+    observeLockState: ObserveLockStateUseCase,
 ) : BaseMviViewModel<UpdateSecretState, UpdateSecretIntent, UpdateSecretEffect>(UpdateSecretState()) {
+
+    init {
+        viewModelScope.launch {
+            // CH-02, CH-03: app bị khóa (rời app quá hạn tự khóa) thì không để Client Secret đang gõ nằm lại trong State suốt lúc khóa.
+            // Lệnh kiểm tra đang chạy (isChecking) đã nhận bản sao của secret nên không bị ảnh hưởng; nhập lại sau khi mở khóa.
+            observeLockState().collect { lock ->
+                if (lock == LockState.Locked) setState { copy(secret = "", revealed = false) }
+            }
+        }
+    }
 
     override fun onIntent(intent: UpdateSecretIntent) {
         when (intent) {

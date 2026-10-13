@@ -6,7 +6,8 @@ import androidx.room3.PrimaryKey
 /**
  * Trang đang đọc của một PDF (PD-05), một dòng cho mỗi tệp. Không có khóa ngoại tới `drive_item`: tiến độ không được mất khi đồng bộ
  * quét lại (xóa rồi ghi lại `drive_item`) và mục bị xóa trên OneDrive thì dòng mồ côi vô hại (nhỏ, và `cTag` không khớp thì bị bỏ qua).
- * `page` đếm từ 0. `cTag` là phiên bản nội dung lúc lưu.
+ * `page` đếm từ 0. `cTag` là phiên bản nội dung lúc lưu. `dismissed` là người dùng bấm X ở dải Đọc tiếp (DS-02, Lát 10): trang vẫn giữ để mở
+ * lại đúng chỗ; mỗi lần lưu lại ghi đè cả dòng nên `dismissed` tự về false.
  */
 @Entity(tableName = "reading_progress")
 data class ReadingProgressEntity(
@@ -17,4 +18,5 @@ data class ReadingProgressEntity(
     /** Epoch mili giây. */
     val updatedAt: Long,
     val finished: Boolean,
+    val dismissed: Boolean,
 )

@@ -87,6 +87,7 @@ internal fun SettingsDialogs(state: SettingsState, onIntent: (SettingsIntent) ->
         }
         SettingsDialog.ClearCache, SettingsDialog.ShrinkCache -> CacheDialogs(state, onIntent)
         SettingsDialog.DisconnectStep1, SettingsDialog.DisconnectStep2 -> DisconnectDialogs(state, onIntent)
+        SettingsDialog.RemoveAccount -> RemoveAccountDialog(state, onIntent)
         null -> Unit
     }
 }

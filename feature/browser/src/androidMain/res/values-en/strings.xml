@@ -1,6 +1,9 @@
 <resources>
     <string name="browser_root">Documents</string>
     <string name="browser_up">Up one level</string>
+    <string name="browser_all_accounts">All accounts</string>
+    <string name="browser_account_inaccessible">Can\'t access</string>
+    <string name="browser_account_not_ready">%1$s is still being scanned for the first time. Try again in a few minutes</string>
     <string name="browser_breadcrumb_hidden">Folders above</string>
     <plurals name="browser_item_count">
         <item quantity="one">%1$d item</item>
@@ -42,5 +45,13 @@
     <!-- Sync banners (D6, D7, DS-04, DS-05, TV-06) -->
     <string name="browser_offline">You are offline. Showing data synced earlier.</string>
     <string name="browser_indexing">Indexing, %1$s items scanned</string>
+    <string name="browser_indexing_account">Indexing %1$s, %2$s items scanned</string>
     <string name="browser_sync_failed">Could not sync. Data may be out of date.</string>
+
+    <!-- Continue watching / reading strip (DS-02, D1) -->
+    <string name="browser_continue_title">Continue watching / reading</string>
+    <string name="browser_continue_video_meta">%1$s left · stopped at %2$s</string>
+    <string name="browser_continue_pdf_meta">Page %1$s / %2$s</string>
+    <string name="browser_continue_dismiss_video">Remove from Continue watching</string>
+    <string name="browser_continue_dismiss_pdf">Remove from Continue reading</string>
 </resources>

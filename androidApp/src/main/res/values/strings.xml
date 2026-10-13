@@ -22,6 +22,21 @@
     <string name="biometric_enroll_subtitle">Xác nhận bằng sinh trắc học của bạn</string> <!-- [mới] -->
     <string name="biometric_use_pin">Dùng mã PIN</string> <!-- [mới] -->
 
+    <!-- Nhiều tài khoản (Lát T, thiet-ke-ui.md mục 4.9, AC1 đến AC3; TA-03, TA-04). [mới]: chuỗi do người dùng viết trong đặc tả, chờ duyệt. -->
+    <string name="account_picker_title">Chọn tài khoản</string>
+    <string name="account_picker_all">Tất cả tài khoản</string>
+    <plurals name="account_picker_all_count">
+        <item quantity="other">%1$d tài khoản</item>
+    </plurals>
+    <string name="account_inaccessible">Không truy cập được tài khoản này</string>
+    <string name="account_add">Thêm tài khoản</string>
+    <string name="account_button_description">Tài khoản: %1$s, %2$s. Chọn tài khoản</string> <!-- [mới] nhãn TalkBack của avatar trên AppBar -->
+    <string name="account_button_description_all">Tài khoản: Tất cả tài khoản. Chọn tài khoản</string> <!-- [mới] -->
+    <string name="account_button_has_error">, có tài khoản không truy cập được</string> <!-- [mới] -->
+    <string name="account_viewing">Đang xem %1$s</string>
+    <string name="account_viewing_all">Đang xem tất cả tài khoản</string>
+    <string name="account_added">Đã thêm %1$s</string>
+
     <!-- Banner secret sắp hết hạn ở Danh sách (CD-06, Q4) -->
     <plurals name="home_expiry_banner">
         <item quantity="other">Client Secret hết hạn sau %1$d ngày</item>

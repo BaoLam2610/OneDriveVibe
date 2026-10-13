@@ -11,6 +11,9 @@ import coil3.key.Keyer
 import coil3.request.Options
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
+import com.lambao.odv.core.common.result.getOrElse
+import com.lambao.odv.core.data.account.AccountDirectory
+import com.lambao.odv.core.domain.model.ItemKey
 import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.ThumbnailSource
 import com.lambao.odv.core.domain.hook.ThumbnailQuality
@@ -70,12 +73,14 @@ internal class ThumbnailUnavailableException(error: AppError) : Exception("Thumb
 internal class GraphThumbnailFetcherFactory(
     private val api: GraphApi,
     private val quality: ThumbnailQuality,
+    private val directory: AccountDirectory,
+    private val index: ThumbnailKeyIndex,
 ) : Fetcher.Factory<ThumbnailSource> {
 
     private val gate = Semaphore(ThumbnailConstants.MAX_PARALLEL_DOWNLOADS)
 
     override fun create(data: ThumbnailSource, options: Options, imageLoader: ImageLoader): Fetcher =
-        GraphThumbnailFetcher(data, quality.scalePercent(), api, imageLoader.diskCache, options, gate)
+        GraphThumbnailFetcher(data, quality.scalePercent(), api, directory, index, imageLoader.diskCache, options, gate)
 }
 
 /**
@@ -87,6 +92,8 @@ internal class GraphThumbnailFetcher(
     private val source: ThumbnailSource,
     private val scalePercent: Int,
     private val api: GraphApi,
+    private val directory: AccountDirectory,
+    private val index: ThumbnailKeyIndex,
     private val diskCache: DiskCache?,
     private val options: Options,
     private val gate: Semaphore,
@@ -113,10 +120,12 @@ internal class GraphThumbnailFetcher(
 
     private suspend fun download(): ByteArray {
         // Lỗi đọc config (kể cả AppLocked khi app khóa) đến từ chính kết quả của GraphApi và thành ThumbnailUnavailableException ở dưới.
-        var result = api.fetchThumbnail(source.itemId, source.size.graphSize(scalePercent))
+        // Id mờ của mục có tiền tố tài khoản (ADR-0030): đổi sang UPN và id Graph thô. Tài khoản đã bị xóa thì không có thumbnail.
+        val target = directory.resolve(source.itemId).getOrElse { throw ThumbnailUnavailableException(it) }
+        var result = api.fetchThumbnail(target.upn, target.graphId, source.size.graphSize(scalePercent))
         val error = (result as? AppResult.Failure)?.error
         if (error is AppError.Http && error.status == 400) {
-            result = api.fetchThumbnail(source.itemId, ThumbnailConstants.FALLBACK_SIZE)
+            result = api.fetchThumbnail(target.upn, target.graphId, ThumbnailConstants.FALLBACK_SIZE)
         }
         return when (result) {
             is AppResult.Success -> result.value
@@ -130,7 +139,10 @@ internal class GraphThumbnailFetcher(
         val editor = cache.openEditor(key) ?: return null
         return try {
             cache.fileSystem.write(editor.data) { write(bytes) }
-            editor.commitAndOpenSnapshot()?.toResult(DataSource.NETWORK)
+            editor.commitAndOpenSnapshot()?.also {
+                // TA-08: ghi nhớ khóa dưới tài khoản chứa tệp để xóa tài khoản thì gỡ được thumbnail của nó.
+                ItemKey.accountIdOf(source.itemId)?.let { account -> index.record(account, key) }
+            }?.toResult(DataSource.NETWORK)
         } catch (e: CancellationException) {
             runCatching { editor.abort() }
             throw e

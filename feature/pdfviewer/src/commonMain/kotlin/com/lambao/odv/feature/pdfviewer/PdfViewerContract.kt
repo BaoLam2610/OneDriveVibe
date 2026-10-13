@@ -32,6 +32,8 @@ data class PdfViewerState(
     val currentPage: Int = 0,
     /** Tệp đã tải đủ nhưng không mở được: có mật khẩu hoặc hỏng (PD-07). */
     val openFailed: Boolean = false,
+    /** Với [openFailed]: tệp hỏng (cho Thử lại sau khi xóa bản cache) chứ không phải có mật khẩu (chỉ Quay lại). */
+    val openCorrupted: Boolean = false,
     /** Thanh công cụ hiện (PD-06). Ẩn thì vào chế độ toàn màn hình. */
     val controlsVisible: Boolean = true,
     /** Số trang (đếm từ 1) cần báo "Đang ở trang X" khi mở lại tệp (PD-05); null là không có gì để báo. */
@@ -45,8 +47,8 @@ sealed interface PdfViewerIntent {
     /** `PdfRenderer` đã mở được tệp với [pageCount] trang. */
     data class Opened(val pageCount: Int) : PdfViewerIntent
 
-    /** Tệp đã tải đủ nhưng `PdfRenderer` không mở được (PD-07). */
-    data object OpenFailed : PdfViewerIntent
+    /** Tệp đã tải đủ nhưng `PdfRenderer` không mở được (PD-07); [corrupted] false là có mật khẩu. */
+    data class OpenFailed(val corrupted: Boolean) : PdfViewerIntent
 
     /** Trang đang đọc đổi thành [page] (đếm từ 0) do cuộn hoặc lật. */
     data class PageChanged(val page: Int) : PdfViewerIntent

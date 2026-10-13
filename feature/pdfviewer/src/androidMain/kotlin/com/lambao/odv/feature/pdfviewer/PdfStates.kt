@@ -110,19 +110,28 @@ internal fun PdfDownloadFailed(
     }
 }
 
-/** Không mở được tệp (PD-07, P6): có mật khẩu hoặc hỏng. Chỉ có nút Quay lại, không có gì để thử lại. */
+/**
+ * Không mở được tệp (PD-07, P6): có mật khẩu hoặc hỏng. [onRetry] null (có mật khẩu) thì chỉ có Quay lại vì tải lại không đổi được gì;
+ * tệp hỏng thì thêm "Thử lại" tải lại bản mới (M3).
+ */
 @Composable
 internal fun PdfOpenError(
     name: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onRetry: (() -> Unit)? = null,
 ) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         ODVViewerError(
             title = stringResource(R.string.pdf_open_error_title),
             body = stringResource(R.string.pdf_open_error_body),
             fileLine = name,
-            action = { ODVViewerButton(stringResource(R.string.pdf_back), onBack) },
+            action = {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ODVViewerButton(stringResource(R.string.pdf_back), onBack)
+                    if (onRetry != null) ODVViewerButton(stringResource(R.string.pdf_retry), onRetry, filled = true)
+                }
+            },
         )
     }
 }

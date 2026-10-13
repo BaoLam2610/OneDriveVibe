@@ -62,8 +62,12 @@ object ODVSize {
     /** Viên chọn mục thanh điều hướng đáy */
     val navIndicatorWidth = 56.dp
     val navIndicatorHeight = 32.dp
-    /** Chấm nhắc trên mục Cài đặt (DH-07) */
+    /** Chấm nhắc trên mục Cài đặt (DH-07); chấm lỗi trên AccountAvatar (mục 4.9) */
     val navDot = 8.dp
+    /** AccountAvatar trên AppBar, trong vùng chạm 48 (mục 4.9, Lát T) */
+    val accountAvatarSm = 32.dp
+    /** AccountAvatar trong AccountRow và vòng hàng Thêm tài khoản; ô tài khoản ở D10 dùng 56 ([thumbRow]) */
+    val accountAvatarMd = 40.dp
     val switchWidth = 52.dp
     val switchHeight = 32.dp
     val radio = 22.dp

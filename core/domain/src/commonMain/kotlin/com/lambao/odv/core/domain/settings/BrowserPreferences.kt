@@ -1,5 +1,6 @@
 package com.lambao.odv.core.domain.settings
 
+import com.lambao.odv.core.domain.model.AccountScope
 import com.lambao.odv.core.domain.model.HomeListTab
 import com.lambao.odv.core.domain.model.SortOrder
 import com.lambao.odv.core.domain.model.ViewMode
@@ -16,7 +17,14 @@ interface BrowserPreferences {
     /** Tab Thư mục hoặc Thư viện dùng gần nhất, để mở app vào đúng tab đó (DH-06). Mặc định [HomeListTab.Folders]. */
     val lastListTab: Flow<HomeListTab>
 
+    /**
+     * Phạm vi xem đã chọn (TA-04); null = chưa chọn. Giá trị thô: **chưa** kiểm tra tài khoản còn tồn tại, `AccountRepository.observeScope`
+     * làm việc đó. Bị xóa cùng các tùy chọn khác khi ngắt kết nối (CD-05).
+     */
+    val accountScope: Flow<AccountScope?>
+
     suspend fun setSortOrder(order: SortOrder)
     suspend fun setViewMode(mode: ViewMode)
     suspend fun setLastListTab(tab: HomeListTab)
+    suspend fun setAccountScope(scope: AccountScope)
 }

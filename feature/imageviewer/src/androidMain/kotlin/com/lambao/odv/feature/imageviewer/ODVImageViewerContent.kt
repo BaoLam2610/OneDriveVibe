@@ -36,6 +36,7 @@ import com.lambao.odv.core.designsystem.component.ODVMediaDefaults
 import com.lambao.odv.core.designsystem.component.ODVSidePanel
 import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.component.ODVViewerPill
+import com.lambao.odv.core.designsystem.component.ODVViewerSystemBars
 import com.lambao.odv.core.designsystem.component.ODVViewerTopBar
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVDuration

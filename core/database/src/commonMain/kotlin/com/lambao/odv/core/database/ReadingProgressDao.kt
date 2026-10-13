@@ -14,7 +14,18 @@ interface ReadingProgressDao {
     @Upsert
     suspend fun upsert(entity: ReadingProgressEntity)
 
+    /** Ẩn khỏi dải Đọc tiếp nhưng giữ trang đang đọc (DS-02). */
+    @Query("UPDATE reading_progress SET dismissed = 1 WHERE itemId = :itemId")
+    suspend fun dismiss(itemId: String)
+
     /** Xóa toàn bộ (ngắt kết nối, CD-05). */
     @Query("DELETE FROM reading_progress")
     suspend fun deleteAll()
+
+    /**
+     * Xóa tiến độ của một tài khoản (TA-08): `itemId` có tiền tố `<drive id>|` ([prefix]). Dùng `substr` thay `LIKE` vì `_` trong drive id
+     * (base64 url) là ký tự đại diện của `LIKE`.
+     */
+    @Query("DELETE FROM reading_progress WHERE substr(itemId, 1, length(:prefix)) = :prefix")
+    suspend fun deleteWithPrefix(prefix: String)
 }

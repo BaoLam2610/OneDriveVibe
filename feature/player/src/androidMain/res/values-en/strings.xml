@@ -67,6 +67,7 @@
     <string name="player_info_created">Created</string> <!-- [mới] -->
     <string name="player_info_modified">Last modified</string>
     <string name="player_info_folder">Folder</string>
+    <string name="player_info_account">Account</string>
 
     <string name="player_error_unsupported_title">This device can\'t play this format</string>
     <string name="player_error_unsupported_body">This device has no decoder for this file.</string>
@@ -78,5 +79,11 @@
     <string name="player_error_network_body">Everything that was buffered has played. Check your connection, then tap Resume.</string>
     <string name="player_error_network_hint">The button turns on when you\'re back online</string>
     <string name="player_resume">Resume</string>
+
+    <!-- Resume prompt (VD-12, V3) -->
+    <string name="player_resume_title">Resume from %1$s?</string>
+    <string name="player_resume_body">You\'ve watched %1$d%% of this video.</string>
+    <string name="player_resume_continue">Resume</string>
+    <string name="player_resume_restart">Start over</string>
     <string name="player_retry">Try again</string> <!-- [mới] -->
 </resources>

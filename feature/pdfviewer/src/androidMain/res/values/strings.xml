@@ -42,5 +42,6 @@
     <string name="pdf_info_uploaded">Ngày tải lên</string> <!-- [mới] -->
     <string name="pdf_info_modified">Ngày sửa</string> <!-- [mới] -->
     <string name="pdf_info_folder">Thư mục</string> <!-- [mới] -->
+    <string name="pdf_info_account">Tài khoản</string> <!-- [mới] Lát T: hàng cuối khi có từ 2 tài khoản -->
     <string name="pdf_info_root" translatable="false">OneDrive</string>
 </resources>

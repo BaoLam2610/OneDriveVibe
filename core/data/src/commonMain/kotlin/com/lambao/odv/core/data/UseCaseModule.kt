@@ -1,5 +1,12 @@
 package com.lambao.odv.core.data
 
+import com.lambao.odv.core.domain.usecase.account.AddAccountUseCase
+import com.lambao.odv.core.domain.usecase.account.ObserveAccountScopeUseCase
+import com.lambao.odv.core.domain.usecase.account.ObserveItemAccountUseCase
+import com.lambao.odv.core.domain.usecase.account.ObserveAccountStatusesUseCase
+import com.lambao.odv.core.domain.usecase.account.ObserveAccountsUseCase
+import com.lambao.odv.core.domain.usecase.account.RemoveAccountUseCase
+import com.lambao.odv.core.domain.usecase.account.SelectAccountScopeUseCase
 import com.lambao.odv.core.domain.usecase.cache.ClearCacheUseCase
 import com.lambao.odv.core.domain.usecase.cache.GetCacheUsageUseCase
 import com.lambao.odv.core.domain.usecase.cache.ObserveCacheBudgetUseCase
@@ -14,6 +21,7 @@ import com.lambao.odv.core.domain.usecase.folder.ObserveFolderContentUseCase
 import com.lambao.odv.core.domain.usecase.folder.SearchDriveUseCase
 import com.lambao.odv.core.domain.usecase.library.ObserveLibraryDaysUseCase
 import com.lambao.odv.core.domain.usecase.library.ObserveLibraryPagesUseCase
+import com.lambao.odv.core.domain.usecase.library.SearchLibraryPagesUseCase
 import com.lambao.odv.core.domain.usecase.security.ChangePinUseCase
 import com.lambao.odv.core.domain.usecase.security.DisableBiometricUseCase
 import com.lambao.odv.core.domain.usecase.security.DisableProtectionUseCase
@@ -33,10 +41,16 @@ import com.lambao.odv.core.domain.usecase.settings.GetLanguageUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveConnectionInfoUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveLastListTabUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveShortMaxMinutesUseCase
+import com.lambao.odv.core.domain.usecase.pdf.DiscardCachedPdfUseCase
 import com.lambao.odv.core.domain.usecase.pdf.GetPdfFileUseCase
 import com.lambao.odv.core.domain.usecase.pdf.GetReadingProgressUseCase
 import com.lambao.odv.core.domain.usecase.pdf.OpenPdfUseCase
 import com.lambao.odv.core.domain.usecase.pdf.SaveReadingProgressUseCase
+import com.lambao.odv.core.domain.usecase.watch.ClearWatchProgressUseCase
+import com.lambao.odv.core.domain.usecase.watch.DismissContinueItemUseCase
+import com.lambao.odv.core.domain.usecase.watch.GetWatchProgressUseCase
+import com.lambao.odv.core.domain.usecase.watch.ObserveContinueItemsUseCase
+import com.lambao.odv.core.domain.usecase.watch.SaveWatchProgressUseCase
 import com.lambao.odv.core.domain.usecase.shorts.GetShortVideoUseCase
 import com.lambao.odv.core.domain.usecase.shorts.ObserveShortTabAvailableUseCase
 import com.lambao.odv.core.domain.usecase.shorts.ObserveShortVideoIdsUseCase
@@ -71,6 +85,15 @@ val useCaseModule = module {
     factoryOf(::ConnectUseCase)
     factoryOf(::UpdateClientSecretUseCase)
 
+    // Nhiều tài khoản (Lát T, ADR-0030): danh sách, phạm vi xem, thêm, xóa (TA-01 → TA-12).
+    factoryOf(::ObserveAccountsUseCase)
+    factoryOf(::ObserveAccountScopeUseCase)
+    factoryOf(::ObserveAccountStatusesUseCase)
+    factoryOf(::ObserveItemAccountUseCase)
+    factoryOf(::SelectAccountScopeUseCase)
+    factoryOf(::AddAccountUseCase)
+    factoryOf(::RemoveAccountUseCase)
+
     // Bảo mật
     factoryOf(::ObserveLockStateUseCase)
     factoryOf(::ObserveProtectionUseCase)
@@ -95,6 +118,7 @@ val useCaseModule = module {
     factoryOf(::SearchDriveUseCase)
     factoryOf(::GetFolderPathUseCase)
     factoryOf(::ObserveLibraryPagesUseCase)
+    factoryOf(::SearchLibraryPagesUseCase)
     factoryOf(::ObserveLibraryDaysUseCase)
 
     // Màn xem ảnh và video
@@ -105,9 +129,17 @@ val useCaseModule = module {
 
     // Màn xem PDF (Lát 9, PD-01, PD-05, PD-08)
     factoryOf(::OpenPdfUseCase)
+    factoryOf(::DiscardCachedPdfUseCase)
     factoryOf(::GetPdfFileUseCase)
     factoryOf(::GetReadingProgressUseCase)
     factoryOf(::SaveReadingProgressUseCase)
+
+    // Xem tiếp / Đọc tiếp (Lát 10, DS-02, VD-12): vị trí xem video và dải ở tab Thư mục
+    factoryOf(::GetWatchProgressUseCase)
+    factoryOf(::SaveWatchProgressUseCase)
+    factoryOf(::ClearWatchProgressUseCase)
+    factoryOf(::ObserveContinueItemsUseCase)
+    factoryOf(::DismissContinueItemUseCase)
 
     // Cài đặt (Lát 7)
     factoryOf(::ObserveThemeModeUseCase)

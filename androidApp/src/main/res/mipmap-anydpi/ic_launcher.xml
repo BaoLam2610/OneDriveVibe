@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    App icon cho Android 7.x (API 24 và 25), nơi chưa có adaptive icon (từ API 26 thì mipmap-anydpi-v26 được ưu tiên). Dùng vector thay
+    cho PNG mẫu của template (chốt 2026-10-13): ô bo góc nền ink + logo mark, cùng hình với ic_launcher_foreground.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#101217"
+        android:pathData="M30,4H78A26,26 0 0 1 104,30V78A26,26 0 0 1 78,104H30A26,26 0 0 1 4,78V30A26,26 0 0 1 30,4Z" />
+    <group
+        android:scaleX="1.27"
+        android:scaleY="1.27"
+        android:translateX="13.36"
+        android:translateY="13.36">
+        <path
+            android:fillColor="#FFC5F23A"
+            android:pathData="M20 6H39V22A3 3 0 0 0 42 25H58V44A14 14 0 0 1 44 58H20A14 14 0 0 1 6 44V20A14 14 0 0 1 20 6Z" />
+        <path
+            android:fillColor="#FF8DB31A"
+            android:pathData="M42 6V18A4 4 0 0 0 46 22H58Z"
+            android:strokeColor="#FF8DB31A"
+            android:strokeWidth="1.5"
+            android:strokeLineJoin="round" />
+        <path
+            android:fillColor="#FF101217"
+            android:pathData="M27.02 22.78L43.02 32.28A2 2 0 0 1 43.02 35.72L43.02 35.72L27.02 45.22A2 2 0 0 1 24.00 43.50L24.00 43.50L24.00 24.50A2 2 0 0 1 27.02 22.78Z" />
+    </group>
+</vector>

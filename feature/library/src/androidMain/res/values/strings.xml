@@ -43,7 +43,16 @@
     <!-- Banner đồng bộ (D3, D7, DS-05, TV-06) -->
     <string name="library_offline">Đang offline. Đang hiển thị dữ liệu đã đồng bộ.</string> <!-- [mới] -->
     <string name="library_indexing">Đang lập chỉ mục, đã quét %1$s mục</string>
+    <string name="library_indexing_account">Đang lập chỉ mục %1$s, đã quét %2$s mục</string> <!-- [mới] D7 ở phạm vi Tất cả tài khoản, TA-05 -->
     <string name="library_indexing_action">Xem Thư mục</string> <!-- [mới] lối tắt TV-06 -->
     <string name="library_sync_failed">Không đồng bộ được. Dữ liệu có thể chưa mới nhất.</string> <!-- [mới] -->
     <string name="library_retry">Thử lại</string> <!-- [mới] -->
+
+    <!-- Tìm kiếm trong Thư viện (TV-07) -->
+    <string name="library_search">Tìm kiếm</string> <!-- [mới] mô tả nút trên AppBar -->
+    <string name="library_search_placeholder">Tìm tên ảnh hoặc video</string> <!-- [mới] đã duyệt 2026-10-13 -->
+    <string name="library_search_back">Quay lại</string> <!-- [mới] -->
+    <string name="library_search_clear">Xóa từ khóa</string> <!-- [mới] -->
+    <string name="library_search_empty_title">Không tìm thấy kết quả</string> <!-- [mới] -->
+    <string name="library_search_empty_body">Không có ảnh hay video nào khớp “%1$s”.</string> <!-- [mới] -->
 </resources>

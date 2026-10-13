@@ -30,7 +30,8 @@ ADR đã xong từ trước: 0001 và 0010 (cấu trúc module), 0009 (không l�
 | 5 | Xem ảnh | | feature:imageviewer |
 | 6 | Xem video (6a: phát và điều khiển cơ bản; 6b: phần còn lại) | | feature:player |
 | 7 | Cài đặt đầy đủ | 0019, 0021, 0022 | feature:settings |
-| 8 | Thanh điều hướng đáy và tab Short | 0023, 0024 | androidApp, feature:shorts, feature:settings, data |
+| 8 | Thanh điều hướng đáy và tab Short | 0023, 0024, 0025, 0026, 0027 | androidApp, feature:shorts, feature:settings, data |
+| T | Nhiều tài khoản: thêm, chọn, xóa, xem gộp Tất cả; đồng bộ mọi tài khoản (chen sau Lát 8, 2026-10-12) | 0030 (bổ sung 0005, 0007) | domain, security, network, database, data, designsystem, feature:auth, browser, library, shorts, settings, androidApp |
 | 9 | Xem PDF | | feature:pdfviewer |
 | 10 | Xem tiếp / Đọc tiếp | | data, feature:browser, player, pdfviewer |
 
@@ -111,8 +112,20 @@ Làm sau khi review code Lát 7 xong. Đặc tả: mục 3.4 (DH-01 → DH-08) v
 
 - **8a. Thanh điều hướng đáy** (ADR-0023): Màn chính với 4 mục Thư mục, Thư viện, Short, Cài đặt (DH-01); mỗi tab giữ trạng thái riêng, kể cả sau khi khóa và khi hệ điều hành thu hồi tiến trình (DH-02); Back theo DH-03; chạm lại tab (DH-04); thanh ẩn ở màn xem, màn khóa và màn con Cài đặt (DH-05); tab mở khi khởi động (DH-06); chấm nhắc secret (DH-07); `FLAG_SECURE` theo tab (DH-08). Cài đặt chuyển thành tab, bỏ nút bánh răng trên AppBar; các chỗ đang điều hướng tới route Cài đặt (banner CD-06) đổi thành chuyển tab. Bỏ `ODVHomeScreen` dạng Tabs. Thêm icon `short` và 4 token `nav-*` vào `:core:designsystem` khi thiết kế được duyệt.
 - **8b. Tab Short cơ bản** (`:feature:shorts` mới): danh sách ID video theo thời lượng tối đa lấy từ Room (SV-01; xem có cần index theo `mediaKind`, thời lượng không, nếu đổi schema thì tăng version theo ADR-0015); xáo bằng seed lưu trong saved state (SV-02); kéo để xáo lại ở video đầu (SV-03); vuốt dọc chuyển video (SV-04); tự phát có tiếng và tự lặp (SV-05); chạm tạm dừng (SV-06); thanh tiến độ (SV-07); khung hình theo kích thước sau giải mã (SV-08); tên tệp mờ (SV-09); nền tối (SV-10); danh sách rỗng (SV-15). Cài đặt › Video thêm "Thời lượng tối đa của Short" (CD-13).
-- **8c. Tải trước và vòng đời** (ADR-0024; cơ chế tải trước đổi sang `CacheWriter` ở ADR-0026 `proposed`): cửa sổ ±1 qua cache video chung (SV-13); tạm dừng/phát tiếp khi đổi tab, xuống nền, khóa (SV-11); không lưu vị trí xem (SV-12); lỗi link, codec, mạng (SV-14); dữ liệu thay đổi (SV-16).
+- **8c. Tải trước và vòng đời** (ADR-0024; cơ chế tải trước đổi sang `CacheWriter` ở ADR-0026, `accepted` 2026-10-11; poster khung hình đầu ở ADR-0027): cửa sổ ±1 qua cache video chung (SV-13); tạm dừng/phát tiếp khi đổi tab, xuống nền, khóa (SV-11); không lưu vị trí xem (SV-12); lỗi link, codec, mạng (SV-14); dữ liệu thay đổi (SV-16).
 - **Kiểm tay:** chuyển qua lại 4 tab ở giữa thư mục sâu và giữa danh sách Thư viện đã cuộn xa rồi kiểm vị trí; Back từ từng tab; bật "Don't keep activities" rồi mở lại; tab Short ẩn khi đang lập chỉ mục và khi tắt Video; vuốt nhanh 10 video liên tiếp (có mạng, mất mạng giữa chừng); video HEVC 10-bit qua decoder FFmpeg; video dọc quay bằng điện thoại (cờ xoay), video 3:4, video ngang; khóa app khi đang phát Short; đổi thời lượng tối đa rồi quay lại tab Short; chụp màn hình ở tab Cài đặt khi bật và tắt "Bảo vệ màn hình". Checklist giao diện ở `thiet-ke-ui.md` mục 10.
+
+### Lát T: Nhiều tài khoản (chen sau Lát 8, trước phần kiểm còn lại của Lát 9; thêm 2026-10-12)
+
+Người dùng yêu cầu làm ngay vì quan trọng; Lát 9 đã code xong 9a đến 9c nên chỉ lùi phần kiểm phụ và review. **Không đánh số lại** (đặt tên T = Tài khoản, theo tiền lệ Lát D; không dùng 8b vì đã là bước con của Lát 8; nhờ vậy các tài liệu và comment ghi Lát 9, 10 vẫn đúng). Đặc tả: `dac-ta-nghiep-vu.md` mục 3.9 (TA-01 → TA-12) và các quy tắc đã sửa theo. ADR-0030. Thiết kế: `thiet-ke-ui.md` mục 4.9, 5.2 (D10), 5.4 (AC1 → AC9), 5.5 (SH10), **đã vẽ xong (2026-10-12)**. **Chốt 2026-10-12:** đồng bộ **mọi tài khoản**, lần lượt, tài khoản đang xem chạy trước; phạm vi xem là một tài khoản hoặc Tất cả; không giới hạn số tài khoản; thêm/xóa không hỏi PIN.
+
+- **T1. Domain và security:** tách `ConnectionConfig` thành phần dùng chung + danh sách `Account` (UPN, tên hiển thị, email, drive id); đổi định dạng `ConfigVault` (chưa phát hành nên không cần migration); use case thêm, xóa, chọn phạm vi, theo dõi danh sách và phạm vi.
+- **T2. Network:** UPN truyền theo từng lời gọi, một token dùng chung; kiểm tra kết nối lấy thêm `owner` (TA-02).
+- **T3. Database và data:** thêm `accountId` (= drive id) vào `drive_item` (khóa kép), `sync_state` (một dòng mỗi tài khoản), `reading_progress`; **tăng `version` ở `OdvDatabase`** (ADR-0015) và ghi lịch sử; mọi truy vấn đọc nhận danh sách `accountId` của phạm vi; khóa cache và link phát chia sẻ (ADR-0029) thêm tài khoản (BN-02).
+- **T4. Đồng bộ nhiều tài khoản:** hàng đợi lần lượt, tài khoản đang xem lên đầu, lỗi một tài khoản không chặn các tài khoản sau (TA-10); DB-01 → DB-04 theo từng tài khoản.
+- **T5. UI dùng chung và màn:** `:core:designsystem` (AccountAvatar, AccountRow, icon `users`, `user-plus`, `trash`), avatar trên AppBar, sheet Chọn tài khoản, màn Thêm tài khoản, nhóm "Tài khoản và kết nối" ở Cài đặt, D10, dòng thư mục có tên tài khoản ở Short (SH10), chuỗi VI/EN.
+- **T6. Đổi phạm vi và dọn dẹp:** TA-06 (dừng Short, bỏ link đã ký, bỏ trạng thái tab, về gốc Thư mục), ngắt kết nối/quên PIN xóa mọi tài khoản (TA-12), review Kotlin.
+- **Kiểm tay:** thêm tài khoản khi bảo mật PIN bật và tắt; đổi phạm vi giữa thư mục sâu, Thư viện đã cuộn, Short đang phát; bật "Don't keep activities" rồi mở lại; đồng bộ lần lượt ba tài khoản (tắt mạng giữa chừng, tài khoản lỗi `403`/`404`); xóa tài khoản đang xem và không đang xem; Thư viện gộp không lẫn tệp tài khoản đã xóa; ngắt kết nối xóa hết.
 
 ### Lát 9: Xem PDF
 
@@ -123,6 +136,15 @@ Làm sau khi review code Lát 7 xong. Đặc tả: mục 3.4 (DH-01 → DH-08) v
 - DS-02, VD-12 (PD-05 đã chuyển sang Lát 9).
 - Đăng ký `ConnectionResetter` xóa lịch sử xem khi ngắt kết nối.
 
+### Mục bổ sung sau Lát 10: Tìm kiếm trong Thư viện (TV-07, duyệt 2026-10-13)
+
+Không phải lát mới; làm sau Lát 10, trước khi chuyển sang phần kiểm còn lại. Kế hoạch đã duyệt (Q1 đến Q4 đều chọn phương án A):
+
+- **Phạm vi:** chỉ ảnh và video của Thư viện (loại tệp bật ở Cài đặt, chip lọc đang chọn, phạm vi tài khoản đang xem); kết quả là **lưới phẳng** 4 cột dùng lại ô của Thư viện; không giới hạn số kết quả (phân trang); màn xem chỉ vuốt trong kết quả khớp.
+- **Không đổi schema Room** (dùng cột `nameKey` và `instr` như DS-03) nên không tăng `version` ở `OdvDatabase`.
+- **Các bước:** (1) `:core:database`/`:core:domain`/`:core:data`: `DriveDao.pagedLibrarySearch` + `observeLibrarySearchItems`, `LibraryRepository.librarySearchPages`, `SearchLibraryPagesUseCase`, `ViewerContext.Library(filter, query)`, nhánh tìm trong `ViewerRepositoryImpl`; (2) `:feature:library`: `LibrarySearchState`, intent `OpenSearch/CloseSearch/QueryChanged`, `searchPages` (debounce 250ms, `cachedIn`), đóng tìm khi đổi phạm vi tài khoản; (3) giao diện: nút Tìm kiếm, `ODVSearchBar`, `SearchBody` (lưới phẳng, trạng thái trống, spinner), `LibraryMediaCell` dùng chung, Back đóng tìm trước; (4) `:androidApp`: `libraryQuery` ở route `ImageViewer`/`VideoPlayer` (mặc định null, tương thích route cũ); (5) chuỗi VI/EN [mới], đặc tả TV-07, thiết kế mục 5.2 và mục 11 dòng 20.
+- **Chưa có artboard** (xem `thiet-ke-ui.md` mục 11 dòng 20).
+
 ## 3. Thư viện chưa có trong ADR (đã duyệt)
 
 | Việc | Chọn | Ghi chú |
@@ -130,7 +152,7 @@ Làm sau khi review code Lát 7 xong. Đặc tả: mục 3.4 (DH-01 → DH-08) v
 | Argon2id | `argon2kt` | Native, nhanh. Phương án dự phòng: BouncyCastle (thuần Java, chậm hơn) |
 | Lưu cài đặt | DataStore Preferences | |
 | Tải ảnh, thumbnail | Coil 3 | |
-| Phát video | Media3 ExoPlayer + `SimpleCache` | Tab Short thêm `DefaultPreloadManager` của Media3 (ADR-0024) |
+| Phát video | Media3 ExoPlayer + `SimpleCache` | Tab Short tải trước ±1 bằng `CacheWriter` vào cache video chung (ADR-0026, thay `DefaultPreloadManager` của ADR-0024) |
 | PDF | `PdfRenderer` của Android | |
 | Đồng bộ chạy nền | Coroutine trong app | Thêm WorkManager khi cần đồng bộ lúc app đã đóng |
 | Log local | Kermit 2.2.0 | Bản debug đẩy vào màn Debug; release không writer (ADR-0012) |

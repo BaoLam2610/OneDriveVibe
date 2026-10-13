@@ -4,6 +4,8 @@ import com.lambao.odv.core.domain.model.UnlockResult
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import com.lambao.odv.core.domain.settings.SecuritySettings
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 
 /**
  * Tắt bảo vệ ứng dụng (CD-03): kiểm tra [pin] rồi mã hóa lại config ở chế độ thiết bị. Thành công thì tắt luôn "Xóa dữ liệu khi nhập
@@ -18,7 +20,8 @@ class DisableProtectionUseCase(
     suspend operator fun invoke(pin: CharArray): UnlockResult {
         val result = security.disableProtection(pin)
         when (result) {
-            UnlockResult.Success -> settings.setWipeOnTooManyFailures(false)
+            // NonCancellable: config đã ở chế độ thiết bị, cờ xóa-khi-sai-nhiều phải tắt cùng lúc (không để cờ bật mà không còn PIN).
+            UnlockResult.Success -> withContext(NonCancellable) { settings.setWipeOnTooManyFailures(false) }
             UnlockResult.Wiped -> disconnect()
             else -> Unit
         }

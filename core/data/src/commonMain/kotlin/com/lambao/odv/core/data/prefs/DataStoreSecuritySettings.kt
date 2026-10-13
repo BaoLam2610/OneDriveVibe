@@ -23,7 +23,7 @@ internal class DataStoreSecuritySettings(
     }
 
     override val autoLockDelay: Flow<AutoLockDelay> =
-        prefs.observeEnum(PreferenceKeys.AUTO_LOCK_DELAY, AutoLockDelay.OneMinute, AutoLockDelay.entries)
+        prefs.observeEnum(PreferenceKeys.AUTO_LOCK_DELAY, AutoLockDelay.Immediately, AutoLockDelay.entries)
 
     override suspend fun setAutoLockDelay(delay: AutoLockDelay) {
         prefs.edit { it[PreferenceKeys.AUTO_LOCK_DELAY] = delay.name }

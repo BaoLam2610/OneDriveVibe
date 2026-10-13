@@ -85,8 +85,10 @@
     <string name="settings_mode_repeat_one_desc">Replay from the start right away</string>
     <string name="settings_mode_repeat_list">Repeat list</string>
     <string name="settings_mode_repeat_list_desc">After the last video, go back to the first</string>
-    <string name="settings_remember_position">Remember position</string>
-    <string name="settings_remember_position_desc">Ask “Resume from…?” when reopening</string>
+    <string name="settings_resume">Reopening a video</string>
+    <string name="settings_resume_ask">Ask first</string>
+    <string name="settings_resume_always">Always resume</string>
+    <string name="settings_resume_start_over">Always start over</string>
 
     <string name="settings_pdf_style">Reading style</string>
     <string name="settings_pdf_vertical">Vertical scroll</string>
@@ -114,8 +116,24 @@
     <string name="settings_cache_shrink_body">The cache is using %1$s, which is over the new limit. OneDriveVibe will delete the least recently used files right away until it is under %2$s.</string>
     <string name="settings_cache_shrink_confirm">Lower and clean up</string>
 
-    <string name="settings_group_connection">Connection</string>
-    <string name="settings_account">Account (UPN)</string>
+    <string name="settings_group_connection">Accounts and connection</string>
+    <string name="settings_viewing">Viewing</string>
+    <string name="settings_viewing_all">All accounts</string>
+    <string name="settings_account_current_badge">Viewing</string>
+    <string name="settings_account_synced_at">Synced %1$s</string>
+    <string name="settings_account_never_synced">Not synced yet</string>
+    <string name="settings_account_indexing">Indexing, %1$s items scanned</string>
+    <string name="settings_account_inaccessible">Can\'t access this account</string>
+    <string name="settings_account_remove">Remove %1$s from the app</string>
+    <string name="settings_account_add">Add account</string>
+    <string name="settings_shared_caption">Shared by all accounts</string>
+    <string name="settings_remove_account_title">Remove account from the app?</string>
+    <string name="settings_remove_account_body">Synced data, watch history and cache of %1$s on this device will be deleted. Files on OneDrive are not affected.</string>
+    <string name="settings_remove_account_confirm">Remove from app</string>
+    <string name="settings_account_cannot_remove_current">Switch to another account before removing this one</string>
+    <string name="settings_account_cannot_remove_last">Can\'t remove the only account. Use Disconnect to remove the connection.</string>
+    <string name="settings_account_removed">Removed %1$s from the app</string>
+    <string name="settings_account_remove_failed">Couldn\'t remove this account</string>
     <string name="settings_last_sync">Last synced</string>
     <string name="settings_last_sync_today">Today %1$s</string>
     <string name="settings_last_sync_yesterday">Yesterday %1$s</string>
@@ -147,12 +165,34 @@
     <string name="settings_disconnect">Disconnect</string>
     <string name="settings_disconnect_desc">Erase all data on this device</string>
     <string name="settings_disconnect_title">Disconnect OneDrive?</string>
-    <string name="settings_disconnect_body">The only way to use the app again is to connect from scratch. Files on OneDrive are not affected.</string>
+    <string name="settings_disconnect_body">The only way to use the app again is to connect from scratch. All accounts in the app will be removed. Files on OneDrive are not affected.</string>
     <string name="settings_disconnect_final_title">Erase data and disconnect?</string>
     <string name="settings_disconnect_final_body">Connection details, watch history and settings on this device will be erased. Files on OneDrive are not affected.</string>
     <string name="settings_disconnect_final_confirm">Erase data</string>
 
     <!-- Update Client Secret screen -->
+    <string name="account_add_title">Add account</string>
+    <string name="account_add_description">The new account shares the Tenant ID, Client ID and Client Secret you already connected. Just enter the email (UPN) of an account in the same tenant.</string>
+    <string name="account_add_label">Account email (UPN)</string>
+    <string name="account_add_hint">Example: name@contoso.com</string>
+    <string name="account_add_format_error">Email format is not valid</string>
+    <string name="account_add_duplicate">This account is already in the app</string>
+    <string name="account_add_submit">Add account</string>
+    <string name="account_add_checking">Checking…</string>
+    <string name="account_add_checking_description">Checking the account</string>
+    <string name="account_add_error_title">Couldn\'t connect</string>
+    <string name="account_add_error_code">Error code: %1$s</string>
+    <string name="account_add_error_close">Close</string>
+    <string name="account_add_error_fix_secret">Fix Client Secret</string>
+    <string name="account_add_error_secret_invalid">The Client Secret is incorrect. Check that you copied the Value column, not the Secret ID.</string>
+    <string name="account_add_error_secret_expired">The Client Secret has expired, create a new one.</string>
+    <string name="account_add_error_app_disabled">The app is disabled in Entra.</string>
+    <string name="account_add_error_forbidden">The app has not been granted the Files.Read.All permission, or admin consent has not been granted.</string>
+    <string name="account_add_error_drive_not_found">No OneDrive was found for this UPN (wrong UPN, no license, or OneDrive not initialized). Note: the app only supports OneDrive for Business accounts, not personal Microsoft accounts.</string>
+    <string name="account_add_error_network">Couldn\'t connect, check your network and try again.</string>
+    <string name="account_add_error_save">Couldn\'t save the account on this device.</string>
+    <string name="account_add_error_other">Something went wrong. Use the error code below to look it up.</string>
+
     <string name="secret_title">Update Client Secret</string>
     <string name="secret_description">Create a new secret in the Entra admin center, then paste its value here. OneDriveVibe only saves it after the connection check succeeds.</string>
     <string name="secret_label">New Client Secret</string>

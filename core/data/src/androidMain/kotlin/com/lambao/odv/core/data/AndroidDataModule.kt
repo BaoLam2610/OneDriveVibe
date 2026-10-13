@@ -10,6 +10,7 @@ import coil3.gif.GifDecoder
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
+import com.lambao.odv.core.data.account.AccountDirectory
 import com.lambao.odv.core.data.cache.CacheBudgetSource
 import com.lambao.odv.core.data.file.ResumableFileStore
 import com.lambao.odv.core.data.original.FileOriginalImageRepository
@@ -24,9 +25,12 @@ import com.lambao.odv.core.data.prefs.PreferencesDataSource
 import com.lambao.odv.core.data.prefs.PreferencesResetter
 import com.lambao.odv.core.data.prefs.createPreferencesDataStore
 import com.lambao.odv.core.data.thumbnail.FixedThumbnailQuality
+import com.lambao.odv.core.data.thumbnail.FileThumbnailKeyIndex
 import com.lambao.odv.core.data.thumbnail.GraphThumbnailFetcherFactory
+import com.lambao.odv.core.data.thumbnail.ThumbnailKeyIndex
 import com.lambao.odv.core.data.thumbnail.ThumbnailCacheResetter
 import com.lambao.odv.core.data.thumbnail.ThumbnailKeyer
+import com.lambao.odv.core.domain.hook.AccountDataCleaner
 import com.lambao.odv.core.domain.hook.CacheBudgetProvider
 import com.lambao.odv.core.domain.hook.CacheStore
 import com.lambao.odv.core.domain.hook.ConnectionResetter
@@ -98,17 +102,25 @@ val androidDataModule = module {
     single<ThumbnailQuality> { FixedThumbnailQuality }
     // Trần cache thumbnail do người dùng đặt (CD); Coil chỉ nhận lúc tạo nên đổi trần có hiệu lực từ lần mở app sau (xem ThumbnailCacheResetter).
     single<ImageLoader> {
-        createImageLoader(androidContext(), get(), get(), get<CacheBudgetProvider>().bytesFor(CacheKind.Thumbnail))
+        createImageLoader(androidContext(), get(), get(), get(), get(), get<CacheBudgetProvider>().bytesFor(CacheKind.Thumbnail))
     }
     // Xóa cache thumbnail khi ngắt kết nối: DisconnectUseCase gom mọi ConnectionResetter bằng getAll(). Cũng là ThumbnailCache
     // để màn Debug xóa tay.
-    singleOf(::ThumbnailCacheResetter) binds arrayOf(ConnectionResetter::class, ThumbnailCache::class, CacheStore::class)
+    // Chỉ mục khóa thumbnail theo tài khoản: để xóa tài khoản thì gỡ được thumbnail của nó khỏi cache của Coil (TA-08, ADR-0030).
+    single<ThumbnailKeyIndex> { FileThumbnailKeyIndex(androidContext().cacheDir.resolve(StorageNames.THUMBNAIL_INDEX_DIR), get()) }
+    singleOf(::ThumbnailCacheResetter) binds arrayOf(
+        ConnectionResetter::class,
+        ThumbnailCache::class,
+        CacheStore::class,
+        AccountDataCleaner::class,
+    )
     // Ảnh gốc (Lát 5): kho tệp riêng, tách khỏi cache thumbnail vì thumbnail cố ý chất lượng thấp; cũng là ConnectionResetter
     // để ngắt kết nối xóa sạch (CD-05).
     single {
         val budget = get<CacheBudgetProvider>()
         FileOriginalImageRepository(
             api = get(),
+            directory = get(),
             store = ResumableFileStore(
                 directory = androidContext().cacheDir.resolve(StorageNames.ORIGINALS_DIR),
                 // Đọc lúc cần: người dùng đổi giới hạn ở Cài đặt (CD) thì lần dọn kế tiếp dùng trần mới.
@@ -117,13 +129,14 @@ val androidDataModule = module {
                 logTag = "OriginalImage",
             ),
         )
-    } binds arrayOf(OriginalImageRepository::class, ConnectionResetter::class, CacheStore::class)
+    } binds arrayOf(OriginalImageRepository::class, ConnectionResetter::class, CacheStore::class, AccountDataCleaner::class)
     // PDF (Lát 9a): cùng ResumableFileStore với ảnh gốc nhưng thư mục và trần riêng (CacheKind.Pdf); cũng là ConnectionResetter và
     // CacheStore nên Ngắt kết nối xóa sạch (CD-05) và Cài đặt đo, xóa, dọn theo giới hạn (CD-07).
     single {
         val budget = get<CacheBudgetProvider>()
         FilePdfRepository(
             api = get(),
+            directory = get(),
             dao = get(),
             store = ResumableFileStore(
                 directory = androidContext().cacheDir.resolve(StorageNames.PDF_DIR),
@@ -133,7 +146,7 @@ val androidDataModule = module {
             ),
             dispatchers = get(),
         )
-    } binds arrayOf(PdfRepository::class, ConnectionResetter::class, CacheStore::class)
+    } binds arrayOf(PdfRepository::class, ConnectionResetter::class, CacheStore::class, AccountDataCleaner::class)
 }
 
 /**
@@ -149,6 +162,8 @@ private fun createImageLoader(
     context: Context,
     api: GraphApi,
     quality: ThumbnailQuality,
+    directory: AccountDirectory,
+    index: ThumbnailKeyIndex,
     diskMaxBytes: Long,
 ): ImageLoader =
     ImageLoader.Builder(context)
@@ -156,7 +171,7 @@ private fun createImageLoader(
             // GIF động (AN-06): ImageDecoder từ Android 9, bản thấp hơn dùng decoder tự viết của coil-gif.
             if (Build.VERSION.SDK_INT >= 28) add(AnimatedImageDecoder.Factory()) else add(GifDecoder.Factory())
             add(ThumbnailKeyer(quality))
-            add(GraphThumbnailFetcherFactory(api, quality))
+            add(GraphThumbnailFetcherFactory(api, quality, directory, index))
         }
         .diskCache {
             DiskCache.Builder()

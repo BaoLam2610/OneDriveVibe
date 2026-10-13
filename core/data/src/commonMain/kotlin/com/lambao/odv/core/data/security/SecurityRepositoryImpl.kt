@@ -6,7 +6,7 @@ import com.lambao.odv.core.common.result.getOrElse
 import com.lambao.odv.core.data.config.ConfigVault
 import com.lambao.odv.core.domain.model.BiometricOutcome
 import com.lambao.odv.core.domain.model.BiometricUnwrap
-import com.lambao.odv.core.domain.model.ConnectionConfig
+import com.lambao.odv.core.domain.model.ConnectionProfile
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.model.SecurityMode
 import com.lambao.odv.core.domain.model.UnlockResult
@@ -219,11 +219,15 @@ internal class SecurityRepositoryImpl(
                     sealed.key.fill(0)
                     return@withLock UnlockResult.Failed
                 }
-                adoptOrClearToken(config, sealed.key, epoch)
-                // PIN mới có salt và khóa dẫn xuất mới: phần bọc sinh trắc học cũ không còn mở được phong bì. Xóa, người dùng
-                // bật lại khi muốn (CD-09).
-                biometric.clear()
-                UnlockResult.Success
+                // Từ đây config trên đĩa đã là phong bì PIN mới: các bước dọn sau không được bị hủy giữa chừng (NonCancellable), kẻo
+                // phần bọc sinh trắc học cũ còn sót hoặc khóa phiên không được nhận.
+                withContext(NonCancellable) {
+                    adoptOrClearToken(config, sealed.key, epoch)
+                    // PIN mới có salt và khóa dẫn xuất mới: phần bọc sinh trắc học cũ không còn mở được phong bì. Xóa, người dùng
+                    // bật lại khi muốn (CD-09).
+                    biometric.clear()
+                    UnlockResult.Success
+                }
             }
         }
     }
@@ -240,11 +244,15 @@ internal class SecurityRepositoryImpl(
                 val written = if (config == null) null else vault.writeRaw(attempt.plain)
                 attempt.plain.fill(0)
                 if (config == null || written !is AppResult.Success) return@withLock UnlockResult.Failed
-                vault.setDeviceMode(config)
-                lockout.clear()
-                // Hết chế độ PIN thì phần bọc khóa dẫn xuất không còn ý nghĩa (CD-03).
-                biometric.clear()
-                UnlockResult.Success
+                // Config đã ghi ở chế độ thiết bị: các bước dọn sau (NonCancellable) phải chạy hết để vault, bộ đếm và phần bọc sinh trắc
+                // học nhất quán với tệp trên đĩa.
+                withContext(NonCancellable) {
+                    vault.setDeviceMode(config)
+                    lockout.clear()
+                    // Hết chế độ PIN thì phần bọc khóa dẫn xuất không còn ý nghĩa (CD-03).
+                    biometric.clear()
+                    UnlockResult.Success
+                }
             }
         }
     }
@@ -253,7 +261,7 @@ internal class SecurityRepositoryImpl(
      * [ConfigVault.adopt] kèm dọn token khi bị hoàn tác. [lock] không làm gì ở chế độ thiết bị nên nếu app xuống nền
      * giữa lúc đang bật PIN, token chưa bị xóa; khi adopt hoàn tác thì phải xóa ở đây (CH-03).
      */
-    private fun adoptOrClearToken(config: ConnectionConfig, key: ByteArray, epoch: Int): Boolean {
+    private fun adoptOrClearToken(config: ConnectionProfile, key: ByteArray, epoch: Int): Boolean {
         val adopted = vault.adopt(config, key, epoch)
         if (!adopted) tokens.clear()
         return adopted

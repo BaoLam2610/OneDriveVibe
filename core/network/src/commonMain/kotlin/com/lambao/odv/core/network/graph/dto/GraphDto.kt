@@ -11,6 +11,19 @@ import kotlinx.serialization.Serializable
 data class DriveDto(
     val id: String,
     val driveType: String? = null,
+    /** Chủ drive: tên hiển thị và email của tài khoản (TA-02). Thiếu hoặc rỗng thì app dùng phần trước `@` của UPN. */
+    val owner: DriveOwnerDto? = null,
+)
+
+@Serializable
+data class DriveOwnerDto(
+    val user: DriveOwnerUserDto? = null,
+)
+
+@Serializable
+data class DriveOwnerUserDto(
+    val displayName: String? = null,
+    val email: String? = null,
 )
 
 @Serializable

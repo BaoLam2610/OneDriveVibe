@@ -30,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -283,7 +282,8 @@ private fun PdfPage(
     ) {
         Box(
             (if (maxHeightPx == null) Modifier.fillMaxSize() else Modifier.aspectRatio(ratio))
-                .background(Color.White)
+                // Giấy trắng của tài liệu: token cố định, không đổi theo theme (L3).
+                .background(ODVMediaColors.pdfPaper)
                 .semantics { contentDescription = description },
         ) {
             image?.let { Image(it, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds) }

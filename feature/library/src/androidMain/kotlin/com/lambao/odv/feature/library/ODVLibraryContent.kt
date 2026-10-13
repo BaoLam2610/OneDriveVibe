@@ -1,6 +1,7 @@
 package com.lambao.odv.feature.library
 
 import android.content.res.Resources
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
@@ -34,7 +36,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.itemKey
 import com.lambao.odv.core.designsystem.component.ODVAppBar
 import com.lambao.odv.core.designsystem.component.ODVAppBarLogo
 import com.lambao.odv.core.designsystem.component.ODVBanner
@@ -43,16 +47,20 @@ import com.lambao.odv.core.designsystem.component.ODVChip
 import com.lambao.odv.core.designsystem.component.ODVDateHeader
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVFastScroller
+import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVPhotoCell
 import com.lambao.odv.core.designsystem.component.ODVPhotoCellPlaceholder
 import com.lambao.odv.core.designsystem.component.ODVRemoteImage
 import com.lambao.odv.core.designsystem.component.ODVReselectEffect
 import com.lambao.odv.core.designsystem.component.ODVScaffold
+import com.lambao.odv.core.designsystem.component.ODVSearchBar
 import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.odvLocale
+import com.lambao.odv.core.designsystem.theme.ODVTheme
+import com.lambao.odv.core.designsystem.theme.ODVTransitions
 import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.LibraryDay
 import com.lambao.odv.core.domain.model.LibraryFilter
@@ -94,41 +102,161 @@ private const val CELL = "cell"
 internal fun ODVLibraryContent(
     state: LibraryState,
     pages: LazyPagingItems<DriveItem>,
+    searchPages: LazyPagingItems<DriveItem>,
     onIntent: (LibraryIntent) -> Unit,
     onShowFolders: () -> Unit,
     modifier: Modifier = Modifier,
     banner: @Composable () -> Unit = {},
+    accountButton: @Composable () -> Unit = {},
     reselectSignal: Int = 0,
 ) {
+    val search = state.search
+    // Trạng thái cuộn của lưới theo ngày nằm ở đây, không trong LibraryGrid: mở tìm kiếm làm LibraryGrid rời composition, nếu để trong đó thì
+    // đóng tìm kiếm xong lưới về đầu (mất vị trí cuộn, trái DH-02). Ở đây nó sống suốt vòng đời tab và vẫn được SaveableStateProvider của Màn chính lưu.
+    val gridState = rememberLazyGridState()
     ODVScaffold(
         modifier = modifier,
+        // Mở/đóng tìm kiếm (TV-07): AppBar và nội dung cross-fade `fast` (mục 2.8). `contentKey` chỉ phân biệt "đang tìm" với "không tìm" nên
+        // gõ chữ (LibrarySearchState đổi theo từng phím) không kích hoạt hoạt ảnh; phía đang mờ đi giữ giá trị cuối cùng của nó.
         topBar = {
-            ODVAppBar(
-                title = stringResource(R.string.library_title),
-                navigation = { ODVAppBarLogo() },
-            )
-        },
-    ) { contentPadding ->
-        Column(Modifier.fillMaxSize()) {
-            banner()
-            LibraryBanner(state, onIntent, onShowFolders)
-            if (state.showFilters) FilterRow(state.filter, onIntent)
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                val layout = remember(state.days) { LibraryLayout(state.days) }
-                when {
-                    layout.total > 0 -> LibraryGrid(state, pages, layout, contentPadding, onIntent, reselectSignal)
-                    // Quét lần đầu đang chạy: banner D7 đã nói rõ, chưa có gì để hiện (TV-06).
-                    !state.sync.initialSyncDone && state.sync.isSyncing -> Unit
-                    !state.daysLoaded -> Loading()
-                    else -> ODVEmptyState(
-                        icon = ODVIcon.Image,
-                        title = stringResource(R.string.library_empty_title),
-                        modifier = Modifier.align(Alignment.Center),
-                        body = stringResource(R.string.library_empty_body),
+            AnimatedContent(
+                targetState = search,
+                transitionSpec = { ODVTransitions.crossFade() },
+                contentKey = { it != null },
+                label = "libraryTopBar",
+            ) { shown ->
+                if (shown != null) {
+                    SearchTopBar(shown, onIntent)
+                } else {
+                    ODVAppBar(
+                        title = stringResource(R.string.library_title),
+                        navigation = { ODVAppBarLogo() },
+                        // Nút Tìm kiếm (TV-07), rồi nút tài khoản (TA-03) do Màn chính dựng, sát lề phải như tab Thư mục.
+                        actions = {
+                            ODVIconButton(ODVIcon.Search, stringResource(R.string.library_search), { onIntent(LibraryIntent.OpenSearch) })
+                            accountButton()
+                        },
                     )
                 }
             }
+        },
+    ) { contentPadding ->
+        AnimatedContent(
+            targetState = search,
+            transitionSpec = { ODVTransitions.crossFade() },
+            contentKey = { it != null },
+            label = "libraryBody",
+        ) { shown ->
+            if (shown != null) {
+                SearchBody(state, shown, searchPages, contentPadding, onIntent)
+            } else {
+                Column(Modifier.fillMaxSize()) {
+                    banner()
+                    LibraryBanner(state, onIntent, onShowFolders)
+                    if (state.showFilters) FilterRow(state.filter, onIntent)
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        val layout = remember(state.days) { LibraryLayout(state.days) }
+                        when {
+                            layout.total > 0 -> LibraryGrid(state, pages, layout, gridState, contentPadding, onIntent, reselectSignal)
+                            // Quét lần đầu đang chạy: banner D7 đã nói rõ, chưa có gì để hiện (TV-06).
+                            !state.sync.initialSyncDone && state.sync.isSyncing -> Unit
+                            !state.daysLoaded -> Loading()
+                            else -> ODVEmptyState(
+                                icon = ODVIcon.Image,
+                                title = stringResource(R.string.library_empty_title),
+                                modifier = Modifier.align(Alignment.Center),
+                                body = stringResource(R.string.library_empty_body),
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+/** AppBar tìm kiếm của Thư viện (TV-07): dùng lại ô tìm của tab Thư mục, tự nhận tiêu điểm khi mở. */
+@Composable
+private fun SearchTopBar(search: LibrarySearchState, onIntent: (LibraryIntent) -> Unit) {
+    ODVSearchBar(
+        query = search.query,
+        onQueryChange = { onIntent(LibraryIntent.QueryChanged(it)) },
+        placeholder = stringResource(R.string.library_search_placeholder),
+        backContentDescription = stringResource(R.string.library_search_back),
+        onBack = { onIntent(LibraryIntent.CloseSearch) },
+        clearContentDescription = stringResource(R.string.library_search_clear),
+        autoFocus = true,
+    )
+}
+
+/**
+ * Kết quả tìm trong Thư viện (TV-07): hàng chip lọc (khi cả ảnh và video đang bật) rồi **lưới phẳng** cùng 4 cột, cùng khe ô và cùng ô
+ * ảnh/video với Thư viện; mới nhất trước, không có tiêu đề ngày và cuộn nhanh. Từ khóa chưa áp thì để trống; áp rồi mà không có gì thì hiện
+ * trạng thái "không có kết quả".
+ */
+@Composable
+private fun SearchBody(
+    state: LibraryState,
+    search: LibrarySearchState,
+    results: LazyPagingItems<DriveItem>,
+    contentPadding: PaddingValues,
+    onIntent: (LibraryIntent) -> Unit,
+) {
+    val resources = LocalResources.current
+    val locale = odvLocale()
+    val dates = remember(locale) { LibraryDateFormatter(locale) }
+    val gridState = rememberLazyGridState()
+    // Đổi từ khóa thì lưới nạp lại từ đầu: đưa về đầu để không đứng giữa một danh sách mới.
+    LaunchedEffect(search.appliedQuery) { gridState.scrollToItem(0) }
+    Column(Modifier.fillMaxSize()) {
+        if (state.showFilters) FilterRow(state.filter, onIntent)
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            when {
+                search.appliedQuery.isEmpty() -> Unit
+                results.itemCount > 0 -> LazyVerticalGrid(
+                    columns = GridCells.Fixed(COLUMNS),
+                    state = gridState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = contentPadding.calculateBottomPadding()),
+                    horizontalArrangement = Arrangement.spacedBy(CellGap),
+                    verticalArrangement = Arrangement.spacedBy(CellGap),
+                ) {
+                    items(count = results.itemCount, key = results.itemKey { it.id }) { index ->
+                        val item = results[index]
+                        if (item == null) {
+                            ODVPhotoCellPlaceholder()
+                        } else {
+                            LibraryMediaCell(
+                                item = item,
+                                contentDescription = item.describe(resources, dates, locale.toLanguageTag(), state.utcOffsetMs),
+                                onClick = { onIntent(LibraryIntent.Open(item)) },
+                            )
+                        }
+                    }
+                }
+                results.loadState.refresh is LoadState.Loading -> Loading()
+                else -> ODVEmptyState(
+                    icon = ODVIcon.Search,
+                    title = stringResource(R.string.library_search_empty_title),
+                    modifier = Modifier.align(Alignment.Center),
+                    body = stringResource(R.string.library_search_empty_body, search.appliedQuery),
+                )
+            }
+        }
+    }
+}
+
+/** Ô ảnh/video của lưới Thư viện, dùng chung cho lưới theo ngày và lưới kết quả tìm (TV-07). */
+@Composable
+private fun LibraryMediaCell(item: DriveItem, contentDescription: String, onClick: () -> Unit) {
+    val isVideo = item.mediaKind == MediaKind.Video
+    ODVPhotoCell(
+        onClick = onClick,
+        contentDescription = contentDescription,
+        kindIcon = if (isVideo) ODVIcon.Video else null,
+        duration = if (isVideo) item.durationMs?.let(::odvFormatDuration) else null,
+    ) {
+        ODVRemoteImage(model = item.thumbnailSource(ThumbnailSize.Cell), modifier = Modifier.fillMaxSize()) {}
     }
 }
 
@@ -137,36 +265,61 @@ internal fun ODVLibraryContent(
 private fun LibraryBanner(state: LibraryState, onIntent: (LibraryIntent) -> Unit, onShowFolders: () -> Unit) {
     val sync = state.sync
     val spacing = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-    when {
-        state.isOffline -> ODVBanner(
-            text = stringResource(R.string.library_offline),
-            tone = ODVBannerTone.Neutral,
-            icon = ODVIcon.CloudOff,
-            modifier = spacing,
-        )
-        !sync.initialSyncDone && sync.isSyncing -> {
-            val locale = odvLocale()
-            val scanned = remember(sync.scannedCount, locale) { NumberFormat.getIntegerInstance(locale).format(sync.scannedCount) }
-            ODVBanner(
-                text = stringResource(R.string.library_indexing, scanned),
-                tone = ODVBannerTone.Volt,
-                icon = ODVIcon.Sync,
+    // Banner trượt vào / mờ đi (mục 2.8). Khóa là LOẠI banner; số mục đã quét đổi liên tục nhưng không kích hoạt hoạt ảnh.
+    val kind = when {
+        state.isOffline -> LibraryBannerKind.Offline
+        // Phạm vi Tất cả (D7, TA-05): còn tài khoản đang quét lần đầu thì banner hiện kèm tên tài khoản đó, dù tài khoản khác đã xong.
+        (!sync.initialSyncDone && sync.isSyncing) || sync.scanningAccountId != null -> LibraryBannerKind.Indexing
+        sync.failed -> LibraryBannerKind.Failed
+        else -> LibraryBannerKind.None
+    }
+    val reduceMotion = ODVTheme.motion.reduceMotion
+    AnimatedContent(
+        targetState = kind,
+        modifier = Modifier.fillMaxWidth(),
+        transitionSpec = { ODVTransitions.banner(reduceMotion) },
+        label = "libraryBanner",
+    ) { shown ->
+        when (shown) {
+            LibraryBannerKind.Offline -> ODVBanner(
+                text = stringResource(R.string.library_offline),
+                tone = ODVBannerTone.Neutral,
+                icon = ODVIcon.CloudOff,
                 modifier = spacing,
-                // TV-06: lối tắt sang tab Thư mục trong lúc chờ quét.
-                actionLabel = stringResource(R.string.library_indexing_action),
-                onAction = onShowFolders,
             )
+            LibraryBannerKind.Indexing -> {
+                val locale = odvLocale()
+                val scanned = remember(sync.scannedCount, locale) { NumberFormat.getIntegerInstance(locale).format(sync.scannedCount) }
+                val accountName = sync.scanningAccountId?.let { state.accountNames[it] }
+                ODVBanner(
+                    text = if (accountName != null) {
+                        stringResource(R.string.library_indexing_account, accountName, scanned)
+                    } else {
+                        stringResource(R.string.library_indexing, scanned)
+                    },
+                    tone = ODVBannerTone.Volt,
+                    icon = ODVIcon.Sync,
+                    modifier = spacing,
+                    // TV-06: lối tắt sang tab Thư mục trong lúc chờ quét.
+                    actionLabel = stringResource(R.string.library_indexing_action),
+                    onAction = onShowFolders,
+                )
+            }
+            LibraryBannerKind.Failed -> ODVBanner(
+                text = stringResource(R.string.library_sync_failed),
+                tone = ODVBannerTone.Warning,
+                icon = ODVIcon.Alert,
+                modifier = spacing,
+                actionLabel = stringResource(R.string.library_retry),
+                onAction = { onIntent(LibraryIntent.Refresh) },
+            )
+            LibraryBannerKind.None -> Unit
         }
-        sync.failed -> ODVBanner(
-            text = stringResource(R.string.library_sync_failed),
-            tone = ODVBannerTone.Warning,
-            icon = ODVIcon.Alert,
-            modifier = spacing,
-            actionLabel = stringResource(R.string.library_retry),
-            onAction = { onIntent(LibraryIntent.Refresh) },
-        )
     }
 }
+
+/** Loại banner của Thư viện, dùng làm khóa hoạt ảnh. */
+private enum class LibraryBannerKind { Offline, Indexing, Failed, None }
 
 /** Chip lọc Tất cả / Ảnh / Video (TV-03). Chỉ hiện khi cả ảnh và video đang bật ([LibraryState.showFilters], CD-01). */
 @Composable
@@ -200,6 +353,7 @@ private fun LibraryGrid(
     state: LibraryState,
     pages: LazyPagingItems<DriveItem>,
     layout: LibraryLayout,
+    gridState: LazyGridState,
     contentPadding: PaddingValues,
     onIntent: (LibraryIntent) -> Unit,
     reselectSignal: Int,
@@ -208,7 +362,6 @@ private fun LibraryGrid(
     val locale = odvLocale()
     val dates = remember(locale) { LibraryDateFormatter(locale) }
     val labels = remember(resources, dates, locale, state.utcOffsetMs) { DayLabels(resources, dates, locale, state.utcOffsetMs) }
-    val gridState = rememberLazyGridState()
     // DH-04: chạm lại tab Thư viện thì cuộn lên đầu.
     ODVReselectEffect(reselectSignal) { gridState.animateScrollToItem(0) }
     val scope = rememberCoroutineScope()
@@ -279,15 +432,11 @@ private fun LibraryGrid(
                     if (item == null) {
                         ODVPhotoCellPlaceholder()
                     } else {
-                        val isVideo = item.mediaKind == MediaKind.Video
-                        ODVPhotoCell(
-                            onClick = { onIntent(LibraryIntent.Open(item)) },
+                        LibraryMediaCell(
+                            item = item,
                             contentDescription = item.describe(resources, dates, locale.toLanguageTag(), state.utcOffsetMs),
-                            kindIcon = if (isVideo) ODVIcon.Video else null,
-                            duration = if (isVideo) item.durationMs?.let(::odvFormatDuration) else null,
-                        ) {
-                            ODVRemoteImage(model = item.thumbnailSource(ThumbnailSize.Cell), modifier = Modifier.fillMaxSize()) {}
-                        }
+                            onClick = { onIntent(LibraryIntent.Open(item)) },
+                        )
                     }
                 }
             }

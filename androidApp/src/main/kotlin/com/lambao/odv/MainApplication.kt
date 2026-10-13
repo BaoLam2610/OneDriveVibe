@@ -26,6 +26,7 @@ import com.lambao.odv.feature.shorts.shortsModule
 import com.lambao.odv.security.AppLockController
 import com.lambao.odv.security.CurrentActivityHolder
 import com.lambao.odv.sync.ForegroundSyncObserver
+import com.lambao.odv.time.AndroidForegroundSignal
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -60,6 +61,8 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
         ProcessLifecycleOwner.get().lifecycle.addObserver(lockController)
         // DS-04: vào foreground thì đồng bộ nếu quá hạn (chế độ không PIN không có bước mở khóa nào đánh thức đồng bộ).
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSync)
+        // CD-06: banner secret hết hạn tính lại mỗi lần vào foreground.
+        ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSignal)
         // Để BiometricPrompt biết hiện trên Activity nào (ADR-0014).
         registerActivityLifecycleCallbacks(activityHolder)
     }
@@ -74,6 +77,9 @@ class MainApplication : Application(), SingletonImageLoader.Factory {
 
     // Giữ tham chiếu mạnh (Lifecycle chỉ giữ yếu observer), như lockController.
     private val foregroundSync by lazy { ForegroundSyncObserver(syncOnForeground) }
+
+    // Singleton Koin (cùng instance với ForegroundSignal mà use case nhận), Koin giữ tham chiếu mạnh.
+    private val foregroundSignal: AndroidForegroundSignal by inject()
 
     private val securitySettings: SecuritySettings by inject()
 

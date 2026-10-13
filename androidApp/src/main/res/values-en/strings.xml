@@ -26,4 +26,19 @@
     <string name="home_expiry_banner_today">Client Secret expires today</string>
     <string name="home_expiry_banner_expired">Client Secret has expired</string>
     <string name="home_expiry_banner_action">Update</string>
+
+    <string name="account_picker_title">Choose account</string>
+    <string name="account_picker_all">All accounts</string>
+    <plurals name="account_picker_all_count">
+        <item quantity="one">%1$d account</item>
+        <item quantity="other">%1$d accounts</item>
+    </plurals>
+    <string name="account_inaccessible">Can\'t access this account</string>
+    <string name="account_add">Add account</string>
+    <string name="account_button_description">Account: %1$s, %2$s. Choose account</string>
+    <string name="account_button_description_all">Account: All accounts. Choose account</string>
+    <string name="account_button_has_error">, an account can\'t be accessed</string>
+    <string name="account_viewing">Viewing %1$s</string>
+    <string name="account_viewing_all">Viewing all accounts</string>
+    <string name="account_added">Added %1$s</string>
 </resources>

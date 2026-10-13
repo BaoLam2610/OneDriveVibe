@@ -3,6 +3,7 @@ package com.lambao.odv.core.data.thumbnail
 import co.touchlab.kermit.Logger
 import coil3.ImageLoader
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
+import com.lambao.odv.core.domain.hook.AccountDataCleaner
 import com.lambao.odv.core.domain.hook.CacheStore
 import com.lambao.odv.core.domain.hook.ConnectionResetter
 import com.lambao.odv.core.domain.hook.ThumbnailCache
@@ -18,7 +19,8 @@ import kotlinx.coroutines.withContext
 internal class ThumbnailCacheResetter(
     private val imageLoader: ImageLoader,
     private val dispatchers: DispatcherProvider,
-) : ConnectionResetter, ThumbnailCache, CacheStore {
+    private val index: ThumbnailKeyIndex,
+) : ConnectionResetter, ThumbnailCache, CacheStore, AccountDataCleaner {
 
     override val kind: CacheKind = CacheKind.Thumbnail
 
@@ -36,16 +38,34 @@ internal class ThumbnailCacheResetter(
 
     override suspend fun reset() = clear()
 
+    /**
+     * Xóa tài khoản khỏi app (TA-08): gỡ khỏi cache đĩa từng thumbnail đã ghi nhớ của tài khoản đó ([ThumbnailKeyIndex]). Cache trong bộ nhớ xóa hết cho
+     * đơn giản (nạp lại khi cuộn). Không đổi thế hệ cache nên tải của tài khoản khác đang bay không bị bỏ.
+     */
+    override suspend fun purge(accountId: String) {
+        try {
+            val keys = index.keysOf(accountId)
+            imageLoader.memoryCache?.clear()
+            withContext(dispatchers.io) { keys.forEach { imageLoader.diskCache?.remove(it) } }
+            index.forget(accountId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log.w { "Không xóa được thumbnail của tài khoản: ${e::class.simpleName}" }
+        }
+    }
+
     override suspend fun clear() {
         // Trước khi xóa: tải đang bay thấy thế hệ đổi và không ghi lại ảnh cũ sau khi cache đã dọn.
         ThumbnailCacheGeneration.advance()
         try {
             imageLoader.memoryCache?.clear()
             withContext(dispatchers.io) { imageLoader.diskCache?.clear() }
+            index.clear()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            log.w(e) { "Không xóa được cache thumbnail" }
+            log.w { "Không xóa được cache thumbnail: ${e::class.simpleName}" }
         }
     }
 }

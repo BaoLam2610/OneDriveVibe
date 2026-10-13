@@ -17,6 +17,13 @@ interface LibraryRepository {
     fun libraryPages(filter: LibraryFilter, enabledKinds: Set<MediaKind>): Flow<PagingData<DriveItem>>
 
     /**
+     * Như [libraryPages] nhưng chỉ các mục có tên khớp [query] (TV-07): không phân biệt hoa thường và dấu tiếng Việt, đọc Room nên dùng được
+     * khi offline, trong phạm vi tài khoản đang xem (TA-05). [query] rỗng (sau khi bỏ khoảng trắng) thì không có mục nào. Không giới hạn số
+     * kết quả vì đã phân trang.
+     */
+    fun librarySearchPages(query: String, filter: LibraryFilter, enabledKinds: Set<MediaKind>): Flow<PagingData<DriveItem>>
+
+    /**
      * Số mục theo từng ngày của Thư viện, mới nhất trước, nhóm theo `dayNumberOf` với độ lệch [utcOffsetMs]. Dùng cho
      * số mục ở tiêu đề nhóm (TV-01) và cuộn nhanh (TV-04).
      */

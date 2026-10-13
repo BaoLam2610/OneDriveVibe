@@ -75,6 +75,9 @@ internal object StorageNames {
 
     /** Thư mục con của `cacheDir`. */
     const val THUMBNAILS_DIR = "thumbnails"
+
+    /** Chỉ mục khóa thumbnail theo tài khoản (TA-08), cạnh [THUMBNAILS_DIR] trong `cacheDir`. */
+    const val THUMBNAIL_INDEX_DIR = "thumbnail_index"
     const val ORIGINALS_DIR = "originals"
     const val PDF_DIR = "pdf"
 }
@@ -85,6 +88,9 @@ internal object PreferenceKeys {
     val SORT_DIRECTION = stringPreferencesKey("sort_direction")
     val VIEW_MODE = stringPreferencesKey("view_mode")
     val LAST_LIST_TAB = stringPreferencesKey("last_list_tab")
+
+    /** Phạm vi xem (TA-04): `all` hoặc `one:<drive id>`. Giá trị lạ hoặc thiếu thì chưa chọn. */
+    val ACCOUNT_SCOPE = stringPreferencesKey("account_scope")
     val PLAY_MODE = stringPreferencesKey("play_mode")
     val VIDEO_FIT = stringPreferencesKey("video_fit")
     val THEME_MODE = stringPreferencesKey("theme_mode")
@@ -96,7 +102,8 @@ internal object PreferenceKeys {
     /** Vắng mặt nghĩa là "nhớ lần gần nhất"; có mặt thì là tên `VideoFit` cố định. */
     val DEFAULT_VIDEO_FIT = stringPreferencesKey("default_video_fit")
     val OPEN_VIDEO_LANDSCAPE = booleanPreferencesKey("open_video_landscape")
-    val REMEMBER_VIDEO_POSITION = booleanPreferencesKey("remember_video_position")
+    /** Tên `ResumeBehavior` (Lát 10, VD-12); thay khóa boolean `remember_video_position` cũ. */
+    val VIDEO_RESUME_BEHAVIOR = stringPreferencesKey("video_resume_behavior")
     val PDF_READING_STYLE = stringPreferencesKey("pdf_reading_style")
     val SECRET_EXPIRY_EPOCH_DAY = longPreferencesKey("secret_expiry_epoch_day")
     val WIPE_ON_TOO_MANY_FAILURES = booleanPreferencesKey("wipe_on_too_many_failures")

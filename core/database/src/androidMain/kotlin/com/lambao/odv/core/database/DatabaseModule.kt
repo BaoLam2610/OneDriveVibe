@@ -13,6 +13,8 @@ val databaseModule = module {
     single<OdvDatabase> { buildDatabase(androidContext(), get<DispatcherProvider>().io) }
     single<DriveDao> { get<OdvDatabase>().driveDao() }
     single<ReadingProgressDao> { get<OdvDatabase>().readingProgressDao() }
+    single<WatchProgressDao> { get<OdvDatabase>().watchProgressDao() }
+    single<ContinueDao> { get<OdvDatabase>().continueDao() }
     // Thu gọn tệp sau khi xóa dữ liệu (SyncCoordinator.reset, CD-05).
     single { DatabaseCompactor(get()) }
 }

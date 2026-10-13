@@ -5,13 +5,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lambao.odv.core.designsystem.component.ODVInfoRow
 import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.odvLocale
+import com.lambao.odv.core.domain.usecase.account.ObserveItemAccountUseCase
+import org.koin.compose.koinInject
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.text.SimpleDateFormat
@@ -53,6 +57,10 @@ internal fun PlayerInfoContent(info: PlayerInfo, modifier: Modifier = Modifier) 
             stringResource(R.string.player_info_folder),
             (listOf(root) + info.folderPath.map { it.name }).joinToString(" / "),
         )
+        // Tài khoản chứa tệp: chỉ khi app có từ 2 tài khoản (TA-03, mục 4.5).
+        val observeAccount = koinInject<ObserveItemAccountUseCase>()
+        val account by remember(item.id) { observeAccount(item.id) }.collectAsStateWithLifecycle(initialValue = null)
+        account?.let { ODVInfoRow(stringResource(R.string.player_info_account), "${it.displayName}\n${it.email}") }
     }
 }
 

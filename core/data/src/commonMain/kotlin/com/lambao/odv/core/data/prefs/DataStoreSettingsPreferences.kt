@@ -1,8 +1,10 @@
 package com.lambao.odv.core.data.prefs
 
+import androidx.datastore.preferences.core.Preferences
 import com.lambao.odv.core.data.PreferenceKeys
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.PdfReadingStyle
+import com.lambao.odv.core.domain.model.ResumeBehavior
 import com.lambao.odv.core.domain.model.ThemeMode
 import com.lambao.odv.core.domain.model.VideoFit
 import com.lambao.odv.core.domain.model.VideoSettingOptions
@@ -11,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * [SettingsPreferences] trên DataStore Preferences, cùng cách làm với [DataStorePlayerPreferences]: giá trị lạ hoặc đọc lỗi
- * thì dùng mặc định (giao diện theo hệ thống, cả ba loại tệp, bước tua 10 giây, 1x, nhớ khung hình, hướng dọc, nhớ vị trí bật,
+ * thì dùng mặc định (giao diện theo hệ thống, cả ba loại tệp, bước tua 10 giây, 1x, nhớ khung hình, hướng dọc, hỏi trước khi xem tiếp,
  * PDF cuộn dọc). Loại tệp đọc ra rỗng (tệp hỏng) cũng về cả ba để không bao giờ có màn hình trống vì lỗi lưu.
  */
 internal class DataStoreSettingsPreferences(
@@ -24,11 +26,26 @@ internal class DataStoreSettingsPreferences(
         prefs.edit { it[PreferenceKeys.THEME_MODE] = mode.name }
     }
 
-    override val enabledKinds: Flow<Set<MediaKind>> = prefs.observe { p ->
+    override val enabledKinds: Flow<Set<MediaKind>> = prefs.observe { p -> readEnabledKinds(p) }
+
+    private fun readEnabledKinds(p: Preferences): Set<MediaKind> {
         val stored = p[PreferenceKeys.ENABLED_KINDS]
             ?.mapNotNull { name -> MediaKind.entries.firstOrNull { it.name == name } }
             ?.toSet()
-        if (stored.isNullOrEmpty()) MediaKind.entries.toSet() else stored
+        return if (stored.isNullOrEmpty()) MediaKind.entries.toSet() else stored
+    }
+
+    override suspend fun updateEnabledKinds(transform: (Set<MediaKind>) -> Set<MediaKind>?): Boolean {
+        var accepted = false
+        // Một lần edit của DataStore là giao dịch tuần tự: đọc và ghi cùng trong khối nên không mất cập nhật khi chạm nhanh.
+        prefs.edit { p ->
+            val next = transform(readEnabledKinds(p))
+            if (!next.isNullOrEmpty()) {
+                p[PreferenceKeys.ENABLED_KINDS] = next.map { kind -> kind.name }.toSet()
+                accepted = true
+            }
+        }
+        return accepted
     }
 
     override suspend fun setEnabledKinds(kinds: Set<MediaKind>) {
@@ -82,10 +99,11 @@ internal class DataStoreSettingsPreferences(
         prefs.edit { it[PreferenceKeys.OPEN_VIDEO_LANDSCAPE] = landscape }
     }
 
-    override val rememberVideoPosition: Flow<Boolean> = prefs.observe { it[PreferenceKeys.REMEMBER_VIDEO_POSITION] ?: true }
+    override val videoResumeBehavior: Flow<ResumeBehavior> =
+        prefs.observeEnum(PreferenceKeys.VIDEO_RESUME_BEHAVIOR, ResumeBehavior.Ask, ResumeBehavior.entries)
 
-    override suspend fun setRememberVideoPosition(enabled: Boolean) {
-        prefs.edit { it[PreferenceKeys.REMEMBER_VIDEO_POSITION] = enabled }
+    override suspend fun setVideoResumeBehavior(behavior: ResumeBehavior) {
+        prefs.edit { it[PreferenceKeys.VIDEO_RESUME_BEHAVIOR] = behavior.name }
     }
 
     override val pdfReadingStyle: Flow<PdfReadingStyle> =

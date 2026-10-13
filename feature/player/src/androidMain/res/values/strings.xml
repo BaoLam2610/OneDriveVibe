@@ -79,6 +79,7 @@
     <string name="player_info_created">Ngày tạo</string> <!-- [mới] -->
     <string name="player_info_modified">Ngày sửa gần nhất</string>
     <string name="player_info_folder">Thư mục</string>
+    <string name="player_info_account">Tài khoản</string> <!-- [mới] Lát T: hàng cuối khi có từ 2 tài khoản -->
     <string name="player_info_root" translatable="false">OneDrive</string>
 
     <!-- Lỗi (VD-15, VD-16) -->
@@ -92,5 +93,11 @@
     <string name="player_error_network_body">Đã phát hết phần đã tải trước. Kiểm tra mạng rồi nhấn Tiếp tục.</string>
     <string name="player_error_network_hint">Nút bật lại khi có mạng</string>
     <string name="player_resume">Tiếp tục</string>
+
+    <!-- Hộp thoại hỏi xem tiếp (VD-12, V3) -->
+    <string name="player_resume_title">Xem tiếp từ %1$s?</string>
+    <string name="player_resume_body">Bạn đã xem %1$d%% video này.</string>
+    <string name="player_resume_continue">Xem tiếp</string>
+    <string name="player_resume_restart">Xem từ đầu</string>
     <string name="player_retry">Thử lại</string> <!-- [mới] -->
 </resources>

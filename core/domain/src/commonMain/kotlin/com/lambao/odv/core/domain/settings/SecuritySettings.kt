@@ -18,7 +18,7 @@ interface SecuritySettings {
     /** Bật tùy chọn phải đã xác nhận PIN (CD-08): nơi gọi đảm bảo, không kiểm tra ở đây. Tắt thì không cần PIN. */
     suspend fun setWipeOnTooManyFailures(enabled: Boolean)
 
-    /** Thời gian chờ trước khi tự khóa khi rời app; mặc định [AutoLockDelay.OneMinute]. */
+    /** Thời gian chờ trước khi tự khóa khi rời app; mặc định [AutoLockDelay.Immediately] (đổi từ 1 phút ngày 2026-10-13). */
     val autoLockDelay: Flow<AutoLockDelay>
 
     suspend fun setAutoLockDelay(delay: AutoLockDelay)

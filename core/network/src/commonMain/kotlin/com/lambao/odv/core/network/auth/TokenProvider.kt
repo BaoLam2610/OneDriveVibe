@@ -124,7 +124,7 @@ class TokenProvider internal constructor(
         }
     }
 
-    // Token cấp cho (tenant, client, secret); UPN không ảnh hưởng token.
+    // Token cấp cho (tenant, client, secret); UPN không ảnh hưởng token nên mọi tài khoản dùng chung một token (ADR-0030).
     private fun GraphCredentials.sameApp(other: GraphCredentials) =
         tenantId == other.tenantId && clientId == other.clientId && clientSecret == other.clientSecret
 }

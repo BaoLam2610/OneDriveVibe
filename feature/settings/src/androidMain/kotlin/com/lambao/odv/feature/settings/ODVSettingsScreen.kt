@@ -6,6 +6,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +22,8 @@ import org.koin.compose.viewmodel.koinViewModel
  * đổi tab) đã thỏa: không cần xử lý riêng theo tab. Từ Lát 8 Cài đặt là một tab của thanh điều hướng đáy (ADR-0023), không còn nút quay lại;
  * [reselectSignal] tăng khi người dùng chạm lại tab này (DH-04): cuộn lên đầu. [onOpenSecuritySetup] mở luồng thiết lập PIN khi bật bảo vệ
  * (CD-02) và [onOpenPin] mở màn PIN cho một thao tác nhạy cảm (CD-03, CD-08, CD-09, CD-04); [onOpenSecretForm] mở form cập nhật Client Secret khi bảo vệ tắt; [onDisconnected] chạy sau khi ngắt kết nối xong (CD-05: về Kết nối với back stack sạch); app sở hữu back stack nên điều hướng đi qua đây.
+ * [onOpenAccountPicker] mở sheet Chọn tài khoản (do Màn chính giữ, vì AppBar của Thư mục và Thư viện cũng mở được, TA-04) và [onOpenAddAccount] mở
+ * màn Thêm tài khoản (TA-07).
  */
 @Composable
 fun ODVSettingsScreen(
@@ -27,6 +31,8 @@ fun ODVSettingsScreen(
     onOpenPin: (PinPurpose) -> Unit,
     onOpenSecretForm: () -> Unit,
     onDisconnected: () -> Unit,
+    onOpenAccountPicker: () -> Unit,
+    onOpenAddAccount: () -> Unit,
     modifier: Modifier = Modifier,
     reselectSignal: Int = 0,
     viewModel: SettingsViewModel = koinViewModel(),
@@ -35,6 +41,8 @@ fun ODVSettingsScreen(
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val savedMessage = stringResource(R.string.secret_saved)
+    // U-L6: LocalResources (không LocalContext); rememberUpdatedState để effect luôn dùng ngôn ngữ hiện tại lúc chạy.
+    val resources by rememberUpdatedState(LocalResources.current)
     // Màn được dựng lại khi quay về từ màn thiết lập hoặc màn PIN (ViewModel còn sống): đọc lại trạng thái sinh trắc học.
     LaunchedEffect(Unit) { viewModel.onIntent(SettingsIntent.Refresh) }
     ODVCollectEffects(viewModel.effects) { effect ->
@@ -43,6 +51,18 @@ fun ODVSettingsScreen(
             is SettingsEffect.OpenPin -> onOpenPin(effect.purpose)
             SettingsEffect.OpenSecretForm -> onOpenSecretForm()
             SettingsEffect.Disconnected -> onDisconnected()
+            SettingsEffect.OpenAccountPicker -> onOpenAccountPicker()
+            SettingsEffect.OpenAddAccount -> onOpenAddAccount()
+            // Snackbar về việc xóa tài khoản (TA-08): chọn câu theo ngôn ngữ đang dùng lúc hiện.
+            is SettingsEffect.ShowAccountMessage -> {
+                val text = when (val message = effect.message) {
+                    AccountMessage.CannotRemoveCurrent -> resources.getString(R.string.settings_account_cannot_remove_current)
+                    AccountMessage.CannotRemoveLast -> resources.getString(R.string.settings_account_cannot_remove_last)
+                    is AccountMessage.Removed -> resources.getString(R.string.settings_account_removed, message.email)
+                    AccountMessage.RemoveFailed -> resources.getString(R.string.settings_account_remove_failed)
+                }
+                scope.launch { snackbarHost.showSnackbar(text) }
+            }
             // showSnackbar chờ tới khi Snackbar tắt, nên chạy ở scope riêng để không chặn các effect khác.
             SettingsEffect.ShowSecretSaved -> scope.launch { snackbarHost.showSnackbar(savedMessage) }
         }

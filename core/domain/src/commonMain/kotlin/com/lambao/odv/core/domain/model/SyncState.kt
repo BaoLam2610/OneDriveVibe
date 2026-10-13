@@ -27,6 +27,16 @@ data class SyncState(
     val lastSyncedAt: Long? = null,
     /** Lỗi của lần đồng bộ gần nhất; null nếu lần đó thành công hoặc chưa chạy. UI chọn thông báo theo mã. */
     val error: AppError? = null,
+    /**
+     * Id (đã có tiền tố tài khoản) của thư mục gốc drive của tài khoản này, để mở "gốc của một tài khoản" từ ô tài khoản ở phạm vi Tất cả
+     * (D10, TA-05). Null cho tới khi trang đồng bộ đầu tiên được ghi; ở phạm vi gộp luôn null.
+     */
+    val rootFolderId: String? = null,
+    /**
+     * Drive id của tài khoản **đang quét lần đầu**, chỉ đặt ở trạng thái gộp của phạm vi Tất cả tài khoản, để banner "Đang lập chỉ mục" ghi tên
+     * tài khoản và hiện cho tới khi mọi tài khoản quét xong (D7, TA-05). Ở phạm vi một tài khoản luôn null (đã rõ là tài khoản nào).
+     */
+    val scanningAccountId: String? = null,
 )
 
 /**
@@ -41,4 +51,6 @@ data class SyncStatus(
     val initialSyncDone: Boolean = false,
     /** Lần đồng bộ gần nhất lỗi (không tính app đang khóa). */
     val failed: Boolean = false,
+    /** Tài khoản đang quét lần đầu ở phạm vi Tất cả (xem [SyncState.scanningAccountId]); null ở phạm vi một tài khoản. */
+    val scanningAccountId: String? = null,
 )

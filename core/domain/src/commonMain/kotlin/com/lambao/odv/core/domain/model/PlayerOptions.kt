@@ -35,3 +35,18 @@ enum class VideoFit {
 
     fun next(): VideoFit = entries[(ordinal + 1) % entries.size]
 }
+
+/**
+ * Cách xử lý khi mở lại video đã xem dở (VD-12), chọn ở Cài đặt › Video. Chỉ áp cho video mở từ Thư mục hoặc Thư viện; mở từ dải
+ * "Xem tiếp" thì luôn vào đúng vị trí đã dừng (DS-02). Mặc định [Ask].
+ */
+enum class ResumeBehavior {
+    /** Hiện hộp thoại "Xem tiếp từ mm:ss?" (Xem tiếp / Xem từ đầu). */
+    Ask,
+
+    /** Vào thẳng vị trí đã dừng, không hỏi. */
+    Resume,
+
+    /** Phát từ đầu, không hỏi; vị trí đã lưu bị xóa. */
+    StartOver,
+}

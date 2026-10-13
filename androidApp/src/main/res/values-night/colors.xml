@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bản tối của odv_window_bg: token `bg` tối #0c0e12. Xem values/colors.xml. -->
+    <color name="odv_window_bg">#0c0e12</color>
+</resources>

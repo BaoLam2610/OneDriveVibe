@@ -2,8 +2,10 @@ package com.lambao.odv.feature.player
 
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
+import com.lambao.odv.core.domain.model.DriveItem
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.model.PlayMode
+import com.lambao.odv.core.domain.model.ResumeBehavior
 import com.lambao.odv.core.domain.model.VideoFit
 import com.lambao.odv.core.domain.model.ViewerContext
 import com.lambao.odv.core.domain.platform.NetworkMonitor
@@ -11,8 +13,12 @@ import com.lambao.odv.core.domain.settings.PlayerPreferences
 import com.lambao.odv.core.domain.settings.SettingsPreferences
 import com.lambao.odv.core.domain.usecase.folder.GetFolderPathUseCase
 import com.lambao.odv.core.domain.usecase.viewer.ObserveViewerItemsUseCase
+import com.lambao.odv.core.domain.usecase.watch.ClearWatchProgressUseCase
+import com.lambao.odv.core.domain.usecase.watch.GetWatchProgressUseCase
+import com.lambao.odv.core.domain.usecase.watch.SaveWatchProgressUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -27,6 +33,9 @@ class PlayerViewModel(
     private val startItemId: String,
     private val observeViewerItems: ObserveViewerItemsUseCase,
     private val getFolderPath: GetFolderPathUseCase,
+    private val getWatchProgress: GetWatchProgressUseCase,
+    private val saveWatchProgress: SaveWatchProgressUseCase,
+    private val clearWatchProgress: ClearWatchProgressUseCase,
     private val network: NetworkMonitor,
     private val prefs: PlayerPreferences,
     private val settings: SettingsPreferences,
@@ -59,6 +68,12 @@ class PlayerViewModel(
             is PlayerIntent.VideoFailed -> skipFailed(intent.itemId)
             PlayerIntent.ClearFailed -> setState { if (failedIds.isEmpty()) this else copy(failedIds = emptySet()) }
             is PlayerIntent.SavePosition -> setState { copy(resumePositionMs = intent.positionMs, autoPlay = intent.playing) }
+            is PlayerIntent.ReportProgress -> reportProgress(intent)
+            PlayerIntent.ResumeFromSaved -> setState {
+                val prompt = resumePrompt ?: return@setState this
+                copy(resumePrompt = null, resumeResolved = true, resumePositionMs = prompt.positionMs)
+            }
+            PlayerIntent.StartOver -> startOver()
             is PlayerIntent.SetSpeed -> {
                 speedTouched = true
                 setState { copy(speed = intent.speed) }
@@ -159,8 +174,9 @@ class PlayerViewModel(
                     // Chưa thấy video được chạm: quét lần đầu có thể chưa xong (TM-07, danh sách ở màn trước lấy từ API) nên Room chưa
                     // có thư mục, hoặc mới có một phần. Không đóng màn và không phát video khác; chờ nó xuất hiện (xem
                     // closeIfStartNeverAppears cho trường hợp không bao giờ có).
-                    if (videos.none { it.id == startItemId }) return@collect
+                    val start = videos.firstOrNull { it.id == startItemId } ?: return@collect
                     startFound = true
+                    resolveResume(start)
                 }
                 if (videos.isEmpty()) {
                     setState { copy(videos = emptyList(), isLoaded = true) }
@@ -181,6 +197,84 @@ class PlayerViewModel(
                         copy(videos = videos, isLoaded = true, currentId = replacement.id, resumePositionMs = 0L, autoPlay = true)
                     }
                 }
+            }
+        }
+    }
+
+    /**
+     * VD-12: quyết định video được chạm bắt đầu từ đâu, một lần khi nó xuất hiện trong danh sách (cần `cTag` để biết vị trí đã lưu còn
+     * đúng). Mở từ dải "Xem tiếp" ([ViewerContext.Folder.resumeFromSaved]) thì vào thẳng vị trí đã dừng; còn lại theo cài đặt "Khi mở lại
+     * video xem dở": hỏi trước (hộp thoại V3), luôn xem tiếp, hoặc luôn phát từ đầu (xóa vị trí đã lưu). Chưa từng xem dở, đã xem xong
+     * (chạy hết video) hoặc không đọc được Room thì phát từ đầu như trước.
+     */
+    private fun resolveResume(start: DriveItem) {
+        viewModelScope.launch {
+            val saved = try {
+                getWatchProgress(start.id, start.cTag)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Lỗi đọc Room: chỉ mất tính năng xem tiếp, không đáng chặn việc xem video.
+                playerLog.w { "[VM] không đọc được vị trí đã lưu: ${e.javaClass.simpleName}" }
+                null
+            }
+            if (saved == null) {
+                setState { copy(resumeResolved = true) }
+                return@launch
+            }
+            val fromStrip = (context as? ViewerContext.Folder)?.resumeFromSaved == true
+            val behavior = if (fromStrip) ResumeBehavior.Resume else settings.videoResumeBehavior.first()
+            playerLog.i { "[VM] có vị trí đã lưu ${saved.positionMs}ms, cách xử lý=$behavior (từ dải=$fromStrip)" }
+            when (behavior) {
+                ResumeBehavior.Ask -> {
+                    val percent = (saved.positionMs * 100L / saved.durationMs.coerceAtLeast(1L)).toInt().coerceIn(0, 100)
+                    setState { copy(resumePrompt = ResumePrompt(saved.positionMs, percent)) }
+                }
+                ResumeBehavior.Resume -> setState { copy(resumeResolved = true, resumePositionMs = saved.positionMs) }
+                ResumeBehavior.StartOver -> {
+                    clearSaved(start.id)
+                    setState { copy(resumeResolved = true) }
+                }
+            }
+        }
+    }
+
+    /** "Xem từ đầu" ở hộp thoại V3: xóa vị trí đã lưu rồi phát từ đầu. */
+    private fun startOver() {
+        if (currentState.resumePrompt == null) return
+        // Đóng hộp thoại ngay nhưng chỉ cho nạp video sau khi xóa xong: nếu không, lần báo vị trí đầu tiên có thể đến trước lệnh xóa rồi bị xóa mất.
+        setState { copy(resumePrompt = null) }
+        viewModelScope.launch {
+            clearSaved(startItemId)
+            setState { copy(resumeResolved = true) }
+        }
+    }
+
+    private suspend fun clearSaved(itemId: String) {
+        try {
+            clearWatchProgress(itemId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            playerLog.w { "[VM] không xóa được vị trí đã lưu: ${e.javaClass.simpleName}" }
+        }
+    }
+
+    /**
+     * Ghi vị trí xem (VD-12). Chưa quyết xong điểm bắt đầu (đang hỏi hoặc đang đọc cài đặt) thì người xem chưa xem gì nên bỏ qua, để không
+     * ghi đè vị trí đã lưu. Ghi trong `NonCancellable`: lần ghi cuối khi rời màn xảy ra ngay lúc ViewModel sắp bị hủy.
+     */
+    private fun reportProgress(report: PlayerIntent.ReportProgress) {
+        if (!currentState.resumeResolved) return
+        val item = currentState.videos.firstOrNull { it.id == report.itemId } ?: return
+        // `launch(NonCancellable)` chứ không phải `withContext` bên trong: lần ghi cuối khi rời màn có thể đến sau khi viewModelScope đã bị
+        // hủy, lúc đó `launch` thường không chạy thân coroutine.
+        viewModelScope.launch(NonCancellable) {
+            try {
+                saveWatchProgress(item.id, item.cTag, report.positionMs, report.durationMs)
+            } catch (e: Exception) {
+                // Không ghi được chỉ làm lần sau mở lại không có vị trí, không đáng làm sập màn xem.
+                playerLog.w { "[VM] không ghi được vị trí xem: ${e.javaClass.simpleName}" }
             }
         }
     }

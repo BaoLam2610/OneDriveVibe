@@ -8,7 +8,7 @@ import com.lambao.odv.core.network.auth.GraphCredentials
 import com.lambao.odv.core.network.graph.GraphCredentialsSource
 
 /**
- * Cấp credentials cho `GraphApi` từ config đã lưu. Nơi duy nhất trong data đổi lỗi đọc config (kể cả `AppError.AppLocked`
+ * Cấp credentials dùng chung (Tenant ID, Client ID, Client Secret) cho `GraphApi` từ config đã lưu; UPN đi theo từng lời gọi (ADR-0030). Nơi duy nhất trong data đổi lỗi đọc config (kể cả `AppError.AppLocked`
  * khi app đang khóa, CH-03) thành kết quả của một lời gọi Graph, nên các repository không phải tự load config nữa.
  */
 internal class ConfigCredentialsSource(

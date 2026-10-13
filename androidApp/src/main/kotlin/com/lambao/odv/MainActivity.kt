@@ -1,5 +1,6 @@
 package com.lambao.odv
 
+import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -29,6 +30,7 @@ import com.lambao.odv.core.domain.usecase.security.ObserveProtectionUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveThemeModeUseCase
 import com.lambao.odv.debug.DebugTools
 import com.lambao.odv.navigation.ODVNavDisplay
+import com.lambao.odv.ui.theme.ThemeBootCache
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.compose.koinInject
@@ -37,8 +39,13 @@ import org.koin.compose.koinInject
 // (không cần khởi động lại app) với AppCompatActivity trên Android 12 trở xuống (ADR-0011, CD-10).
 class MainActivity : AppCompatActivity() {
     private val observeProtection: ObserveProtectionUseCase by inject()
+    private val observeThemeMode: ObserveThemeModeUseCase by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Giao diện app đã chọn, đọc ĐỒNG BỘ từ bản sao khởi động (ThemeBootCache) để khung đầu tiên đã đúng màu: ép nền cửa sổ XML (trước
+        // super.onCreate) và làm giá trị khởi đầu của Compose. Nếu đợi DataStore thì máy tối + app sáng sẽ thấy nền tối rồi mới sáng.
+        val bootTheme = ThemeBootCache.read(this)
+        ThemeBootCache.windowTheme(bootTheme)?.let { setTheme(it) }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         // Đăng ký Window để "Bảo vệ màn hình" toàn app (ODVSecureWindowPolicy.appWide) áp dụng được cho Activity này ở mọi bản dựng; công cụ
@@ -54,19 +61,34 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Giữ bản sao khởi động khớp DataStore (cũng là nơi Ngắt kết nối xóa về "Theo hệ thống", CD-05) và cập nhật theme splash hệ thống.
+        lifecycleScope.launch {
+            observeThemeMode().collect { mode ->
+                ThemeBootCache.write(this@MainActivity, mode)
+                applySplashTheme(mode)
+            }
+        }
+
         setContent {
-            ODVApp()
+            ODVApp(initialThemeMode = bootTheme)
+        }
+    }
+
+    // Android 13+: hệ thống nhớ theme splash này cho lần khởi động kế tiếp, nên splash hệ thống có nền đúng giao diện của app từ lần sau.
+    // Theo hệ thống thì bỏ ghi đè (ID_NULL) để quay về Theme.OneDriveVibe vốn theo máy. Android 12/12L không có API này.
+    private fun applySplashTheme(mode: ThemeMode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            splashScreen.setSplashScreenTheme(ThemeBootCache.windowTheme(mode) ?: Resources.ID_NULL)
         }
     }
 }
 
 @Composable
-fun ODVApp() {
-    // Giao diện Sáng/Tối người dùng chọn ở Cài đặt (Lát 7). Giá trị cuối cùng được giữ qua lần tạo lại Activity (rememberSaveable)
-    // để không chớp "Theo hệ thống" trong lúc DataStore chưa phát giá trị. Lần đầu mở app (khởi động nguội) vẫn có thể thấy
-    // "Theo hệ thống" một thoáng; chấp nhận để không chặn khởi động bằng đọc đồng bộ.
+fun ODVApp(initialThemeMode: ThemeMode = ThemeMode.System) {
+    // Giao diện Sáng/Tối người dùng chọn ở Cài đặt (Lát 7). Khởi đầu bằng giá trị đọc đồng bộ từ ThemeBootCache (không phải "Theo hệ
+    // thống") để khung đầu tiên đã đúng màu, rồi DataStore phát giá trị thật và đồng bộ lại. Được giữ qua lần tạo lại Activity (rememberSaveable).
     val observeThemeMode = koinInject<ObserveThemeModeUseCase>()
-    var themeMode by rememberSaveable { mutableStateOf(ThemeMode.System) }
+    var themeMode by rememberSaveable { mutableStateOf(initialThemeMode) }
     LaunchedEffect(observeThemeMode) { observeThemeMode().collect { themeMode = it } }
     ODVTheme(mode = themeMode.toDesignSystem()) {
         val observeProtection = koinInject<ObserveProtectionUseCase>()

@@ -10,6 +10,7 @@ import com.lambao.odv.core.domain.model.AppLanguage
 import com.lambao.odv.core.domain.model.AutoLockDelay
 import com.lambao.odv.core.domain.model.PdfReadingStyle
 import com.lambao.odv.core.domain.model.PlayMode
+import com.lambao.odv.core.domain.model.ResumeBehavior
 import com.lambao.odv.core.domain.model.ThemeMode
 import com.lambao.odv.core.domain.model.VideoFit
 import com.lambao.odv.core.domain.model.VideoSettingOptions
@@ -79,6 +80,13 @@ internal fun SettingsSheets(state: SettingsState, onIntent: (SettingsIntent) -> 
             onIntent,
             PlayMode.entries.map {
                 Choice(it.label(), it == state.playMode, { onIntent(SettingsIntent.SelectPlayMode(it)) }, it.description())
+            },
+        )
+        SettingsSheet.Resume -> ChoiceSheet(
+            stringResource(R.string.settings_resume),
+            onIntent,
+            ResumeBehavior.entries.map {
+                Choice(it.label(), it == state.videoResumeBehavior, { onIntent(SettingsIntent.SelectResumeBehavior(it)) })
             },
         )
         SettingsSheet.PdfStyle -> ChoiceSheet(

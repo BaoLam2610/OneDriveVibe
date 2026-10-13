@@ -23,6 +23,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.lambao.odv.core.designsystem.theme.ODVTheme
+import com.lambao.odv.core.designsystem.theme.ODVTransitions
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.domain.model.MediaKind
 import com.lambao.odv.core.domain.usecase.security.InitializeSecurityUseCase
@@ -33,10 +34,12 @@ import com.lambao.odv.feature.auth.security.ODVSecuritySetupScreen
 import com.lambao.odv.feature.imageviewer.ODVImageViewerScreen
 import com.lambao.odv.feature.pdfviewer.ODVPdfViewerScreen
 import com.lambao.odv.feature.player.ODVPlayerScreen
+import com.lambao.odv.feature.settings.ODVAddAccountScreen
 import com.lambao.odv.feature.settings.ODVPinFlowScreen
 import com.lambao.odv.feature.settings.ODVUpdateSecretScreen
 import com.lambao.odv.feature.settings.PinPurpose
 import com.lambao.odv.ui.home.ODVHomeScreen
+import com.lambao.odv.ui.splash.ODVSplashContent
 import com.lambao.odv.ui.splash.ODVSplashScreen
 import org.koin.compose.koinInject
 
@@ -47,6 +50,8 @@ import org.koin.compose.koinInject
 @Composable
 fun ODVNavDisplay(modifier: Modifier = Modifier) {
     val backStack = rememberNavBackStack(AppRoute.Splash)
+    // Giảm hiệu ứng của hệ thống (mục 2.8): chuyển màn rút còn cross-fade ngắn.
+    val reduceMotion = ODVTheme.motion.reduceMotion
     val observeLockState = koinInject<ObserveLockStateUseCase>()
     val initializeSecurity = koinInject<InitializeSecurityUseCase>()
     // Cùng một StateFlow của repository (không bọc lại): .value đọc đồng bộ ở onUnlocked bên dưới.
@@ -76,7 +81,8 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
     // Splash/Kết nối (màn dưới cùng của back stack) sẽ chạy và tự điều hướng khi config còn khóa, và lúc Lock trượt vào
     // thì Splash nhấp nháy. Chờ Lock lên trên cùng rồi mới dựng, nên màn đầu tiên người dùng thấy là màn Khóa.
     if (lockState == LockState.Unknown || (!navShown && covered)) {
-        Box(modifier.fillMaxSize().background(ODVTheme.colors.bg))
+        // Vẽ hình Splash (có logo) thay vì nền trơn: Splash thật chỉ sống vài mili giây nên nếu không, người dùng chỉ thấy nền trơn.
+        ODVSplashContent(modifier)
         return
     }
     if (!navShown) LaunchedEffect(Unit) { navShown = true }
@@ -90,6 +96,11 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
             // Ở màn gốc NavDisplay không bắt nút Back nên hệ thống đóng app; điều kiện chỉ để không bao giờ làm rỗng back stack.
             // Màn Khóa tự xử lý Back (thu app xuống nền), không bao giờ pop để lộ màn bên dưới.
             onBack = { if (backStack.size > 1 && backStack.lastOrNull() != AppRoute.Lock) backStack.removeLastOrNull() },
+            // Chuyển màn chỉ fade (thiet-ke-ui.md mục 2.8), thay cho kiểu trượt mặc định của Navigation 3. Màn Khóa hiện ngay, không
+            // hoạt ảnh: fade sẽ để lộ nội dung bên dưới vài khung hình khi app vừa bị khóa (CH-03). Back và vuốt Back dự đoán cùng fade out.
+            transitionSpec = { ODVTransitions.screenPush(reduceMotion) },
+            popTransitionSpec = { ODVTransitions.screenPop(reduceMotion) },
+            predictivePopTransitionSpec = { ODVTransitions.screenPop(reduceMotion) },
             entryDecorators = listOf(
                 // Giữ rememberSaveable của từng màn khi màn đó còn trong back stack.
                 rememberSaveableStateHolderNavEntryDecorator(),
@@ -127,7 +138,8 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                         },
                     )
                 }
-                entry<AppRoute.Lock> {
+                // Màn Khóa hiện ngay, không hoạt ảnh: ghi đè transitionSpec mặc định bằng metadata của entry (NavEntry.key là private).
+                entry<AppRoute.Lock>(metadata = NavDisplay.transitionSpec { ODVTransitions.none() }) {
                     // KH: Back ở màn Khóa thu app xuống nền (không về màn bên dưới). ON_STOP sau đó chỉ khóa lại, đã khóa rồi.
                     val activity = LocalContext.current.findActivity()
                     BackHandler { activity?.moveTaskToBack(true) }
@@ -143,13 +155,17 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                         onDisconnected = { backStack.resetTo(AppRoute.Connect) },
                     )
                 }
-                entry<AppRoute.Home> {
+                // Vào Màn chính (thay cả back stack, thường từ Splash) không fade: placeholder của Màn chính trùng hình với Splash nên không có gì để
+                // chuyển, và fade 250ms chạy đúng lúc Màn chính dựng lần đầu (nặng) sẽ bị rớt khung. Back về Màn chính vẫn dùng popTransitionSpec.
+                entry<AppRoute.Home>(metadata = NavDisplay.transitionSpec { ODVTransitions.none() }) {
                     ODVHomeScreen(
                         // Cài đặt là tab của Màn chính (ADR-0023): các màn con của nó vẫn đẩy lên back stack của app, che thanh đáy (DH-05).
                         // Guard: bấm đôi công tắc không được đẩy hai màn.
                         onOpenSecuritySetup = { if (backStack.lastOrNull() == AppRoute.Home) backStack.add(AppRoute.SecuritySetup(fromSettings = true)) },
                         onOpenPin = { purpose -> if (backStack.lastOrNull() == AppRoute.Home) backStack.add(AppRoute.SettingsPin(purpose.name)) },
                         onOpenSecretForm = { if (backStack.lastOrNull() == AppRoute.Home) backStack.add(AppRoute.UpdateSecret) },
+                        // TA-07: màn Thêm tài khoản mở từ Cài đặt hoặc sheet Chọn tài khoản; che thanh đáy (DH-05).
+                        onOpenAddAccount = { if (backStack.lastOrNull() == AppRoute.Home) backStack.add(AppRoute.AddAccount) },
                         // CD-05: đã xóa sạch dữ liệu, về Kết nối với back stack sạch.
                         onDisconnected = { backStack.resetTo(AppRoute.Connect) },
                         // Banner hết hạn secret (CD-06): bảo vệ bật thì xác thực lại bằng PIN trước (CD-04), tắt thì vào thẳng form.
@@ -198,6 +214,20 @@ fun ODVNavDisplay(modifier: Modifier = Modifier) {
                     ODVUpdateSecretScreen(
                         onBack = { if (backStack.lastOrNull() == route) backStack.removeLastOrNull() },
                         onSaved = { if (backStack.lastOrNull() == route) backStack.removeLastOrNull() },
+                    )
+                }
+                entry<AppRoute.AddAccount> { route ->
+                    ODVAddAccountScreen(
+                        onBack = { if (backStack.lastOrNull() == route) backStack.removeLastOrNull() },
+                        // Thêm xong: đóng màn; Màn chính đã chuyển phạm vi xem sang tài khoản mới và hiện Snackbar "Đã thêm …" (TA-07).
+                        onAdded = { if (backStack.lastOrNull() == route) backStack.removeLastOrNull() },
+                        // TK-04: lỗi secret khi thêm tài khoản. Đóng màn này rồi mở cập nhật Client Secret, qua P1 nếu bảo vệ đang bật (CD-04).
+                        onFixSecret = { requiresPin ->
+                            if (backStack.lastOrNull() == route) {
+                                backStack.removeLastOrNull()
+                                backStack.add(if (requiresPin) AppRoute.SettingsPin(PinPurpose.UpdateSecret.name) else AppRoute.UpdateSecret)
+                            }
+                        },
                     )
                 }
                 entry<AppRoute.ImageViewer> { route ->

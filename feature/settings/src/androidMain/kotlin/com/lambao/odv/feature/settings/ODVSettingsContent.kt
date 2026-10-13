@@ -32,7 +32,6 @@ import com.lambao.odv.core.designsystem.component.ODVReselectEffect
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSettingsGroup
 import com.lambao.odv.core.designsystem.component.ODVSnackbarHost
-import com.lambao.odv.core.designsystem.component.ODVSwitchRow
 import com.lambao.odv.core.designsystem.component.ODVValueRow
 import com.lambao.odv.core.designsystem.odvFormatSpeed
 import com.lambao.odv.core.designsystem.odvLocale
@@ -183,11 +182,11 @@ private fun VideoGroup(state: SettingsState, onIntent: (SettingsIntent) -> Unit)
             )
         }
         row {
-            ODVSwitchRow(
-                title = stringResource(R.string.settings_remember_position),
-                description = stringResource(R.string.settings_remember_position_desc),
-                checked = state.rememberVideoPosition,
-                onCheckedChange = { onIntent(SettingsIntent.SetRememberPosition(it)) },
+            // VD-12 (Lát 10): thay công tắc "Nhớ vị trí xem"; vị trí luôn được lưu, ở đây chọn cách xử lý khi mở lại video xem dở.
+            ODVValueRow(
+                title = stringResource(R.string.settings_resume),
+                value = state.videoResumeBehavior.label(),
+                onClick = { onIntent(SettingsIntent.ShowSheet(SettingsSheet.Resume)) },
             )
         }
         // CD-13: cuối nhóm Video; cả nhóm Video chỉ có ý nghĩa khi loại Video bật nên hàng này ẩn khi tắt Video.

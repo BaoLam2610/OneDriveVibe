@@ -12,6 +12,7 @@ val pdfViewerModule = module {
             getReadingProgress = get(),
             saveReadingProgress = get(),
             openPdf = get(),
+            discardCachedPdf = get(),
             getFolderPath = get(),
             settings = get(),
         )

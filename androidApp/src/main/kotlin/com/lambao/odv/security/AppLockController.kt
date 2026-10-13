@@ -57,10 +57,15 @@ class AppLockController(
     }
 
     override fun onStart(owner: LifecycleOwner) {
+        // Bộ hẹn giờ đã chạy xong tức là app đã bị khóa lúc ở nền. Không khóa lần hai ở dưới: `lock()` luôn tăng epoch nên lần hai
+        // làm hủy ngầm lần quét vân tay đầu (kết quả Interrupted, người dùng kẹt ở màn PIN); gặp ở độ trễ 10s/30s/1 phút
+        // (review Lát 7).
+        val alreadyLocked = pendingLock?.isCompleted == true
         pendingLock?.cancel()
         pendingLock = null
         if (!isStopped) return
         isStopped = false
+        if (alreadyLocked) return
         // Hẹn giờ có thể bị trì hoãn (Doze): quá hạn rồi thì khóa ngay, trước khi người dùng kịp thao tác.
         if (SystemClock.elapsedRealtime() - stoppedAtMs >= autoLock.millis) lockApp()
     }

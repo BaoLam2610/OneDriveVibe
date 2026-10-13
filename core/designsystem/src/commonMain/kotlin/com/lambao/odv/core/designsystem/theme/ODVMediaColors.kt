@@ -35,6 +35,8 @@ object ODVMediaColors {
     val card = Color(0xFF1B1D22)
     /** Nền sau trang PDF */
     val pdfCanvas = Color(0xFF2A2C31)
+    /** Giấy trang PDF: nền tô trước khi dựng trang và nền khung trang lúc chờ dựng; luôn trắng, không đổi theo theme */
+    val pdfPaper = Color(0xFFFFFFFF)
     /** Nút phát, phần đã xem */
     val accent = Color(0xFFC5F23A)
     /** Icon trên nút phát */

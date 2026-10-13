@@ -2,11 +2,18 @@ package com.lambao.odv.feature.settings
 
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
+import com.lambao.odv.core.domain.model.AccountScope
+import com.lambao.odv.core.domain.model.CacheBudget
+import com.lambao.odv.core.domain.model.CacheKind
 import com.lambao.odv.core.domain.model.CachePolicy
+import com.lambao.odv.core.domain.model.RemoveAccountOutcome
 import com.lambao.odv.core.domain.settings.PlayerPreferences
 import com.lambao.odv.core.domain.settings.SecuritySettings
 import com.lambao.odv.core.domain.settings.SettingsPreferences
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
+import com.lambao.odv.core.domain.usecase.account.ObserveAccountScopeUseCase
+import com.lambao.odv.core.domain.usecase.account.ObserveAccountStatusesUseCase
+import com.lambao.odv.core.domain.usecase.account.RemoveAccountUseCase
 import com.lambao.odv.core.domain.usecase.cache.ClearCacheUseCase
 import com.lambao.odv.core.domain.usecase.cache.GetCacheUsageUseCase
 import com.lambao.odv.core.domain.usecase.cache.ObserveCacheBudgetUseCase
@@ -26,7 +33,11 @@ import com.lambao.odv.core.domain.usecase.settings.SetSecretExpiryUseCase
 import com.lambao.odv.core.domain.usecase.settings.SetThemeModeUseCase
 import com.lambao.odv.core.domain.usecase.settings.ToggleFileKindUseCase
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 /**
  * ViewModel màn Cài đặt (MVI, ADR-0002). Nói chuyện với UseCase (ADR-0016); các tùy chọn đơn giản (không có luật) đọc/ghi thẳng qua
@@ -60,35 +71,62 @@ class SettingsViewModel(
     private val settings: SettingsPreferences,
     private val security: SecuritySettings,
     private val player: PlayerPreferences,
+    observeAccountStatuses: ObserveAccountStatusesUseCase,
+    observeAccountScope: ObserveAccountScopeUseCase,
+    private val removeAccount: RemoveAccountUseCase,
 ) : BaseMviViewModel<SettingsState, SettingsIntent, SettingsEffect>(SettingsState(language = getLanguage())) {
+
+    /** Chống bấm đôi công tắc sinh trắc học: hộp thoại hệ thống đang mở hoặc đang bọc khóa thì bỏ qua lần bấm tiếp (giống [SettingsState.isDisconnecting]). */
+    private var isTogglingBiometric = false
+
+    /** Mốc nhận sự kiện "đã lưu secret" chưa hiện và mốc lần gần nhất tab Cài đặt hiện ra; xem [onSecretSavedEvent] và [onScreenShown]. */
+    private var secretSavedMark: TimeMark? = null
+    private var shownMark: TimeMark? = null
 
     init {
         // Cài đặt mới sinh: sự kiện "đã lưu secret" cũ (từ banner ở Danh sách) không còn ý nghĩa.
         secretUpdateEvents.clear()
-        viewModelScope.launch { observeThemeMode().collect { mode -> setState { copy(themeMode = mode) } } }
-        viewModelScope.launch { observeConnectionInfo().collect { info -> setState { copy(connection = info) } } }
-        viewModelScope.launch { settings.enabledKinds.collect { kinds -> setState { copy(enabledKinds = kinds) } } }
-        viewModelScope.launch { settings.seekStepSeconds.collect { value -> setState { copy(seekStepSeconds = value) } } }
-        viewModelScope.launch { settings.defaultSpeed.collect { value -> setState { copy(defaultSpeed = value) } } }
-        viewModelScope.launch { settings.defaultVideoFit.collect { value -> setState { copy(defaultVideoFit = value) } } }
-        viewModelScope.launch { settings.openVideoLandscape.collect { value -> setState { copy(openVideoLandscape = value) } } }
-        viewModelScope.launch { settings.rememberVideoPosition.collect { value -> setState { copy(rememberVideoPosition = value) } } }
-        viewModelScope.launch { settings.shortMaxMinutes.collect { value -> setState { copy(shortMaxMinutes = value) } } }
-        viewModelScope.launch { settings.pdfReadingStyle.collect { value -> setState { copy(pdfReadingStyle = value) } } }
-        viewModelScope.launch { player.playMode.collect { value -> setState { copy(playMode = value) } } }
-        viewModelScope.launch { security.autoLockDelay.collect { value -> setState { copy(autoLockDelay = value) } } }
-        viewModelScope.launch { security.wipeOnTooManyFailures.collect { value -> setState { copy(wipeOnFailures = value) } } }
-        viewModelScope.launch { security.screenProtection.collect { value -> setState { copy(screenProtection = value) } } }
-        viewModelScope.launch {
-            observeCacheBudget().collect { budget ->
-                val gb = (budget.limitBytes / CachePolicy.BYTES_PER_GB).toInt()
-                setState { copy(cacheLimitGb = gb, cacheShares = budget.shares) }
-            }
-        }
-        viewModelScope.launch { refreshCacheUsage() }
-        viewModelScope.launch { secretUpdateEvents.saved.collect { sendEffect(SettingsEffect.ShowSecretSaved) } }
-        viewModelScope.launch { observeSecretExpiry().collect { day -> setState { copy(secretExpiryEpochDay = day) } } }
-        viewModelScope.launch { observeSecretExpiryNotice().collect { notice -> setState { copy(expiryNotice = notice) } } }
+        observeDisplayAndAccounts(observeThemeMode, observeConnectionInfo, observeAccountStatuses, observeAccountScope)
+        observeVideoAndPdf()
+        observeSecurity(observeProtection)
+        observeCache(observeCacheBudget)
+        observeSecretExpiryAndEvents(observeSecretExpiry, observeSecretExpiryNotice, secretUpdateEvents)
+    }
+
+    /** Nối một luồng đọc vào State: mỗi giá trị mới đi qua [reduce]. Thay cho một `viewModelScope.launch { collect { setState } }` mỗi luồng. */
+    private fun <T> Flow<T>.bindToState(reduce: SettingsState.(T) -> SettingsState) {
+        viewModelScope.launch { collect { value -> setState { reduce(value) } } }
+    }
+
+    private fun observeDisplayAndAccounts(
+        observeThemeMode: ObserveThemeModeUseCase,
+        observeConnectionInfo: ObserveConnectionInfoUseCase,
+        observeAccountStatuses: ObserveAccountStatusesUseCase,
+        observeAccountScope: ObserveAccountScopeUseCase,
+    ) {
+        observeThemeMode().bindToState { copy(themeMode = it) }
+        // M1: ObserveConnectionInfoUseCase đọc lại khi trạng thái khóa đổi, nên VM tạo lúc app khóa vẫn có nhóm Kết nối sau khi mở khóa.
+        observeConnectionInfo().bindToState { copy(connection = it) }
+        observeAccountStatuses().bindToState { copy(accounts = it) }
+        observeAccountScope().bindToState { copy(scope = it) }
+        settings.enabledKinds.bindToState { copy(enabledKinds = it) }
+    }
+
+    private fun observeVideoAndPdf() {
+        settings.seekStepSeconds.bindToState { copy(seekStepSeconds = it) }
+        settings.defaultSpeed.bindToState { copy(defaultSpeed = it) }
+        settings.defaultVideoFit.bindToState { copy(defaultVideoFit = it) }
+        settings.openVideoLandscape.bindToState { copy(openVideoLandscape = it) }
+        settings.videoResumeBehavior.bindToState { copy(videoResumeBehavior = it) }
+        settings.shortMaxMinutes.bindToState { copy(shortMaxMinutes = it) }
+        settings.pdfReadingStyle.bindToState { copy(pdfReadingStyle = it) }
+        player.playMode.bindToState { copy(playMode = it) }
+    }
+
+    private fun observeSecurity(observeProtection: ObserveProtectionUseCase) {
+        security.autoLockDelay.bindToState { copy(autoLockDelay = it) }
+        security.wipeOnTooManyFailures.bindToState { copy(wipeOnFailures = it) }
+        security.screenProtection.bindToState { copy(screenProtection = it) }
         viewModelScope.launch {
             // Bật/tắt bảo vệ đổi trạng thái sinh trắc học (tắt PIN thì xóa phần bọc), nên đọc lại mỗi lần đổi.
             observeProtection().collect { enabled ->
@@ -98,10 +136,69 @@ class SettingsViewModel(
         }
     }
 
+    private fun observeCache(observeCacheBudget: ObserveCacheBudgetUseCase) {
+        viewModelScope.launch {
+            observeCacheBudget().collect { budget ->
+                val gb = (budget.limitBytes / CachePolicy.BYTES_PER_GB).toInt()
+                setState { copy(cacheLimitGb = gb, cacheShares = budget.shares) }
+            }
+        }
+        viewModelScope.launch { refreshCacheUsage() }
+    }
+
+    private fun observeSecretExpiryAndEvents(
+        observeSecretExpiry: ObserveSecretExpiryUseCase,
+        observeSecretExpiryNotice: ObserveSecretExpiryNoticeUseCase,
+        secretUpdateEvents: SecretUpdateEvents,
+    ) {
+        observeSecretExpiry().bindToState { copy(secretExpiryEpochDay = it) }
+        observeSecretExpiryNotice().bindToState { copy(expiryNotice = it) }
+        viewModelScope.launch { secretUpdateEvents.saved.collect { onSecretSavedEvent() } }
+    }
+
+    /**
+     * L8: Snackbar "Đã cập nhật Client Secret" chỉ có nghĩa ngay sau khi lưu. Sự kiện đến khi tab Cài đặt không hiện (cập nhật từ banner ở
+     * Danh sách) trước đây nằm trong hàng đợi effect và hiện rất muộn khi người dùng mở Cài đặt. Nay: ghi mốc; nếu tab vừa hiện lại (race
+     * giữa sự kiện và [onScreenShown]) thì phát ngay, không thì để [onScreenShown] quyết định theo độ tươi của mốc.
+     */
+    private fun onSecretSavedEvent() {
+        secretSavedMark = TimeSource.Monotonic.markNow()
+        if (shownMark?.let { it.elapsedNow() < SHOWN_RACE_WINDOW } == true) deliverSecretSaved()
+    }
+
+    /** Gọi mỗi khi tab Cài đặt hiện ra (intent [SettingsIntent.Refresh]): phát Snackbar nếu secret vừa lưu cách đây không lâu, bỏ sự kiện cũ. */
+    private fun onScreenShown() {
+        shownMark = TimeSource.Monotonic.markNow()
+        if (secretSavedMark?.let { it.elapsedNow() < SECRET_SAVED_FRESH } == true) deliverSecretSaved() else secretSavedMark = null
+    }
+
+    private fun deliverSecretSaved() {
+        secretSavedMark = null
+        sendEffect(SettingsEffect.ShowSecretSaved)
+    }
+
     override fun onIntent(intent: SettingsIntent) {
         when (intent) {
             is SettingsIntent.ShowSheet -> setState { copy(sheet = intent.sheet) }
             SettingsIntent.DismissSheet -> setState { copy(sheet = null) }
+            SettingsIntent.DismissDialog -> setState { copy(dialog = null, pendingLimitGb = null, removeCandidate = null) }
+            SettingsIntent.Refresh -> {
+                onScreenShown()
+                viewModelScope.launch {
+                    refreshBiometric()
+                    refreshCacheUsage()
+                }
+            }
+            is SettingsIntent.Display -> onDisplayIntent(intent)
+            is SettingsIntent.VideoPdf -> onVideoPdfIntent(intent)
+            is SettingsIntent.Security -> onSecurityIntent(intent)
+            is SettingsIntent.Cache -> onCacheIntent(intent)
+            is SettingsIntent.Account -> onAccountIntent(intent)
+        }
+    }
+
+    private fun onDisplayIntent(intent: SettingsIntent.Display) {
+        when (intent) {
             is SettingsIntent.SelectTheme -> choose { setThemeMode(intent.mode) }
             is SettingsIntent.SelectLanguage -> {
                 // Cập nhật State trước: AppCompat áp dụng ngay khi đổi, ViewModel hiện đúng giá trị mới.
@@ -109,8 +206,14 @@ class SettingsViewModel(
                 setLanguage(intent.language)
             }
             is SettingsIntent.ToggleKind ->
-                // Luật "không tắt loại cuối" nằm ở UseCase; bị từ chối thì State không đổi và chip vẫn bật.
+                // Luật "không tắt loại cuối" nằm ở UseCase và nó đọc-sửa-ghi nguyên tử trong kho (L7: chạm nhanh hai chip không mất cập
+                // nhật). Giá trị đích tính từ State hiện tại; bị từ chối thì State không đổi và chip vẫn bật.
                 viewModelScope.launch { toggleFileKind(intent.kind, intent.kind !in currentState.enabledKinds) }
+        }
+    }
+
+    private fun onVideoPdfIntent(intent: SettingsIntent.VideoPdf) {
+        when (intent) {
             is SettingsIntent.SelectSeekStep -> choose { settings.setSeekStepSeconds(intent.seconds) }
             // O6: nháp nằm trong bảng, chỉ ghi khi bấm "Áp dụng" (cùng kiểu bảng Giới hạn tối đa).
             is SettingsIntent.ApplyShortMax -> choose { settings.setShortMaxMinutes(intent.minutes) }
@@ -118,12 +221,14 @@ class SettingsViewModel(
             is SettingsIntent.SelectVideoFit -> choose { settings.setDefaultVideoFit(intent.fit) }
             is SettingsIntent.SelectOrientation -> choose { settings.setOpenVideoLandscape(intent.landscape) }
             is SettingsIntent.SelectPlayMode -> choose { player.setPlayMode(intent.mode) }
-            is SettingsIntent.SetRememberPosition -> viewModelScope.launch { settings.setRememberVideoPosition(intent.enabled) }
+            // Như các lựa chọn khác trong sheet: lưu rồi đóng sheet.
+            is SettingsIntent.SelectResumeBehavior -> choose { settings.setVideoResumeBehavior(intent.behavior) }
             is SettingsIntent.SelectPdfStyle -> choose { settings.setPdfReadingStyle(intent.style) }
-            SettingsIntent.Refresh -> viewModelScope.launch {
-                refreshBiometric()
-                refreshCacheUsage()
-            }
+        }
+    }
+
+    private fun onSecurityIntent(intent: SettingsIntent.Security) {
+        when (intent) {
             is SettingsIntent.ToggleProtection ->
                 sendEffect(if (intent.enable) SettingsEffect.OpenSecuritySetup else SettingsEffect.OpenPin(PinPurpose.DisableProtection))
             SettingsIntent.ChangePin -> sendEffect(SettingsEffect.OpenPin(PinPurpose.ChangePin))
@@ -135,7 +240,12 @@ class SettingsViewModel(
                 setState { copy(dialog = null) }
                 sendEffect(SettingsEffect.OpenPin(PinPurpose.EnableWipe))
             }
-            SettingsIntent.DismissDialog -> setState { copy(dialog = null, pendingLimitGb = null) }
+            is SettingsIntent.SetScreenProtection -> viewModelScope.launch { security.setScreenProtection(intent.enabled) }
+        }
+    }
+
+    private fun onCacheIntent(intent: SettingsIntent.Cache) {
+        when (intent) {
             is SettingsIntent.ApplyCacheLimit -> applyCacheLimit(intent.gb)
             SettingsIntent.ConfirmShrinkCache -> {
                 val gb = currentState.pendingLimitGb
@@ -157,16 +267,64 @@ class SettingsViewModel(
                     refreshCacheUsage()
                 }
             }
-            is SettingsIntent.SetScreenProtection -> viewModelScope.launch { security.setScreenProtection(intent.enabled) }
+        }
+    }
+
+    private fun onAccountIntent(intent: SettingsIntent.Account) {
+        when (intent) {
             SettingsIntent.UpdateSecret ->
                 sendEffect(if (currentState.protectionEnabled) SettingsEffect.OpenPin(PinPurpose.UpdateSecret) else SettingsEffect.OpenSecretForm)
             is SettingsIntent.SaveSecretExpiry -> {
                 setState { copy(sheet = null) }
                 viewModelScope.launch { setSecretExpiry(intent.epochDay) }
             }
+            SettingsIntent.OpenAccountPicker -> sendEffect(SettingsEffect.OpenAccountPicker)
+            SettingsIntent.AddAccount -> sendEffect(SettingsEffect.OpenAddAccount)
+            is SettingsIntent.AskRemoveAccount -> askRemoveAccount(intent.accountId)
+            SettingsIntent.ConfirmRemoveAccount -> confirmRemoveAccount()
             SettingsIntent.AskDisconnect -> setState { copy(dialog = SettingsDialog.DisconnectStep1) }
             SettingsIntent.ContinueDisconnect -> setState { copy(dialog = SettingsDialog.DisconnectStep2) }
             SettingsIntent.ConfirmDisconnect -> disconnectNow()
+        }
+    }
+
+    /**
+     * Xóa tài khoản (TA-08): hỏi AC8 nếu được phép; không thì Snackbar giải thích. Tài khoản đang xem (phạm vi một tài khoản) và tài khoản
+     * duy nhất không xóa được; ở phạm vi Tất cả mọi tài khoản đều xóa được (khi còn từ 2).
+     */
+    private fun askRemoveAccount(accountId: String) {
+        val state = currentState
+        val target = state.accounts.firstOrNull { it.account.id == accountId } ?: return
+        when {
+            state.accounts.size <= 1 -> sendEffect(SettingsEffect.ShowAccountMessage(AccountMessage.CannotRemoveLast))
+            (state.scope as? AccountScope.One)?.accountId == accountId ->
+                sendEffect(SettingsEffect.ShowAccountMessage(AccountMessage.CannotRemoveCurrent))
+            else -> setState { copy(dialog = SettingsDialog.RemoveAccount, removeCandidate = target) }
+        }
+    }
+
+    private fun confirmRemoveAccount() {
+        val target = currentState.removeCandidate ?: return
+        if (currentState.isRemovingAccount) return
+        setState { copy(isRemovingAccount = true) }
+        viewModelScope.launch {
+            val outcome = removeAccount(target.account.id)
+            setState { copy(isRemovingAccount = false, dialog = null, removeCandidate = null) }
+            // Xóa tài khoản dọn thumbnail, ảnh, video, PDF của nó (TA-08): đo lại để dung lượng ở nhóm Bộ nhớ đệm đổi ngay, không phải
+            // chuyển tab mới thấy (kiểm tay Lát 9, mục 8).
+            if (outcome == RemoveAccountOutcome.Removed) refreshCacheUsage()
+            sendEffect(
+                SettingsEffect.ShowAccountMessage(
+                    when (outcome) {
+                        RemoveAccountOutcome.Removed -> AccountMessage.Removed(target.account.email)
+                        // U-L10: NotAllowed không nói lý do; suy từ state (không xóa được thì danh sách chưa đổi): chỉ còn một tài khoản
+                        // thì "không xóa được tài khoản cuối", ngược lại là tài khoản đang xem.
+                        RemoveAccountOutcome.NotAllowed ->
+                            if (currentState.accounts.size <= 1) AccountMessage.CannotRemoveLast else AccountMessage.CannotRemoveCurrent
+                        is RemoveAccountOutcome.Failed -> AccountMessage.RemoveFailed
+                    },
+                ),
+            )
         }
     }
 
@@ -203,22 +361,34 @@ class SettingsViewModel(
      * Tắt: xóa phần bọc ngay, PIN vẫn dùng được.
      */
     private fun toggleBiometric(enable: Boolean) {
+        // L2: bấm đôi khi hộp thoại hệ thống đang mở sẽ chạy enableBiometric hai lần; cờ này bỏ qua lần bấm sau tới khi lần đầu xong.
+        if (isTogglingBiometric) return
+        isTogglingBiometric = true
         viewModelScope.launch {
-            if (enable) enableBiometric() else disableBiometric()
-            refreshBiometric()
+            try {
+                if (enable) enableBiometric() else disableBiometric()
+                refreshBiometric()
+            } finally {
+                isTogglingBiometric = false
+            }
         }
     }
 
     /**
-     * Đổi giới hạn chung. Dung lượng đang dùng (đo lại cho chắc) vượt giới hạn mới thì hỏi D6 vì sẽ dọn ngay tệp lâu không dùng
-     * (CD-07); chưa vượt thì đổi luôn. UseCase vẫn dọn từng loại theo trần mới của nó dù tổng chưa vượt.
+     * Đổi giới hạn chung. Hạ giới hạn mà **bất kỳ loại nào** đang dùng vượt trần riêng mới của nó (giới hạn mới × tỉ lệ của loại đó, đo lại
+     * cho chắc) thì hỏi D6 vì sẽ dọn ngay tệp lâu không dùng (CD-07, chốt 2026-10-12: không chỉ khi tổng vượt); không thì đổi luôn.
+     * Tăng giới hạn không bao giờ hỏi. Đổi tỉ lệ chia vẫn dọn không hỏi.
      */
     private fun applyCacheLimit(gb: Int) {
         setState { copy(sheet = null) }
         viewModelScope.launch {
             val usage = getCacheUsage()
             setState { copy(cacheUsage = usage) }
-            if (usage.total > CachePolicy.limitBytes(gb)) {
+            val state = currentState
+            val newBudget = CacheBudget(CachePolicy.limitBytes(gb), state.cacheShares)
+            val lowering = gb < state.cacheLimitGb
+            val anyOverShare = CacheKind.entries.any { usage.of(it) > newBudget.bytesFor(it) }
+            if (lowering && anyOverShare) {
                 setState { copy(dialog = SettingsDialog.ShrinkCache, pendingLimitGb = gb) }
             } else {
                 setLimitAndRefresh(gb)
@@ -239,5 +409,13 @@ class SettingsViewModel(
     private suspend fun refreshBiometric() {
         val status = getBiometricStatus()
         setState { copy(biometric = status) }
+    }
+
+    private companion object {
+        /** Secret lưu cách đây chưa tới ngần này thì coi là "vừa lưu" và hiện Snackbar khi tab Cài đặt hiện ra (L8). */
+        val SECRET_SAVED_FRESH = 5.seconds
+
+        /** Tab Cài đặt vừa hiện trong khoảng này thì sự kiện "đã lưu" đến sau vẫn được phát ngay (tránh race với [onScreenShown]). */
+        val SHOWN_RACE_WINDOW = 1.seconds
     }
 }

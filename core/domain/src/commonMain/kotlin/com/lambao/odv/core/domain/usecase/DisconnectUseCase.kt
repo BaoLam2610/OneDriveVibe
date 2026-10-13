@@ -1,5 +1,6 @@
 package com.lambao.odv.core.domain.usecase
 
+import co.touchlab.kermit.Logger
 import com.lambao.odv.core.domain.hook.ConnectionResetter
 import com.lambao.odv.core.domain.repository.SecurityRepository
 import kotlinx.coroutines.CancellationException
@@ -17,6 +18,8 @@ class DisconnectUseCase(
     private val resetters: List<ConnectionResetter>,
     private val security: SecurityRepository,
 ) {
+    private val log = Logger.withTag("Disconnect")
+
     // NonCancellable: ViewModel gọi từ màn Khóa có thể bị clear giữa chừng; xóa dở dang (KH-06, CD-05) là không chấp nhận.
     suspend operator fun invoke() = withContext(NonCancellable) {
         for (resetter in resetters) {
@@ -25,7 +28,9 @@ class DisconnectUseCase(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Một phần dữ liệu không xóa được không được chặn việc xóa config và khóa: phần quan trọng nhất.
+                // Một phần dữ liệu không xóa được không được chặn việc xóa config và khóa: phần quan trọng nhất. Nhưng không im lặng:
+                // chỉ ghi TÊN lớp resetter và TÊN lớp ngoại lệ, không ghi message (có thể chứa đường dẫn hay dữ liệu, CH-06).
+                log.w { "Resetter ${resetter::class.simpleName} thất bại: ${e::class.simpleName}" }
             }
         }
         security.wipe()

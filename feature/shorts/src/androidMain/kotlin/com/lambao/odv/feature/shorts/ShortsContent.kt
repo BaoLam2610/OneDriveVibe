@@ -79,6 +79,7 @@ import com.lambao.odv.core.designsystem.icon.ODVIcon
 import com.lambao.odv.core.designsystem.theme.ODVMediaColors
 import com.lambao.odv.core.designsystem.theme.ODVSize
 import com.lambao.odv.core.designsystem.theme.ODVTheme
+import com.lambao.odv.core.domain.model.ItemKey
 import com.lambao.odv.core.domain.model.ShortVideo
 import com.lambao.odv.core.media.PlayerFailure
 import kotlinx.coroutines.CancellationException
@@ -99,7 +100,7 @@ internal fun ShortsContent(
     reshuffledShown: Boolean,
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
-    onPreload: (List<ShortVideo>) -> Unit,
+    onPreload: (PreloadWindow) -> Unit,
     posterOf: (String) -> ImageBitmap?,
     reselectSignal: Int,
     onOpenSettings: () -> Unit,
@@ -134,7 +135,7 @@ private fun BoxScope.ShortsPager(
     reshuffledShown: Boolean,
     onIntent: (ShortsIntent) -> Unit,
     onPositionChanged: (Long) -> Unit,
-    onPreload: (List<ShortVideo>) -> Unit,
+    onPreload: (PreloadWindow) -> Unit,
     posterOf: (String) -> ImageBitmap?,
     reselectSignal: Int,
 ) {
@@ -217,11 +218,18 @@ private fun BoxScope.ShortsPager(
     }
 
     // SV-13: tải trước đầu các video kế cận (kế tiếp trước, rồi video trước), chỉ sau khi video đang xem đã lên hình để không giành băng thông
-    // với nó. Mất mạng thì holder tự bỏ qua.
+    // với nó. Mất mạng thì holder tự bỏ qua. Video kế tiếp còn được chuẩn bị sẵn trong RAM (ADR-0028) nên holder cần cả chỉ số trang.
     val currentRendered = controller != null && currentId != null && controller.renderedItemId == currentId
-    val neighbours = listOf(settled + 1, settled - 1).mapNotNull { ids.getOrNull(it) }.mapNotNull { state.videos[it] }
-    LaunchedEffect(currentRendered, settled, state.generation, neighbours.map { it.item.id }) {
-        if (currentRendered && neighbours.isNotEmpty()) currentOnPreload(neighbours)
+    // Video đang xem lỗi (không giải mã được, link hỏng...) thì không bao giờ vẽ khung hình đầu và cũng không còn gì để tranh băng thông: vẫn phải
+    // tải trước, nếu không video kế tiếp phải mở bằng nguồn thường (log 2026-10-12: 2114ms thay vì ~300ms sau một video lỗi).
+    val currentFailed = controller != null && currentId != null && controller.failedItemId == currentId
+    val currentSettled = currentRendered || currentFailed
+    val nextVideo = ids.getOrNull(settled + 1)?.let { state.videos[it] }
+    val previousVideo = ids.getOrNull(settled - 1)?.let { state.videos[it] }
+    LaunchedEffect(currentSettled, settled, state.generation, nextVideo?.item?.id, previousVideo?.item?.id) {
+        if (currentSettled && currentId != null && (nextVideo != null || previousVideo != null)) {
+            currentOnPreload(PreloadWindow(settled, currentId, nextVideo, previousVideo))
+        }
     }
 
     // SV-07: đọc vị trí theo nhịp ngắn cho thanh tiến độ, đồng thời để màn lưu lại cho lần khôi phục.
@@ -298,6 +306,8 @@ private fun BoxScope.ShortsPager(
                 controller = controller,
                 poster = posterOf(ids[page]),
                 isCurrent = page == settled && !autoScrolling,
+                // SV-09, TA-05: tên tài khoản chỉ có ở phạm vi Tất cả (accountNames rỗng ở phạm vi khác).
+                accountName = ItemKey.accountIdOf(ids[page])?.let { state.accountNames[it] },
             )
         }
 
@@ -350,6 +360,7 @@ private fun ShortPage(
     controller: ShortPlayerController?,
     poster: ImageBitmap?,
     isCurrent: Boolean,
+    accountName: String? = null,
 ) {
     val item = video?.item
     val playingLabel = stringResource(R.string.shorts_state_playing)
@@ -456,7 +467,8 @@ private fun ShortPage(
             if (failure != null && active != null) ShortFailure(failure, item.name, active)
             ShortInfo(
                 name = item.name,
-                folder = video.folderName ?: rootLabel,
+                // "Bao Lam · Ảnh du lịch" ở phạm vi Tất cả tài khoản (SV-09); một tài khoản thì chỉ có thư mục.
+                folder = listOfNotNull(accountName, video.folderName ?: rootLabel).joinToString(" · "),
                 modifier = Modifier.align(Alignment.BottomStart),
             )
         }

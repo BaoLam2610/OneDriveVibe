@@ -2,11 +2,15 @@ package com.lambao.odv.feature.shorts
 
 import androidx.lifecycle.viewModelScope
 import com.lambao.odv.core.common.mvi.BaseMviViewModel
+import com.lambao.odv.core.domain.model.AccountScope
+import com.lambao.odv.core.domain.usecase.account.ObserveAccountScopeUseCase
+import com.lambao.odv.core.domain.usecase.account.ObserveAccountsUseCase
 import com.lambao.odv.core.domain.usecase.settings.ObserveShortMaxMinutesUseCase
 import com.lambao.odv.core.domain.usecase.shorts.GetShortVideoUseCase
 import com.lambao.odv.core.domain.usecase.shorts.ObserveShortTabAvailableUseCase
 import com.lambao.odv.core.domain.usecase.shorts.ObserveShortVideoIdsUseCase
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -23,6 +27,8 @@ class ShortsViewModel(
     private val observeVideoIds: ObserveShortVideoIdsUseCase,
     private val getVideo: GetShortVideoUseCase,
     observeAvailable: ObserveShortTabAvailableUseCase,
+    observeAccountScope: ObserveAccountScopeUseCase,
+    observeAccounts: ObserveAccountsUseCase,
 ) : BaseMviViewModel<ShortsState, ShortsIntent, ShortsEffect>(ShortsState()) {
 
     private var buildJob: Job? = null
@@ -43,6 +49,20 @@ class ShortsViewModel(
         // DH-01: tắt loại Video (hoặc chưa đồng bộ xong) thì mục Short biến mất và trạng thái bị bỏ; bật lại thì lần vào kế tiếp xáo mới (SV-02).
         viewModelScope.launch {
             observeAvailable().collect { available -> if (!available) reset() }
+        }
+        // TA-06: đổi phạm vi xem thì bỏ trạng thái tab Short (thứ tự xáo, video đang xem), lần vào kế tiếp xáo mới. Lần phát đầu không reset.
+        viewModelScope.launch {
+            var previous: AccountScope? = null
+            observeAccountScope().collect { scope ->
+                if (previous != null && previous != scope) reset()
+                previous = scope
+            }
+        }
+        // SV-09: ở phạm vi Tất cả (từ 2 tài khoản) dòng thư mục có tên tài khoản ở đầu.
+        viewModelScope.launch {
+            combine(observeAccountScope(), observeAccounts()) { scope, list ->
+                if (scope == AccountScope.All && list.size >= 2) list.associate { it.id to it.displayName } else emptyMap()
+            }.collect { names -> setState { copy(accountNames = names) } }
         }
     }
 
@@ -210,6 +230,6 @@ class ShortsViewModel(
         trackJob = null
         sourceIds = emptyList()
         liveIds = emptySet()
-        setState { ShortsState(generation = generation) }
+        setState { ShortsState(generation = generation, accountNames = accountNames) }
     }
 }

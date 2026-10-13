@@ -5,13 +5,12 @@ import android.media.MediaMetadataRetriever
 import android.os.Build
 import android.os.SystemClock
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
-import com.lambao.odv.core.domain.usecase.viewer.GetStreamUrlUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -22,16 +21,16 @@ import kotlinx.coroutines.withTimeoutOrNull
  * còn nháy, và trang không cần hiện spinner (kiểm tay 2026-10-11, thay cho thiết kế hai player). Thumbnail của OneDrive không dùng được vì nó không
  * phải khung hình đầu.
  *
- * Dùng `MediaMetadataRetriever` đọc qua link ký lấy từ [StreamUrlProvider] riêng của lớp này. Bộ giải mã chỉ được mượn vài chục đến vài trăm ms cho
+ * Dùng `MediaMetadataRetriever` đọc qua link ký lấy từ [SharedStreamUrls] dùng chung của tab Short (ADR-0029). Bộ giải mã chỉ được mượn vài chục đến vài trăm ms cho
  * một khung rồi trả ngay (không giữ phiên giải mã thứ hai suốt lúc xem như phương án hai player), và chỉ chạy một việc mỗi lần. Máy không có bộ giải mã
  * cho định dạng đó (vd. HEVC 10-bit trên Helio G99) thì trả null và giao diện giữ cách cũ (nền đen, spinner sau một lúc). Ảnh trả về đã xoay đúng
- * hướng hiển thị. Chỉ giữ trong bộ nhớ, không ghi đĩa; [clear] xóa link ký khi app bị khóa (CH-03).
+ * hướng hiển thị. Chỉ giữ trong bộ nhớ, không ghi đĩa; link ký được xóa chung khi app bị khóa (CH-03, `ShortPlayerHolder`).
  */
 class FirstFrameProvider(
-    getStreamUrl: GetStreamUrlUseCase,
+    sharedUrls: SharedStreamUrls,
     private val dispatchers: DispatcherProvider,
 ) {
-    private val urls = StreamUrlProvider(getStreamUrl)
+    private val urls = sharedUrls.provider
     private val gate = Semaphore(1)
 
     // Chạy các việc chặn luồng của MediaMetadataRetriever tách khỏi coroutine người gọi (xem firstFrame). Singleton của Koin nên sống cùng app.
@@ -75,11 +74,9 @@ class FirstFrameProvider(
     ): Bitmap? =
             try {
                 val url = urls.urlFor(itemId, refresh = false)
-                // Bị hủy (app khóa) trong lúc lấy link: không mở kết nối, và xóa lại link vừa được nhớ để CH-03 không bị hở.
-                if (!currentCoroutineContext().isActive) {
-                    urls.clear()
-                    throw CancellationException()
-                }
+                // Bị hủy (app khóa) trong lúc lấy link: không mở kết nối. Link không bị ghi lại sau khi xóa vì StreamUrlProvider.clear() đã đổi epoch
+                // (ADR-0029); tuyệt đối không gọi urls.clear() ở đây vì link giờ dùng chung với player và bộ tải trước.
+                currentCoroutineContext().ensureActive()
                 retriever.setDataSource(url, HashMap())
                 val width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
                 val height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
@@ -118,11 +115,6 @@ class FirstFrameProvider(
                 mediaLog.w { "[Poster] id=$id lỗi sau ${SystemClock.elapsedRealtime() - startedAt}ms: ${e.javaClass.simpleName}" }
                 null
             }
-
-    /** Xóa link ký đang giữ (app bị khóa, CH-03). */
-    fun clear() {
-        urls.clear()
-    }
 
     private companion object {
         /** Trên cỡ này (hơi hơn 4K) thì không lấy poster. */

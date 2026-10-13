@@ -21,6 +21,9 @@ internal object PlayerConstants {
 
     // Phân loại lỗi phát (PlayerFailure, CAUSE_DEPTH) đã chuyển sang :core:media cùng nền phát (ADR-0025).
 
+    /** Nhịp báo vị trí xem cho ViewModel ghi khi đang phát (VD-12), để tiến trình bị thu hồi vẫn còn vị trí gần nhất. */
+    const val PROGRESS_SAVE_MS = 10_000L
+
     // --- Giao diện và cử chỉ ---
 
     /** Tốc độ khi giữ lâu để phát nhanh; nhả tay thì về tốc độ đã chọn. */

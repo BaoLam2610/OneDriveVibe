@@ -16,6 +16,15 @@ data class PlayerInfo(
 )
 
 /**
+ * Hộp thoại "Xem tiếp từ mm:ss?" (VD-12, V3): hiện khi mở video xem dở và cài đặt là "Hỏi trước". [positionMs] là chỗ đã dừng, [percent]
+ * là phần đã xem (0 đến 100) cho dòng "Bạn đã xem N% video này.".
+ */
+data class ResumePrompt(
+    val positionMs: Long,
+    val percent: Int,
+)
+
+/**
  * Trạng thái màn xem video (VD). Chỉ giữ thứ phải sống sót khi giao diện bị dựng lại: danh sách phát, video đang xem, vị trí để
  * xem tiếp và các lựa chọn. Thứ đổi theo từng khung hình (vị trí phát, buffer) và thứ chỉ có nghĩa với một lần hiển thị (điều khiển
  * hiện/ẩn, gợn chạm đúp, zoom, khóa thao tác) nằm ở lớp giao diện, nên State không bị ngập bởi hàng chục cập nhật mỗi giây.
@@ -32,6 +41,14 @@ data class PlayerState(
      * (màn Khóa che lên rồi mở khóa), để người xem về đúng chỗ.
      */
     val resumePositionMs: Long = 0L,
+    /**
+     * Đã biết video được chạm bắt đầu từ đâu (VD-12). Giao diện chưa nạp video cho tới khi true: phải đọc vị trí đã lưu và cài đặt
+     * "Khi mở lại video xem dở" trước, và nếu cài đặt là "Hỏi trước" thì chờ người xem chọn ở [resumePrompt]. Chỉ áp cho video mở đầu
+     * tiên; chuyển video (Trước, Sau, tự phát tiếp) luôn phát từ đầu và không hỏi.
+     */
+    val resumeResolved: Boolean = false,
+    /** Khác null khi hộp thoại "Xem tiếp từ mm:ss?" đang hiện (VD-12). */
+    val resumePrompt: ResumePrompt? = null,
     /** Tự phát khi nạp. Khôi phục sau lúc giao diện bị gỡ thì theo trạng thái lúc gỡ: đang phát thì phát tiếp, đang dừng thì nằm chờ. */
     val autoPlay: Boolean = true,
     /** Tốc độ phát người xem chọn (VD-05); giữ qua các video. */
@@ -106,6 +123,18 @@ sealed interface PlayerIntent {
      * Xuống nền thì player đã bị dừng trước đó nên [playing] là false: màn Khóa che lên rồi mở khóa vẫn nằm chờ tạm dừng.
      */
     data class SavePosition(val positionMs: Long, val playing: Boolean) : PlayerIntent
+
+    /**
+     * Ghi vị trí xem của video [itemId] (VD-12): giao diện báo theo nhịp khi đang phát, khi xuống nền, khi chuyển video và khi rời màn.
+     * [durationMs] là thời lượng player biết (hoặc của Graph khi chưa biết); mọi vị trí đều được ghi, riêng video chạy hết thì là đã xem xong.
+     */
+    data class ReportProgress(val itemId: String, val positionMs: Long, val durationMs: Long) : PlayerIntent
+
+    /** Bấm "Xem tiếp" ở hộp thoại V3: nạp video ở vị trí đã lưu. */
+    data object ResumeFromSaved : PlayerIntent
+
+    /** Bấm "Xem từ đầu" ở hộp thoại V3: xóa vị trí đã lưu rồi phát từ đầu. */
+    data object StartOver : PlayerIntent
 
     /** Chọn tốc độ phát (VD-05). */
     data class SetSpeed(val speed: Float) : PlayerIntent

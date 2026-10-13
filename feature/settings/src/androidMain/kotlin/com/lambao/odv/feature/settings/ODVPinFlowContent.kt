@@ -32,8 +32,9 @@ import com.lambao.odv.core.designsystem.theme.ODVTheme
 
 /**
  * Giao diện màn PIN của Cài đặt (thiet-ke-ui.md mục 5.4, P1 → P3): cùng bố cục với màn Thiết lập bảo mật (mũi tên Back, icon `lock`,
- * tiêu đề, dãy chấm, dòng thông báo, bàn phím số tự vẽ sát đáy để bàn phím bên thứ ba không ghi nhận được PIN, BM-07). Back ở P2 và
- * P3 quay về P1 (làm lại từ đầu); ở P1 thoát về Cài đặt. Hộp thoại D1 hiện sau khi PIN hiện tại đúng khi tắt bảo vệ (CD-03).
+ * tiêu đề, dãy chấm, dòng thông báo, bàn phím số tự vẽ sát đáy để bàn phím bên thứ ba không ghi nhận được PIN, BM-07). Back ở mọi
+ * bước (P1, P2, P3) đều bỏ cả màn PIN và thoát về Cài đặt (entry `SettingsPin` ở ODVNavDisplay gọi `removeLastOrNull`), không có
+ * "lùi một bước"; lúc đang kiểm tra hoặc ghi thì Back bị khóa. Hộp thoại D1 hiện sau khi PIN hiện tại đúng khi tắt bảo vệ (CD-03).
  */
 @Composable
 internal fun ODVPinFlowContent(

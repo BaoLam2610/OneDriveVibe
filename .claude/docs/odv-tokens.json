@@ -84,6 +84,7 @@
     "icon-well": {"$type": "color", "$value": "#ffffff1f", "$description": "Vòng tròn sau icon lỗi trên media; đường kẻ trên thanh điều hướng đáy N4"},
     "card": {"$type": "color", "$value": "#1b1d22", "$description": "Thẻ trên media: Tiếp theo, Mất mạng"},
     "pdf-canvas": {"$type": "color", "$value": "#2a2c31", "$description": "Nền sau trang PDF"},
+    "pdf-paper": {"$type": "color", "$value": "#ffffff", "$description": "Giấy trang PDF: nền tô trước khi dựng trang và nền khung trang lúc chờ dựng; luôn trắng, không đổi theo theme"},
     "accent": {"$type": "color", "$value": "#c5f23a", "$description": "Nút phát, phần đã xem, tiến độ tab Short"},
     "on-accent": {"$type": "color", "$value": "#101217", "$description": "Icon trên nút phát"}
   },
@@ -139,7 +140,9 @@
     "nav-bar": {"$type": "dimension", "$value": "64dp", "$description": "Chiều cao thanh điều hướng đáy, chưa tính system inset"},
     "nav-indicator-width": {"$type": "dimension", "$value": "56dp", "$description": "Viên chọn mục thanh điều hướng đáy"},
     "nav-indicator-height": {"$type": "dimension", "$value": "32dp", "$description": "Viên chọn mục thanh điều hướng đáy"},
-    "nav-dot": {"$type": "dimension", "$value": "8dp", "$description": "Chấm nhắc trên mục Cài đặt (warning sắp hết hạn, danger đã hết hạn)"},
+    "nav-dot": {"$type": "dimension", "$value": "8dp", "$description": "Chấm nhắc trên mục Cài đặt (warning sắp hết hạn, danger đã hết hạn); chấm lỗi trên AccountAvatar"},
+    "account-avatar-sm": {"$type": "dimension", "$value": "32dp", "$description": "AccountAvatar trên AppBar, trong vùng chạm 48"},
+    "account-avatar-md": {"$type": "dimension", "$value": "40dp", "$description": "AccountAvatar trong AccountRow và vòng hàng Thêm tài khoản; ô tài khoản ở D10 dùng 56 (thumb-row)"},
     "play-button": {"$type": "dimension", "$value": "72dp", "$description": "Nút phát giữa, vòng tạm dừng tab Short"},
     "button": {"$type": "dimension", "$value": "48dp", "$description": ""},
     "button-sm": {"$type": "dimension", "$value": "36dp", "$description": ""},

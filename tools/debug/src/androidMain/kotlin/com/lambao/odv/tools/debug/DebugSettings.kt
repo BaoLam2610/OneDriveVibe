@@ -24,6 +24,7 @@ object DebugSettings {
     private const val LEGACY_KEY_SECURE = "secure_mode"
     private const val KEY_MASK = "mask_traffic"
     private const val KEY_THUMBNAIL_SCALE = "thumbnail_scale_percent"
+    private const val KEY_NEXT_PRELOAD = "next_preload_enabled"
 
     /** Các tỉ lệ chất lượng thumbnail cho chọn (phần trăm so với cỡ mặc định); 100 là mặc định của app. */
     val thumbnailScales: List<Int> = listOf(50, 75, 100, 125, 150)
@@ -33,6 +34,14 @@ object DebugSettings {
 
     private val _maskTraffic = MutableStateFlow(false)
     val maskTraffic: StateFlow<Boolean> = _maskTraffic.asStateFlow()
+
+    private val _nextPreloadEnabled = MutableStateFlow(true)
+
+    /**
+     * Chuẩn bị sẵn video kế tiếp của tab Short trong RAM (ADR-0028). Mặc định BẬT; tắt để so thời gian tới khung hình đầu giữa `nguồn=ram` và
+     * `nguồn=thường` trong log. `DebugTools` ở app cấp giá trị này cho `NextVideoPreloadSwitch`.
+     */
+    val nextPreloadEnabled: StateFlow<Boolean> = _nextPreloadEnabled.asStateFlow()
 
     private val _thumbnailScale = MutableStateFlow(100)
 
@@ -46,6 +55,7 @@ object DebugSettings {
         if (stored.contains(LEGACY_KEY_SECURE)) stored.edit { remove(LEGACY_KEY_SECURE) }
         _maskTraffic.value = stored.getBoolean(KEY_MASK, false)
         _thumbnailScale.value = stored.getInt(KEY_THUMBNAIL_SCALE, 100).takeIf { it in thumbnailScales } ?: 100
+        _nextPreloadEnabled.value = stored.getBoolean(KEY_NEXT_PRELOAD, true)
         application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
             // Đăng ký Window của mọi Activity (DebugActivity, gallery) để "Bảo vệ màn hình" toàn app áp dụng cho cả những Activity
             // không có màn nào gọi ODVSecureWindow.
@@ -67,6 +77,13 @@ object DebugSettings {
         _thumbnailScale.value = percent
         prefs?.edit {
             putInt(KEY_THUMBNAIL_SCALE, percent)
+        }
+    }
+
+    fun setNextPreloadEnabled(enabled: Boolean) {
+        _nextPreloadEnabled.value = enabled
+        prefs?.edit {
+            putBoolean(KEY_NEXT_PRELOAD, enabled)
         }
     }
 

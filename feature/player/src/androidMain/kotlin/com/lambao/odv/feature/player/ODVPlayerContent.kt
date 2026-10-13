@@ -25,6 +25,7 @@ import coil3.compose.AsyncImage
 import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.component.ODVViewerButton
 import com.lambao.odv.core.designsystem.component.ODVViewerError
+import com.lambao.odv.core.designsystem.component.ODVViewerSystemBars
 import com.lambao.odv.core.designsystem.theme.ODVMediaColors
 import com.lambao.odv.core.domain.model.ThumbnailSize
 import com.lambao.odv.core.domain.model.ThumbnailSource
@@ -49,7 +50,7 @@ internal fun ODVPlayerContent(
     // Ẩn luôn thanh trạng thái và thanh điều hướng của hệ thống khi điều khiển ẩn. PlayerLayer báo qua onBarsHiddenChange; ở mọi
     // trạng thái khác (đang tạo player, lỗi) bar hiện bình thường nhưng icon vẫn sáng trên nền đen.
     var barsHidden by remember { mutableStateOf(false) }
-    ODVPlayerSystemBars(hidden = barsHidden)
+    ODVViewerSystemBars(hidden = barsHidden)
     // Hướng do nút xoay quyết định, không nhớ giữa các lần mở màn (VD-19: mở từ Danh sách luôn vào hướng dọc).
     var requestedLandscape by rememberSaveable { mutableStateOf(false) }
     // Hướng khi mở video theo Cài đặt (mặc định dọc): áp dụng đúng một lần khi đọc xong, không ép lại khi xoay tay hay đổi video.
@@ -124,6 +125,15 @@ internal fun ODVPlayerContent(
                 onBack = onBack,
                 onBarsHiddenChange = { barsHidden = it },
                 onToggleOrientation = { requestedLandscape = !requestedLandscape },
+            )
+        }
+        // VD-12: hỏi "Xem tiếp từ mm:ss?" trước khi phát (cài đặt "Hỏi trước"); video chưa được nạp cho tới khi người xem chọn.
+        state.resumePrompt?.let { prompt ->
+            ResumePromptDialog(
+                prompt = prompt,
+                onResume = { onIntent(PlayerIntent.ResumeFromSaved) },
+                onStartOver = { onIntent(PlayerIntent.StartOver) },
+                onBack = onBack,
             )
         }
     }

@@ -41,12 +41,15 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lambao.odv.core.designsystem.component.ODVBottomSheet
 import com.lambao.odv.core.designsystem.component.ODVButton
 import com.lambao.odv.core.designsystem.component.ODVButtonStyle
 import com.lambao.odv.core.designsystem.component.ODVDialog
 import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVInfoRow
+import com.lambao.odv.core.domain.usecase.account.ObserveItemAccountUseCase
+import org.koin.compose.koinInject
 import com.lambao.odv.core.designsystem.component.ODVMediaDefaults
 import com.lambao.odv.core.designsystem.component.ODVOptionRow
 import com.lambao.odv.core.designsystem.component.ODVProgressBar
@@ -287,6 +290,10 @@ private fun PdfInfoContent(info: PdfViewerInfo, modifier: Modifier = Modifier) {
             stringResource(R.string.pdf_info_folder),
             (listOf(root) + info.folderPath.map { it.name }).joinToString(" / "),
         )
+        // Tài khoản chứa tệp: chỉ khi app có từ 2 tài khoản (TA-03, mục 4.5).
+        val observeAccount = koinInject<ObserveItemAccountUseCase>()
+        val account by remember(item.id) { observeAccount(item.id) }.collectAsStateWithLifecycle(initialValue = null)
+        account?.let { ODVInfoRow(stringResource(R.string.pdf_info_account), "${it.displayName}\n${it.email}") }
     }
 }
 

@@ -8,7 +8,9 @@ import org.koin.dsl.module
 /** Binding Koin của `:feature:settings`. Ghép ở MainApplication. */
 val settingsModule = module {
     singleOf(::SecretUpdateEvents)
-    // 23 tham số, vượt giới hạn 22 của viewModelOf nên khai báo tường minh bằng tên.
+    // Cầu nối "đã thêm tài khoản" từ màn Thêm tài khoản về Màn chính (Snackbar, TA-07).
+    singleOf(::AccountEvents)
+    // 26 tham số, vượt giới hạn 22 của viewModelOf nên khai báo tường minh bằng tên.
     viewModel {
         SettingsViewModel(
             observeThemeMode = get(),
@@ -34,9 +36,13 @@ val settingsModule = module {
             settings = get(),
             security = get(),
             player = get(),
+            observeAccountStatuses = get(),
+            observeAccountScope = get(),
+            removeAccount = get(),
         )
     }
     viewModelOf(::UpdateSecretViewModel)
+    viewModelOf(::AddAccountViewModel)
     // Màn PIN nhận mục đích qua tham số (route chỉ mang tên PinPurpose).
     viewModel { params ->
         PinFlowViewModel(

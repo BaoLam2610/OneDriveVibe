@@ -7,6 +7,7 @@ import com.lambao.odv.core.data.drive.toEntity
 import com.lambao.odv.core.database.DriveDao
 import com.lambao.odv.core.database.DriveItemEntity
 import com.lambao.odv.core.database.SyncStateEntity
+import com.lambao.odv.core.domain.model.ItemKey
 import com.lambao.odv.core.network.graph.GraphApi
 import com.lambao.odv.core.data.SyncConstants
 import kotlinx.coroutines.currentCoroutineContext
@@ -15,8 +16,9 @@ import kotlinx.coroutines.ensureActive
 import kotlin.time.Clock
 
 /**
- * Một lần đồng bộ delta (DB-01 → DB-05). Không giữ trạng thái giữa các lần chạy: mọi thứ cần để tiếp tục nằm trong
- * bảng `sync_state`, nên tắt app lúc nào cũng tiếp tục được.
+ * Một lần đồng bộ delta **của một tài khoản** (DB-01 → DB-05, ADR-0030). Không giữ trạng thái giữa các lần chạy: mọi thứ cần để
+ * tiếp tục nằm trong dòng `sync_state` của tài khoản đó, nên tắt app lúc nào cũng tiếp tục được. Việc xếp hàng nhiều tài khoản,
+ * lần lượt, nằm ở `SyncCoordinator`.
  *
  * - Chưa có `deltaLink`: quét đầy đủ từ `/root/delta` (DB-01). Mỗi trang ghi nguyên tử cùng `pendingNextLink` (DB-04).
  * - Có `deltaLink`: chỉ lấy thay đổi từ mốc đó (DB-02).
@@ -33,18 +35,20 @@ internal class SyncEngine(
 ) {
 
     /**
-     * [onProgress] nhận số mục đã quét trong lần quét đầy đủ (TV-06). Trả lỗi theo [AppError], không ném ngoại lệ.
+     * Đồng bộ tài khoản [accountId] (drive id) có UPN [upn]. [onProgress] nhận số mục đã quét trong lần quét đầy đủ (TV-06). Trả lỗi
+     * theo [AppError], không ném ngoại lệ. [shouldStop] được hỏi trước mỗi trang: true thì dừng ngay (tài khoản đang bị xóa, TA-08)
+     * và trả `AppError.Unknown`, không ghi thêm gì.
      *
      * Lỗi tạm thời (mạng, `429`, `5xx`) đã được HttpRequestRetry thử lại vài lần trong một request; nếu vẫn lỗi thì ở đây
      * chờ thêm (theo `Retry-After` nếu có, không thì tăng dần) rồi chạy tiếp từ trang dở, vì mốc đã lưu theo từng trang
      * (TK-05, TK-06, DB-04). Bộ đếm lỗi đặt lại mỗi khi ghi được thêm trang, nên drive lớn bị throttle rải rác vẫn đi hết.
      */
-    suspend fun run(onProgress: (Int) -> Unit): AppResult<Unit> {
+    suspend fun run(accountId: String, upn: String, shouldStop: () -> Boolean, onProgress: (Int) -> Unit): AppResult<Unit> {
         var restarted = false
         var transientFailures = 0
         while (true) {
             var progressed = false
-            val result = runOnce { scanned ->
+            val result = runOnce(accountId, upn, shouldStop) { scanned ->
                 progressed = true
                 onProgress(scanned)
             }
@@ -53,11 +57,13 @@ internal class SyncEngine(
             when {
                 error.isResyncRequired() && !restarted -> {
                     restarted = true
-                    dropCursor()
+                    dropCursor(accountId)
                 }
                 error.isTransient() -> {
                     if (progressed) transientFailures = 0
                     if (++transientFailures > SyncConstants.MAX_TRANSIENT_RETRIES) return result
+                    // Đang bị xóa (TA-08) thì khỏi chờ backoff, để purge không treo lâu khi đang throttle (review Lát T D-L5).
+                    if (shouldStop()) return AppResult.Failure(AppError.Unknown())
                     delay(backoffMs(error, transientFailures))
                 }
                 else -> return result
@@ -65,8 +71,8 @@ internal class SyncEngine(
         }
     }
 
-    private suspend fun runOnce(onProgress: (Int) -> Unit): AppResult<Unit> {
-        var state = dao.getSyncState() ?: SyncStateEntity()
+    private suspend fun runOnce(accountId: String, upn: String, shouldStop: () -> Boolean, onProgress: (Int) -> Unit): AppResult<Unit> {
+        var state = dao.getSyncState(accountId) ?: SyncStateEntity(accountId)
         val fullScan = state.deltaLink == null
         // Quét đầy đủ mới (không phải tiếp tục trang dở) thì tăng scanId và đếm lại từ 0.
         val resuming = state.pendingNextLink != null
@@ -76,17 +82,18 @@ internal class SyncEngine(
 
         while (true) {
             currentCoroutineContext().ensureActive()
-            val page = api.deltaPage(link).getOrElse { return AppResult.Failure(it) }
+            if (shouldStop()) return AppResult.Failure(AppError.Unknown())
+            val page = api.deltaPage(upn, link).getOrElse { return AppResult.Failure(it) }
 
             var rootId = state.rootId
             val upserts = ArrayList<DriveItemEntity>(page.value.size)
             val deleted = ArrayList<String>()
             for (dto in page.value) {
                 when {
-                    // Gốc drive không phải một mục để hiển thị: chỉ nhớ id để biết "thư mục gốc" của UI là mục nào.
-                    dto.root != null -> rootId = dto.id
-                    dto.deleted != null -> deleted += dto.id
-                    else -> dto.toEntity(scanId)?.let(upserts::add)
+                    // Gốc drive không phải một mục để hiển thị: chỉ nhớ id (đã có tiền tố tài khoản) để biết "thư mục gốc" của UI là mục nào.
+                    dto.root != null -> rootId = ItemKey.of(accountId, dto.id)
+                    dto.deleted != null -> deleted += ItemKey.of(accountId, dto.id)
+                    else -> dto.toEntity(accountId, scanId)?.let(upserts::add)
                 }
             }
             scanned += upserts.size
@@ -118,8 +125,8 @@ internal class SyncEngine(
     }
 
     /** Bỏ mốc và trang dở để lần chạy sau quét đầy đủ lại (DB-03); giữ nguyên `rootId`, `scanId` và dữ liệu đang có. */
-    private suspend fun dropCursor() {
-        val state = dao.getSyncState() ?: return
+    private suspend fun dropCursor(accountId: String) {
+        val state = dao.getSyncState(accountId) ?: return
         dao.upsertSyncState(state.copy(deltaLink = null, pendingNextLink = null, scannedCount = 0))
     }
 

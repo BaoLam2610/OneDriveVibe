@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.compose.runtime.Composable
 import com.lambao.odv.MainActivity
 import com.lambao.odv.core.designsystem.component.ODVSecureWindowPolicy
+import com.lambao.odv.core.domain.hook.NextVideoPreloadSwitch
 import com.lambao.odv.core.domain.hook.PreferencesInspector
 import com.lambao.odv.core.domain.hook.ThumbnailCache
 import com.lambao.odv.core.domain.hook.ThumbnailQuality
@@ -38,10 +39,16 @@ object DebugTools {
         // Đứng sau androidDataModule trong MainApplication nên ghi đè ThumbnailQuality cố định 100% bằng giá trị chỉnh ở màn
         // Debug (Koin 4 cho ghi đè mặc định). Bản release không có module này nên luôn 100%.
         module { single<ThumbnailQuality> { DebugThumbnailQuality } },
+        // Cùng cách với ThumbnailQuality: ghi đè công tắc mặc định (luôn bật) của androidMediaModule bằng công tắc ở tab Khác (ADR-0028).
+        module { single<NextVideoPreloadSwitch> { DebugNextVideoPreloadSwitch } },
     )
 
     private object DebugThumbnailQuality : ThumbnailQuality {
         override fun scalePercent(): Int = DebugSettings.thumbnailScalePercent.value
+    }
+
+    private object DebugNextVideoPreloadSwitch : NextVideoPreloadSwitch {
+        override fun isEnabled(): Boolean = DebugSettings.nextPreloadEnabled.value
     }
 
     /**

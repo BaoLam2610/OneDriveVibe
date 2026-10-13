@@ -5,7 +5,9 @@ import com.lambao.odv.core.common.dispatcher.DispatcherProvider
 import com.lambao.odv.core.database.DatabaseCompactor
 import com.lambao.odv.core.database.ReadingProgressDao
 import com.lambao.odv.core.database.ReadingProgressEntity
+import com.lambao.odv.core.domain.hook.AccountDataCleaner
 import com.lambao.odv.core.domain.hook.ConnectionResetter
+import com.lambao.odv.core.domain.model.ItemKey
 import com.lambao.odv.core.domain.model.ReadingProgress
 import com.lambao.odv.core.domain.repository.ReadingProgressRepository
 import kotlinx.coroutines.CancellationException
@@ -19,7 +21,7 @@ internal class ReadingProgressRepositoryImpl(
     private val dao: ReadingProgressDao,
     private val compactor: DatabaseCompactor,
     private val dispatchers: DispatcherProvider,
-) : ReadingProgressRepository, ConnectionResetter {
+) : ReadingProgressRepository, ConnectionResetter, AccountDataCleaner {
 
     private val log = Logger.withTag("ReadingProgress")
 
@@ -32,6 +34,11 @@ internal class ReadingProgressRepositoryImpl(
 
     override suspend fun save(progress: ReadingProgress) = withContext(dispatchers.io) {
         dao.upsert(progress.toEntity())
+    }
+
+    /** Xóa tài khoản khỏi app (TA-08): xóa tiến độ đọc của mọi tệp có tiền tố `<drive id>|` ([ItemKey]). */
+    override suspend fun purge(accountId: String) {
+        withContext(dispatchers.io) { dao.deleteWithPrefix(ItemKey.of(accountId, "")) }
     }
 
     override suspend fun reset() {
@@ -59,6 +66,7 @@ private fun ReadingProgressEntity.toDomain() = ReadingProgress(
     finished = finished,
 )
 
+// Ghi đè cả dòng nên `dismissed` tự về false: đọc tiếp thì mục hiện lại ở dải Đọc tiếp (DS-02).
 private fun ReadingProgress.toEntity() = ReadingProgressEntity(
     itemId = itemId,
     cTag = cTag,
@@ -66,4 +74,5 @@ private fun ReadingProgress.toEntity() = ReadingProgressEntity(
     pageCount = pageCount,
     updatedAt = updatedAt,
     finished = finished,
+    dismissed = false,
 )

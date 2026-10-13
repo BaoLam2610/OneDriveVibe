@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Icon trong suốt cho splash hệ thống Android 12+ (windowSplashScreenAnimatedIcon bắt buộc có drawable). Chủ đích: splash hệ thống chỉ
+    hiện nền trơn, logo do ODVSplashScreen vẽ để người dùng thấy đúng một splash (yêu cầu 2026-10-13).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,0h24v24h-24z" />
+</vector>

@@ -11,6 +11,8 @@ kotlin {
 
     sourceSets {
         androidMain.dependencies {
+            // koinInject cho hàng "Tài khoản" của bảng thông tin (Lát T, mục 4.5); koinViewModel đã có từ convention plugin.
+            implementation(libs.koin.compose)
             // WindowCompat: ẩn/hiện system bar khi chạm một lần (AN-04) và icon sáng trên nền đen.
             implementation(libs.androidx.core.ktx)
             // AsyncImage cho thumbnail lớn và GIF động (AN-01, AN-06).

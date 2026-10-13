@@ -6,8 +6,11 @@ import kotlin.time.Duration.Companion.minutes
 internal object GraphConstants {
     const val BASE_URL = "https://graph.microsoft.com/v1.0"
 
-    /** Kiểm tra kết nối (KN-07): chỉ cần biết drive tồn tại. Không xin `quota` (KN-12). */
-    const val DRIVE_SELECT = "id,driveType"
+    /**
+     * Kiểm tra kết nối (KN-07, TA-07): drive tồn tại, drive id (khóa tài khoản, ADR-0030) và chủ drive để hiện tên và email (TA-02).
+     * Không xin `quota` (KN-12).
+     */
+    const val DRIVE_SELECT = "id,driveType,owner"
     const val ITEM_INFO_SELECT = "id,name,image,photo,fileSystemInfo"
     const val DOWNLOAD_CHUNK_BYTES = 64 * 1024
     const val CHILDREN_SELECT = "id,name,size,folder,file,video,package"

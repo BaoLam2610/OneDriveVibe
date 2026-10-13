@@ -12,6 +12,7 @@ import com.lambao.odv.core.domain.usecase.security.GetLockStatusUseCase
 import com.lambao.odv.core.domain.usecase.security.GetLockoutRemainingUseCase
 import com.lambao.odv.core.domain.usecase.security.ObserveLockStateUseCase
 import com.lambao.odv.core.domain.usecase.security.VerifyPinUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,6 +44,12 @@ class PinFlowViewModel(
     private val first = CharArray(PinPolicy.LENGTH)
     private var cooldownJob: Job? = null
 
+    /**
+     * Thế hệ của phiên nhập PIN: tăng mỗi lần app bị khóa. Kết quả verify nhận về sau khi khóa (thế hệ cũ) bị bỏ và PIN vừa nhận bị xóa,
+     * để [onCurrentVerified] không ghi lại PIN vào [held] sau khi observer Locked đã dọn (CH-02, CH-03).
+     */
+    private var generation = 0
+
     init {
         viewModelScope.launch { applyStatus() }
         viewModelScope.launch {
@@ -50,6 +57,7 @@ class PinFlowViewModel(
             // nhớ và đưa về P1, để PIN không nằm lại suốt lúc app khóa. Sau khi mở khóa phải nhập lại từ đầu.
             observeLockState().collect { lock ->
                 if (lock == LockState.Locked) {
+                    generation++
                     clearAll()
                     setState { copy(step = PinStep.Current, entered = 0, error = null, confirmDisable = false) }
                 }
@@ -116,6 +124,7 @@ class PinFlowViewModel(
         val attempt = pin.copyOf()
         clearEntry()
         setState { copy(isBusy = true) }
+        val startedAt = generation
         viewModelScope.launch {
             // Đúng thì [onCurrentVerified] tự xóa [attempt] (sau khi sao vào [held] nếu cần); không thì xóa ngay ở đây.
             val result = try {
@@ -123,6 +132,17 @@ class PinFlowViewModel(
             } catch (e: Throwable) {
                 attempt.fill('\u0000')
                 throw e
+            }
+            if (startedAt != generation) {
+                // App đã bị khóa trong lúc kiểm tra: bỏ kết quả cũ, không giữ PIN (observer Locked đã đưa màn về P1). Wiped thì dữ liệu
+                // đã bị xóa thật nên vẫn phải báo.
+                attempt.fill('\u0000')
+                if (result == UnlockResult.Wiped) {
+                    handleFailure(result)
+                } else {
+                    setState { copy(isBusy = false, entered = 0, error = null) }
+                }
+                return@launch
             }
             if (result == UnlockResult.Success) {
                 onCurrentVerified(attempt)
@@ -168,6 +188,11 @@ class PinFlowViewModel(
         viewModelScope.launch {
             val result = try {
                 disableProtection(old)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Lỗi lưu bất ngờ: hiện StorageFailed và nhả isBusy (qua handleFailure) thay vì kẹt màn.
+                UnlockResult.Failed
             } finally {
                 old.fill('\u0000')
             }
@@ -191,6 +216,10 @@ class PinFlowViewModel(
         viewModelScope.launch {
             val result = try {
                 changePin(old, new)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                UnlockResult.Failed
             } finally {
                 old.fill('\u0000')
                 new.fill('\u0000')

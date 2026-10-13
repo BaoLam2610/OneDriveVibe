@@ -1,5 +1,8 @@
 package com.lambao.odv.core.data
 
+import com.lambao.odv.core.data.account.AccountDirectory
+import com.lambao.odv.core.data.account.AccountRepositoryImpl
+import com.lambao.odv.core.data.account.ScopedAccounts
 import com.lambao.odv.core.data.config.ConfigCredentialsSource
 import com.lambao.odv.core.data.config.ConfigRepositoryImpl
 import com.lambao.odv.core.data.config.ConfigVault
@@ -14,9 +17,14 @@ import com.lambao.odv.core.data.security.LockoutStore
 import com.lambao.odv.core.data.security.SecurityRepositoryImpl
 import com.lambao.odv.core.data.sync.SyncCoordinator
 import com.lambao.odv.core.data.sync.SyncEngine
+import com.lambao.odv.core.data.watch.ContinueRepositoryImpl
+import com.lambao.odv.core.data.watch.WatchProgressRepositoryImpl
+import com.lambao.odv.core.domain.repository.AccountRepository
 import com.lambao.odv.core.domain.repository.ConfigRepository
+import com.lambao.odv.core.domain.hook.AccountDataCleaner
 import com.lambao.odv.core.domain.hook.ConnectionResetter
 import com.lambao.odv.core.domain.repository.ConnectionRepository
+import com.lambao.odv.core.domain.repository.ContinueRepository
 import com.lambao.odv.core.domain.repository.FolderRepository
 import com.lambao.odv.core.domain.repository.LibraryRepository
 import com.lambao.odv.core.domain.repository.ReadingProgressRepository
@@ -25,6 +33,7 @@ import com.lambao.odv.core.domain.repository.SyncRepository
 import com.lambao.odv.core.domain.repository.VideoStreamRepository
 import com.lambao.odv.core.domain.repository.ShortRepository
 import com.lambao.odv.core.domain.repository.ViewerRepository
+import com.lambao.odv.core.domain.repository.WatchProgressRepository
 import com.lambao.odv.core.domain.usecase.DisconnectUseCase
 import com.lambao.odv.core.network.graph.GraphCredentialsSource
 import org.koin.core.module.dsl.singleOf
@@ -45,6 +54,12 @@ val dataModule = module {
     singleOf(::ConfigVault)
     singleOf(::LockoutStore)
     singleOf(::ConfigRepositoryImpl) bind ConfigRepository::class
+    // Nhiều tài khoản (Lát T, ADR-0030): danh sách tài khoản và phạm vi xem. `cleaners` là lambda để không vòng phụ thuộc với SyncCoordinator
+    // (nó cần AccountRepository); getAll() chạy lúc xóa tài khoản, khi mọi bản cài đã có.
+    single { AccountRepositoryImpl(vault = get(), prefs = get(), dao = get(), cleaners = { getAll<AccountDataCleaner>() }) } bind AccountRepository::class
+    // Đổi id mờ của mục sang UPN + id Graph thô; danh sách tài khoản theo phạm vi xem cho các truy vấn Room.
+    singleOf(::AccountDirectory)
+    singleOf(::ScopedAccounts)
     // Credentials cho GraphApi lấy từ config đã lưu, ở mỗi lời gọi (network chỉ biết interface GraphCredentialsSource).
     singleOf(::ConfigCredentialsSource) bind GraphCredentialsSource::class
     // Tùy chọn bảo mật của Cài đặt (SecuritySettings): cần DataStore nên được cài ở androidDataModule (cùng tệp DataStore `settings`).
@@ -58,7 +73,19 @@ val dataModule = module {
     // Danh sách video của tab Short (SV-01): đọc id từ Room.
     singleOf(::ShortRepositoryImpl) bind ShortRepository::class
     // Trang đang đọc của PDF (Lát 9a, PD-05). Cũng là ConnectionResetter: Ngắt kết nối xóa tiến độ đọc (CD-05).
-    singleOf(::ReadingProgressRepositoryImpl) binds arrayOf(ReadingProgressRepository::class, ConnectionResetter::class)
+    singleOf(::ReadingProgressRepositoryImpl) binds arrayOf(
+        ReadingProgressRepository::class,
+        ConnectionResetter::class,
+        AccountDataCleaner::class,
+    )
+    // Vị trí xem dở của video (Lát 10, VD-12), cùng cách làm với tiến độ đọc PDF: Ngắt kết nối và xóa tài khoản đều xóa nó.
+    singleOf(::WatchProgressRepositoryImpl) binds arrayOf(
+        WatchProgressRepository::class,
+        ConnectionResetter::class,
+        AccountDataCleaner::class,
+    )
+    // Dải Xem tiếp / Đọc tiếp (Lát 10, DS-02): gộp tiến độ video và PDF.
+    singleOf(::ContinueRepositoryImpl) bind ContinueRepository::class
     // Link phát video (Lát 6, VD-14): trình phát hỏi lại mỗi lần mở kết nối vì link chỉ sống khoảng 1 giờ.
     singleOf(::VideoStreamRepositoryImpl) bind VideoStreamRepository::class
     // Đồng bộ delta về Room (ADR-0007). SyncCoordinator vừa là SyncRepository vừa là ConnectionResetter của Room nên
@@ -67,6 +94,7 @@ val dataModule = module {
     singleOf(::SyncCoordinator) binds arrayOf(
         SyncRepository::class,
         ConnectionResetter::class,
+        AccountDataCleaner::class,
     )
     // getAll: mỗi lát đăng ký ConnectionResetter của mình (Room, cache, cài đặt) mà không phải sửa chỗ này.
     factory { DisconnectUseCase(getAll(), get()) }

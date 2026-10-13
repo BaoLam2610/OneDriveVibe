@@ -8,7 +8,18 @@ import com.lambao.odv.core.domain.model.SyncStatus
 import com.lambao.odv.core.domain.model.ViewerContext
 
 /**
- * Trạng thái tab Thư viện (TV-01 → TV-06). Danh sách ảnh/video không nằm ở đây mà ở luồng phân trang
+ * Trạng thái tìm kiếm trong Thư viện (TV-07). Màn đang ở chế độ tìm khi [LibraryState.search] khác null.
+ *
+ * [query] là chữ trong ô nhập (đổi theo từng phím); [appliedQuery] là từ khóa đã chờ hết khoảng debounce và đang được dùng để tìm, đã bỏ khoảng
+ * trắng hai đầu. Lưới kết quả, trạng thái "không có kết quả" và ngữ cảnh màn xem đều theo [appliedQuery] để khớp với cái người dùng đang thấy.
+ */
+data class LibrarySearchState(
+    val query: String = "",
+    val appliedQuery: String = "",
+)
+
+/**
+ * Trạng thái tab Thư viện (TV-01 → TV-07). Danh sách ảnh/video không nằm ở đây mà ở luồng phân trang
  * `LibraryViewModel.pages`; State chỉ giữ số mục theo ngày để dựng tiêu đề nhóm và độ dài lưới.
  */
 data class LibraryState(
@@ -24,6 +35,10 @@ data class LibraryState(
     val isOffline: Boolean = false,
     /** Loại tệp được bật ở Cài đặt (CD-01). Thư viện chỉ có ảnh và video; PDF không ảnh hưởng. */
     val enabledKinds: Set<MediaKind> = MediaKind.entries.toSet(),
+    /** Tên hiển thị theo drive id của tài khoản, để banner "Đang lập chỉ mục" ghi tên tài khoản ở phạm vi Tất cả (D7, TA-05). */
+    val accountNames: Map<String, String> = emptyMap(),
+    /** Đang tìm kiếm (TV-07) khi khác null; kết quả nằm ở luồng phân trang `LibraryViewModel.searchPages`. */
+    val search: LibrarySearchState? = null,
 ) {
     /**
      * Chip lọc Tất cả / Ảnh / Video (TV-03) chỉ có nghĩa khi cả ảnh lẫn video đang bật; chỉ còn một loại thì "Tất cả" trùng với loại
@@ -41,6 +56,15 @@ sealed interface LibraryIntent {
 
     /** "Thử lại" ở banner đồng bộ lỗi. */
     data object Refresh : LibraryIntent
+
+    /** Chạm nút Tìm kiếm trên AppBar (TV-07). */
+    data object OpenSearch : LibraryIntent
+
+    /** Nút quay lại của thanh tìm, hoặc Back hệ thống khi đang tìm (TV-07). */
+    data object CloseSearch : LibraryIntent
+
+    /** Chữ trong ô tìm đổi (TV-07). */
+    data class QueryChanged(val query: String) : LibraryIntent
 }
 
 sealed interface LibraryEffect {

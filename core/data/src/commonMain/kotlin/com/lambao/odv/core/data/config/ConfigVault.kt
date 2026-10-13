@@ -3,7 +3,8 @@ package com.lambao.odv.core.data.config
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.common.result.AppResult
 import com.lambao.odv.core.common.result.getOrElse
-import com.lambao.odv.core.domain.model.ConnectionConfig
+import com.lambao.odv.core.domain.model.Account
+import com.lambao.odv.core.domain.model.ConnectionProfile
 import com.lambao.odv.core.domain.model.LockState
 import com.lambao.odv.core.security.PinEnvelopeCodec
 import com.lambao.odv.core.security.SecretStore
@@ -22,15 +23,29 @@ import kotlin.concurrent.Volatile
 /**
  * Config dạng lưu: JSON. `toString` che toàn bộ vì có Client Secret (CH-06).
  * Ở chế độ thiết bị đây là plaintext của lớp mã hóa Keystore; ở chế độ PIN nó nằm trong phong bì PIN (ADR-0014).
+ *
+ * Phần dùng chung (Tenant ID, Client ID, Client Secret) và danh sách tài khoản (ADR-0030). UPN, tên và email nằm trong tệp đã mã hóa
+ * này, không lưu ở nơi nào khác (CH-01). Tệp định dạng cũ (một `upn`, không có `accounts`) không đọc được và người dùng kết nối lại:
+ * chưa phát hành nên không viết bước chuyển đổi.
  */
 @Serializable
 private class StoredConfig(
     val tenantId: String,
     val clientId: String,
     val clientSecret: String,
-    val upn: String,
+    val accounts: List<StoredAccount>,
 ) {
     override fun toString(): String = "StoredConfig(***)"
+}
+
+@Serializable
+private class StoredAccount(
+    val id: String,
+    val upn: String,
+    val displayName: String,
+    val email: String,
+) {
+    override fun toString(): String = "StoredAccount(***)"
 }
 
 /**
@@ -47,9 +62,22 @@ internal class ConfigVault(
     private val json = Json { ignoreUnknownKeys = true }
     private val mutex = Mutex()
 
-    /** Bản đã giải mã trong bộ nhớ. Xóa khi khóa app hoặc ngắt kết nối (CH-03). */
-    @Volatile
-    private var cache: ConnectionConfig? = null
+    // Giữ suốt một lần đọc-sửa-ghi ([update]) để thêm/xóa tài khoản và đổi Client Secret không ghi đè lẫn nhau. Tách khỏi [mutex] vì
+    // [replace] gọi [readRaw]/[writeRaw] cũng lấy [mutex] (Mutex không vào lại được).
+    private val editLock = Mutex()
+
+    // Bản đã giải mã trong bộ nhớ, phát ra cho `AccountRepository` (danh sách tài khoản) quan sát. Xóa khi khóa app hoặc ngắt kết nối
+    // (CH-03): luồng phát null nên danh sách tài khoản về rỗng ngay.
+    private val _profile = MutableStateFlow<ConnectionProfile?>(null)
+
+    /** Config đã giải mã trong bộ nhớ; null khi chưa đọc, đang khóa hoặc đã ngắt kết nối. Không bao giờ ghi ra ngoài (CH-03, CH-06). */
+    val profile: StateFlow<ConnectionProfile?> = _profile.asStateFlow()
+
+    private var cache: ConnectionProfile?
+        get() = _profile.value
+        set(value) {
+            _profile.value = value
+        }
 
     /** Khóa dẫn xuất từ PIN của phiên hiện tại (chỉ có ở chế độ PIN khi đã mở khóa). Xóa bằng 0 khi khóa. */
     @Volatile
@@ -129,7 +157,7 @@ internal class ConfigVault(
         }
     }
 
-    suspend fun load(): AppResult<ConnectionConfig> {
+    suspend fun load(): AppResult<ConnectionProfile> {
         cache?.let { return AppResult.Success(it) }
         val bytes = readRaw().getOrElse { return AppResult.Failure(it) }
             ?: return AppResult.Failure(AppError.SecureStorage)
@@ -141,7 +169,7 @@ internal class ConfigVault(
     }
 
     /** Ghi [config] ở chế độ thiết bị và bỏ mọi thứ của chế độ PIN trong bộ nhớ (kết nối mới, KN-08). */
-    suspend fun saveDevice(config: ConnectionConfig): AppResult<Unit> {
+    suspend fun saveDevice(config: ConnectionProfile): AppResult<Unit> {
         val written = writeRaw(encode(config))
         if (written is AppResult.Success) setDeviceMode(config)
         return written
@@ -152,7 +180,7 @@ internal class ConfigVault(
      * mã hóa lại bằng khóa phiên đang giữ, cùng salt (`resealWithKey`) nên PIN không cần nhập lại và phần bọc sinh trắc học vẫn
      * dùng được (ADR-0014). Ghi nguyên tử; thất bại thì tệp và bản trong bộ nhớ giữ nguyên. Đang khóa thì trả `AppLocked`.
      */
-    suspend fun replace(config: ConnectionConfig): AppResult<Unit> {
+    suspend fun replace(config: ConnectionProfile): AppResult<Unit> {
         val plain = encode(config)
         var key: ByteArray? = null
         // Thế hệ khóa lúc bắt đầu: nếu lock() chen vào thì không được gán lại bản giải mã vào bộ nhớ (CH-03).
@@ -180,8 +208,17 @@ internal class ConfigVault(
         }
     }
 
+    /**
+     * Đọc config hiện tại, áp [transform], rồi [replace] giữ nguyên chế độ bảo mật; tất cả dưới một khóa nên hai thao tác sửa config
+     * cùng lúc (vd. thêm tài khoản và cập nhật Client Secret) không làm mất thay đổi của nhau (TA-07, CD-04).
+     */
+    suspend fun update(transform: (ConnectionProfile) -> ConnectionProfile): AppResult<Unit> = editLock.withLock {
+        val current = load().getOrElse { return@withLock AppResult.Failure(it) }
+        replace(transform(current))
+    }
+
     /** Sau khi tệp đã ở chế độ thiết bị: giữ [config] trong bộ nhớ, bỏ khóa phiên, mở khóa. */
-    fun setDeviceMode(config: ConnectionConfig) {
+    fun setDeviceMode(config: ConnectionProfile) {
         cache = config
         discardKey()
         pinMode = false
@@ -194,7 +231,7 @@ internal class ConfigVault(
      * [expectedEpoch] là [currentEpoch] đọc trước khi bắt đầu thao tác. Nếu app đã bị [lock] từ đó thì hoàn tác, xóa
      * [key] và để Locked; trả về `false`. Phần ghi diễn ra trước, kiểm tra thế hệ sau cùng (xem [epoch]).
      */
-    fun adopt(config: ConnectionConfig, key: ByteArray, expectedEpoch: Int): Boolean {
+    fun adopt(config: ConnectionProfile, key: ByteArray, expectedEpoch: Int): Boolean {
         discardKey()
         sessionKey = key
         cache = config
@@ -231,11 +268,11 @@ internal class ConfigVault(
         _lockState.value = LockState.Unlocked
     }
 
-    fun encode(config: ConnectionConfig): ByteArray =
+    fun encode(config: ConnectionProfile): ByteArray =
         json.encodeToString(StoredConfig.serializer(), config.toStored()).encodeToByteArray()
 
     /** Null nếu không phải JSON config hợp lệ. */
-    fun decode(bytes: ByteArray): ConnectionConfig? = try {
+    fun decode(bytes: ByteArray): ConnectionProfile? = try {
         json.decodeFromString(StoredConfig.serializer(), bytes.decodeToString()).toDomain()
     } catch (e: CancellationException) {
         throw e
@@ -248,7 +285,9 @@ internal class ConfigVault(
         sessionKey = null
     }
 
-    private fun ConnectionConfig.toStored() = StoredConfig(tenantId, clientId, clientSecret, upn)
+    private fun ConnectionProfile.toStored() =
+        StoredConfig(tenantId, clientId, clientSecret, accounts.map { StoredAccount(it.id, it.upn, it.displayName, it.email) })
 
-    private fun StoredConfig.toDomain() = ConnectionConfig(tenantId, clientId, clientSecret, upn)
+    private fun StoredConfig.toDomain() =
+        ConnectionProfile(tenantId, clientId, clientSecret, accounts.map { Account(it.id, it.upn, it.displayName, it.email) })
 }

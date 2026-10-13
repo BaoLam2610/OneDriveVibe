@@ -35,6 +35,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.lambao.odv.core.common.error.AppError
 import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.component.ODVViewerError
@@ -84,8 +85,10 @@ internal fun ImagePage(
     onZoomedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val original by remember(item.id, item.cTag) { originalOf(item) }
-        .collectAsStateWithLifecycle(initialValue = CachedFileState.Downloading(0L, null))
+    // Khởi đầu là null (chưa biết), không phải Downloading: ảnh đã có trong cache chỉ phát `Ready` sau một lần chạy trên luồng IO, nếu giả định
+    // "đang tải" từ đầu thì viên thuốc "Đang tải ảnh gốc" chớp vài khung mỗi lần vuốt tới ảnh đã cache. Viên thuốc chỉ hiện khi luồng thật sự báo tải.
+    val original: CachedFileState? by remember(item.id, item.cTag) { originalOf(item) }
+        .collectAsStateWithLifecycle(initialValue = null)
     val path = (original as? CachedFileState.Ready)?.path
     val probe by produceState<ImageProbe?>(initialValue = null, path) {
         value = if (path == null) null else withContext(Dispatchers.IO) { probeImage(path) }
@@ -141,7 +144,7 @@ internal fun ImagePage(
                 color = ODVMediaColors.onMediaMuted,
             )
         } else {
-            StatusPill(original, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 84.dp))
+            original?.let { StatusPill(it, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 84.dp)) }
         }
     }
 }
@@ -238,12 +241,20 @@ private fun GifLayer(
 /**
  * Yêu cầu tải tệp ảnh gốc cục bộ. Tắt cache bộ nhớ của Coil: ảnh gốc to và đã nằm trên đĩa (cache riêng), còn cache bộ nhớ
  * của app cỡ cho thumbnail nên một ảnh gốc giải mã sẽ đẩy cả lưới thumbnail ra.
+ *
+ * Tắt cross-fade: `ImageLoader` bật `crossfade(true)` toàn app và Telephoto luôn áp nó (kể cả khi ảnh lấy từ đĩa), nên ảnh gốc hiện dần
+ * trong khi thumbnail bên dưới cũng đang mờ đi (AN-01); hai lớp cùng trong suốt một phần trên nền đen làm màn hình tối đi giữa chừng, thấy như
+ * một cú nháy mỗi lần vuốt tới ảnh. Ảnh gốc hiện thẳng ở độ đục 100% thì thumbnail mờ đi bên dưới không còn thấy.
  */
 @Composable
 private fun rememberOriginalRequest(path: String): ImageRequest {
     val context = LocalPlatformContext.current
     return remember(path) {
-        ImageRequest.Builder(context).data(File(path)).memoryCachePolicy(CachePolicy.DISABLED).build()
+        ImageRequest.Builder(context)
+            .data(File(path))
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .crossfade(false)
+            .build()
     }
 }
 

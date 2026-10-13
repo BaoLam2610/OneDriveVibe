@@ -92,6 +92,8 @@ Response `quota` gồm `total`, `used`, `remaining`, `deleted`, `state` (đơn v
 
 > Request `GET /users/{upn}/drive?$select=id,driveType,quota` phù hợp để **kiểm tra kết nối**: thành công nghĩa là token hợp lệ, đã có quyền và drive tồn tại.
 
+> **Nhiều tài khoản (2026-10-12, ADR-0030, đặc tả TA-02):** app gọi `GET /users/{upn}/drive?$select=id,driveType,owner` (không xin `quota`, KN-12). `id` là **drive id**, dùng làm `accountId` trong CSDL. `owner.user.displayName` và `owner.user.email` dùng làm tên hiển thị và email của tài khoản. **Đã kiểm chứng với token app-only (2026-10-12):** response có `owner.user.displayName` và `email`. Vẫn giữ dự phòng: nếu `owner` hoặc các trường con thiếu thì app dùng phần trước `@` của UPN làm tên và UPN làm email. Chưa ghi response mẫu vào `onedrive-graph-responses.md`. Một token dùng chung cho mọi UPN trong cùng tenant (token app-only đọc được drive của mọi người dùng đã cấp `Files.Read.All`).
+
 **Lưu ý về `quota`**
 
 - **`used` có thể lớn hơn `total`.** Đây là hành vi hợp lệ của Graph, không phải lỗi của app hay của response: khi đó `state = "exceeded"` và `remaining = 0`. Ví dụ thực tế (đã bỏ `id`):

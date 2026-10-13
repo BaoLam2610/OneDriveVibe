@@ -8,10 +8,12 @@ import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.SimpleCache
 import com.lambao.odv.core.common.dispatcher.DispatcherProvider
+import com.lambao.odv.core.domain.hook.AccountDataCleaner
 import com.lambao.odv.core.domain.hook.CacheBudgetProvider
 import com.lambao.odv.core.domain.hook.CacheStore
 import com.lambao.odv.core.domain.hook.ConnectionResetter
 import com.lambao.odv.core.domain.model.CacheKind
+import com.lambao.odv.core.domain.model.ItemKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -38,7 +40,7 @@ class VideoCache(
     private val context: Context,
     private val dispatchers: DispatcherProvider,
     private val budget: CacheBudgetProvider,
-) : ConnectionResetter, CacheStore {
+) : ConnectionResetter, CacheStore, AccountDataCleaner {
 
     override val kind: CacheKind = CacheKind.Video
 
@@ -78,13 +80,38 @@ class VideoCache(
     /** Bỏ các bản cũ (`cTag` khác) của cùng video để chúng không chiếm chỗ tới khi bị LRU dọn (BN-02). Không ném ngoại lệ. */
     suspend fun dropStaleVersions(itemId: String, keepKey: String) {
         withContext(dispatchers.io) {
-            runCatching {
+            // try/catch thay runCatching để không nuốt CancellationException (review Lát T D-L7).
+            try {
                 val store = get()
                 val prefix = "$itemId:"
                 val stale = store.keys.filter { it.startsWith(prefix) && it != keepKey }
                 stale.forEach { store.removeResource(it) }
                 if (stale.isNotEmpty()) mediaLog.i { "[Cache] id=${itemId.shortId()} bỏ ${stale.size} bản cũ (cTag đổi)" }
-            }.onFailure { mediaLog.w { "[Cache] không dọn được bản cũ: ${it.javaClass.simpleName}" } }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mediaLog.w { "[Cache] không dọn được bản cũ: ${e.javaClass.simpleName}" }
+            }
+        }
+    }
+
+    /**
+     * Xóa các đoạn video đã giữ của một tài khoản (TA-08). Khóa cache bắt đầu bằng id của mục, mà id có tiền tố `<drive id>|`
+     * ([ItemKey], ADR-0030) nên xóa theo tiền tố đó. Mở cache nếu chưa mở (cần để liệt kê khóa). Không ném ngoại lệ.
+     */
+    override suspend fun purge(accountId: String) {
+        withContext(dispatchers.io) {
+            try {
+                val store = get()
+                val prefix = ItemKey.of(accountId, "")
+                val owned = store.keys.filter { it.startsWith(prefix) }
+                owned.forEach { store.removeResource(it) }
+                mediaLog.i { "[Cache] đã xóa ${owned.size} video của một tài khoản bị gỡ" }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                mediaLog.w { "[Cache] không xóa được video của tài khoản: ${e.javaClass.simpleName}" }
+            }
         }
     }
 
@@ -121,7 +148,26 @@ class VideoCache(
             .getOrDefault(0L)
     }
 
-    override suspend fun clear() = reset()
+    /**
+     * Xóa video đã giữ (CD-07, nút "Xóa bộ nhớ đệm") **mà vẫn giữ nguyên `SimpleCache` đang mở**. Không dùng [reset]: player của
+     * tab Short sống suốt Màn chính và đã gắn `CacheDataSource` với instance cũ lúc dựng, nên đóng nó đi thì Short lỗi
+     * "video bị lỗi" và "Thử lại" cũng vô ích (review Lát 7, H1). [reset] chỉ dành cho Ngắt kết nối, khi Màn chính bị bỏ.
+     * Chưa mở cache thì không có ai đang giữ nó, xóa thư mục như [reset] là đủ.
+     */
+    override suspend fun clear() {
+        val open = mutex.withLock { cache }
+        if (open == null) {
+            reset()
+            return
+        }
+        withContext(dispatchers.io) {
+            runCatching {
+                val keys = open.keys.toList()
+                keys.forEach { open.removeResource(it) }
+                mediaLog.i { "[Cache] đã xóa ${keys.size} video (giữ nguyên cache đang mở)" }
+            }.onFailure { mediaLog.w { "[Cache] không xóa hết được: ${it.javaClass.simpleName}" } }
+        }
+    }
 
     /** Dọn đoạn lâu không dùng nhất tới khi không quá [maxBytes] (CD-07). Cache chưa mở mà đã nằm trong trần thì khỏi mở. */
     override suspend fun trimTo(maxBytes: Long) {

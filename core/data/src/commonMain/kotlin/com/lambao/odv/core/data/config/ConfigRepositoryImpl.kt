@@ -1,9 +1,10 @@
 package com.lambao.odv.core.data.config
 
 import com.lambao.odv.core.common.result.AppResult
-import com.lambao.odv.core.common.result.flatMap
 import com.lambao.odv.core.data.security.LockoutStore
+import com.lambao.odv.core.domain.model.Account
 import com.lambao.odv.core.domain.model.ConnectionConfig
+import com.lambao.odv.core.domain.model.ConnectionProfile
 import com.lambao.odv.core.domain.repository.ConfigRepository
 
 /**
@@ -17,15 +18,16 @@ internal class ConfigRepositoryImpl(
 
     override suspend fun hasConfig(): Boolean = vault.exists()
 
-    override suspend fun save(config: ConnectionConfig): AppResult<Unit> {
-        val result = vault.saveDevice(config)
+    override suspend fun save(config: ConnectionConfig, account: Account): AppResult<Unit> {
+        val profile = ConnectionProfile(config.tenantId, config.clientId, config.clientSecret, listOf(account))
+        val result = vault.saveDevice(profile)
         // Kết nối mới thay hẳn config cũ nên bộ đếm sai của PIN cũ không còn ý nghĩa.
         if (result is AppResult.Success) lockout.clear()
         return result
     }
 
-    override suspend fun load(): AppResult<ConnectionConfig> = vault.load()
+    override suspend fun load(): AppResult<ConnectionProfile> = vault.load()
 
     override suspend fun updateClientSecret(secret: String): AppResult<Unit> =
-        vault.load().flatMap { vault.replace(it.copy(clientSecret = secret)) }
+        vault.update { it.copy(clientSecret = secret) }
 }

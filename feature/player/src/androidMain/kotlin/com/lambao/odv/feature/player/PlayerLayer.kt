@@ -72,7 +72,7 @@ internal fun PlayerLayer(
     val fitLabels = VideoFit.entries.associateWith { it.label() }
 
     // Nạp video, nhịp tiến độ, dừng khi xuống nền, giữ màn sáng, tạm dừng khi xem thông tin (VD-09, VD-10, VD-17).
-    PlayerPlaybackEffects(controller, state, current, infoOpen)
+    PlayerPlaybackEffects(controller, state, current, infoOpen, onIntent)
     // Zoom về 1x khi chuyển video hoặc đổi hướng (VD-18).
     LaunchedEffect(current.id, landscape) { zoom.reset() }
     val isPlaying = controller.isPlaying

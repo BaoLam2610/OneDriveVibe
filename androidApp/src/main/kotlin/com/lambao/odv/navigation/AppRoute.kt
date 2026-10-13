@@ -55,6 +55,13 @@ sealed interface AppRoute : NavKey {
     data object UpdateSecret : AppRoute
 
     /**
+     * Màn Thêm tài khoản (TA-07, Lát T). Mở từ Cài đặt (hàng "Thêm tài khoản") và từ sheet Chọn tài khoản; che thanh đáy (DH-05). Không mang tham số:
+     * tài khoản mới dùng chung Tenant ID, Client ID, Client Secret đã lưu.
+     */
+    @Serializable
+    data object AddAccount : AppRoute
+
+    /**
      * Màn xem ảnh (AN). Chỉ mang tham số tối thiểu nên lưu được qua process death; màn tự nạp danh sách ảnh từ Room theo
      * ngữ cảnh mở. [libraryFilter] khác null là mở từ tab Thư viện (tên `LibraryFilter`); ngược lại là mở từ tab Thư mục
      * ([folderId] null = gốc) theo kiểu sắp xếp [sortField], [sortDirection]. Dùng chuỗi thay vì enum của domain vì domain
@@ -67,6 +74,8 @@ sealed interface AppRoute : NavKey {
         val sortField: String = SortField.Name.name,
         val sortDirection: String = SortDirection.Ascending.name,
         val libraryFilter: String? = null,
+        /** Mở từ kết quả tìm của Thư viện (TV-07): chỉ vuốt trong các ảnh có tên khớp từ khóa này. Chỉ có nghĩa khi [libraryFilter] khác null. */
+        val libraryQuery: String? = null,
     ) : AppRoute
 
     /**
@@ -80,11 +89,15 @@ sealed interface AppRoute : NavKey {
         val sortField: String = SortField.Name.name,
         val sortDirection: String = SortDirection.Ascending.name,
         val libraryFilter: String? = null,
+        /** Mở từ kết quả tìm của Thư viện (TV-07), như [ImageViewer.libraryQuery]. */
+        val libraryQuery: String? = null,
+        /** Mở từ dải "Xem tiếp" (DS-02): vào thẳng vị trí đã dừng, không hỏi (VD-12). Đi qua [ViewerContext.Folder.resumeFromSaved]. */
+        val resumeFromSaved: Boolean = false,
     ) : AppRoute
 
     /**
      * Màn xem PDF (PD, Lát 9). Chỉ cần [itemId]: không vuốt sang PDF khác (đặc tả không có) nên không mang ngữ cảnh mở. Màn tự đọc tên,
-     * cTag từ Room và trang đã lưu (PD-05). Route có từ 9a nhưng chưa có `entry` và `onOpenFile` chưa mở nó cho tới khi 9b có màn.
+     * cTag từ Room và trang đã lưu (PD-05). `ODVNavDisplay` có `entry` cho route này và `onOpenFile` mở nó với tệp PDF.
      */
     @Serializable
     data class PdfViewer(val itemId: String) : AppRoute
@@ -92,29 +105,37 @@ sealed interface AppRoute : NavKey {
 
 internal fun ViewerContext.toImageViewerRoute(startItemId: String): AppRoute.ImageViewer = when (this) {
     is ViewerContext.Folder -> AppRoute.ImageViewer(startItemId, folderId, sort.field.name, sort.direction.name)
-    is ViewerContext.Library -> AppRoute.ImageViewer(startItemId, libraryFilter = filter.name)
+    is ViewerContext.Library -> AppRoute.ImageViewer(startItemId, libraryFilter = filter.name, libraryQuery = query)
 }
 
 internal fun AppRoute.ImageViewer.toViewerContext(): ViewerContext =
-    viewerContextOf(folderId, sortField, sortDirection, libraryFilter)
+    viewerContextOf(folderId, sortField, sortDirection, libraryFilter, libraryQuery)
 
 internal fun ViewerContext.toVideoPlayerRoute(startItemId: String): AppRoute.VideoPlayer = when (this) {
-    is ViewerContext.Folder -> AppRoute.VideoPlayer(startItemId, folderId, sort.field.name, sort.direction.name)
-    is ViewerContext.Library -> AppRoute.VideoPlayer(startItemId, libraryFilter = filter.name)
+    is ViewerContext.Folder -> AppRoute.VideoPlayer(startItemId, folderId, sort.field.name, sort.direction.name, resumeFromSaved = resumeFromSaved)
+    is ViewerContext.Library -> AppRoute.VideoPlayer(startItemId, libraryFilter = filter.name, libraryQuery = query)
 }
 
 internal fun AppRoute.VideoPlayer.toViewerContext(): ViewerContext =
-    viewerContextOf(folderId, sortField, sortDirection, libraryFilter)
+    viewerContextOf(folderId, sortField, sortDirection, libraryFilter, libraryQuery, resumeFromSaved)
 
 /** Dựng lại ngữ cảnh mở từ các trường của route (màn xem ảnh và video dùng chung dạng tham số). */
-private fun viewerContextOf(folderId: String?, sortField: String, sortDirection: String, libraryFilter: String?): ViewerContext {
+private fun viewerContextOf(
+    folderId: String?,
+    sortField: String,
+    sortDirection: String,
+    libraryFilter: String?,
+    libraryQuery: String?,
+    resumeFromSaved: Boolean = false,
+): ViewerContext {
     val filter = libraryFilter?.let { name -> LibraryFilter.entries.firstOrNull { it.name == name } }
-    if (filter != null) return ViewerContext.Library(filter)
+    if (filter != null) return ViewerContext.Library(filter, libraryQuery)
     return ViewerContext.Folder(
         folderId,
         SortOrder(
             field = SortField.entries.firstOrNull { it.name == sortField } ?: SortField.Name,
             direction = SortDirection.entries.firstOrNull { it.name == sortDirection } ?: SortDirection.Ascending,
         ),
+        resumeFromSaved,
     )
 }

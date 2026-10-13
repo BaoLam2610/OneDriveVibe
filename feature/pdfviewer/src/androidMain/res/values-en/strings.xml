@@ -36,4 +36,5 @@
     <string name="pdf_info_uploaded">Uploaded</string> <!-- [mới] -->
     <string name="pdf_info_modified">Modified</string> <!-- [mới] -->
     <string name="pdf_info_folder">Folder</string> <!-- [mới] -->
+    <string name="pdf_info_account">Account</string>
 </resources>

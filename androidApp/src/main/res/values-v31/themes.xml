@@ -1,0 +1,27 @@
+<resources>
+    <!--
+        Android 12+: hệ thống luôn dựng splash riêng, không tắt hẳn được. Cho nó trùng nền với khung đầu của ODVSplashScreen và dùng icon
+        trong suốt để người dùng chỉ thấy MỘT splash (splash tự viết, có logo và dòng giới thiệu). Giới hạn: màu nền theo chế độ
+        Sáng/Tối của HỆ THỐNG, nên nếu giao diện trong app khác hệ thống thì thấy một khung nền khác màu trong chốc lát.
+    -->
+    <style name="Theme.OneDriveVibe" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/odv_window_bg</item>
+        <item name="android:windowSplashScreenBackground">@color/odv_window_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon_empty</item>
+    </style>
+
+    <!--
+        Bản v31 của Theme.OneDriveVibe.Light/Dark: thêm nền splash hệ thống cố định theo giao diện của app. Android 13+ lưu theme này qua
+        Activity.setSplashScreenTheme (MainActivity) nên áp dụng từ lần khởi động kế tiếp; Android 12/12L không có API đó, splash hệ thống
+        vẫn theo giao diện của máy.
+    -->
+    <style name="Theme.OneDriveVibe.Light" parent="Theme.OneDriveVibe">
+        <item name="android:windowBackground">@color/odv_bg_light</item>
+        <item name="android:windowSplashScreenBackground">@color/odv_bg_light</item>
+    </style>
+
+    <style name="Theme.OneDriveVibe.Dark" parent="Theme.OneDriveVibe">
+        <item name="android:windowBackground">@color/odv_bg_dark</item>
+        <item name="android:windowSplashScreenBackground">@color/odv_bg_dark</item>
+    </style>
+</resources>

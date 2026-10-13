@@ -4,6 +4,10 @@
     <string name="browser_title" translatable="false">OneDrive</string>
     <string name="browser_root">Tài liệu</string>
     <string name="browser_up">Lên một cấp</string>
+    <!-- Nhiều tài khoản (Lát T, TA-05, TA-10): gốc của phạm vi Tất cả tài khoản (D10) -->
+    <string name="browser_all_accounts">Tất cả tài khoản</string> <!-- [mới] tiêu đề AppBar và gốc breadcrumb ở D10 -->
+    <string name="browser_account_inaccessible">Không truy cập được</string> <!-- [mới] meta ô tài khoản lỗi ở D10 -->
+    <string name="browser_account_not_ready">%1$s đang được quét lần đầu, thử lại sau ít phút</string> <!-- [mới] chạm ô tài khoản chưa có gốc drive (U-M3) -->
     <string name="browser_breadcrumb_hidden">Các thư mục phía trên</string>
     <plurals name="browser_item_count">
         <item quantity="other">%1$d mục</item>
@@ -44,5 +48,13 @@
     <!-- Banner đồng bộ (D6, D7, DS-04, DS-05, TV-06) -->
     <string name="browser_offline">Đang offline. Đang hiển thị dữ liệu đã đồng bộ.</string> <!-- [mới] -->
     <string name="browser_indexing">Đang lập chỉ mục, đã quét %1$s mục</string>
+    <string name="browser_indexing_account">Đang lập chỉ mục %1$s, đã quét %2$s mục</string> <!-- [mới] D7 ở phạm vi Tất cả tài khoản, TA-05 -->
     <string name="browser_sync_failed">Không đồng bộ được. Dữ liệu có thể chưa mới nhất.</string> <!-- [mới] -->
+
+    <!-- Dải Xem tiếp / Đọc tiếp (DS-02, D1) -->
+    <string name="browser_continue_title">Xem tiếp / Đọc tiếp</string>
+    <string name="browser_continue_video_meta">Còn %1$s · dừng ở %2$s</string>
+    <string name="browser_continue_pdf_meta">Trang %1$s / %2$s</string>
+    <string name="browser_continue_dismiss_video">Xóa khỏi Xem tiếp</string>
+    <string name="browser_continue_dismiss_pdf">Xóa khỏi Đọc tiếp</string>
 </resources>

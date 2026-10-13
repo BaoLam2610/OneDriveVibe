@@ -535,6 +535,7 @@ private fun OthersTab(padding: PaddingValues) {
     val context = LocalContext.current
     val maskTraffic by DebugSettings.maskTraffic.collectAsState()
     val thumbnailScale by DebugSettings.thumbnailScalePercent.collectAsState()
+    val nextPreloadEnabled by DebugSettings.nextPreloadEnabled.collectAsState()
     val scope = rememberCoroutineScope()
     var thumbnailCleared by remember { mutableStateOf(false) }
     val actions = DebugActions.items
@@ -607,6 +608,16 @@ private fun OthersTab(padding: PaddingValues) {
                 }
             }
             if (thumbnailCleared) item { Note("Đã xóa cache thumbnail.") }
+        }
+        item { SectionTitle("Short") }
+        item {
+            ODVSwitchRow(
+                title = "Chuẩn bị sẵn video kế tiếp trong RAM",
+                checked = nextPreloadEnabled,
+                onCheckedChange = { DebugSettings.setNextPreloadEnabled(it) },
+                modifier = Modifier.padding(horizontal = 16.dp),
+                description = "ADR-0028. Tắt để so A/B: log tab Short ghi nguồn=thường thay vì nguồn=ram. Có hiệu lực từ lần vuốt kế tiếp, mặc định bật.",
+            )
         }
         item { SectionTitle("Công cụ") }
         if (actions.isEmpty()) item { Note("Chưa có công cụ nào đăng ký qua DebugActions.register.") }
