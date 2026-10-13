@@ -27,6 +27,18 @@ object ODVSecureWindowPolicy {
      */
     val appWide: StateFlow<Boolean> = _appWide.asStateFlow()
 
+    /**
+     * `true` thì các màn nhạy cảm (Kết nối, Khóa, nhập PIN...) **không** tự chặn chụp màn hình nữa mà theo [appWide] như mọi màn khác: tắt
+     * "Bảo vệ màn hình" thì chụp được cả chúng. Mặc định `false` (luôn chặn, ADR-0022). Chỉ công cụ debug đặt `true` (ADR-0031) để chụp màn hình
+     * các màn này khi làm tài liệu và thiết kế; bản release không bao giờ đặt. Gọi trên luồng chính.
+     */
+    var sensitiveScreensFollowAppWide: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            counts.keys.toList().forEach(::applyFlag)
+        }
+
     /** Đặt "Bảo vệ màn hình" toàn app và áp dụng ngay cho mọi Window đã biết. Gọi trên luồng chính. */
     fun setAppWide(enabled: Boolean) {
         if (_appWide.value == enabled) return
@@ -55,8 +67,9 @@ object ODVSecureWindowPolicy {
     }
 
     private fun applyFlag(window: Window) {
-        // Một nguồn sự thật: cài đặt "Bảo vệ màn hình" của người dùng (appWide), hoặc có màn nhạy cảm đang yêu cầu. Công cụ debug không ghi đè.
-        val secure = _appWide.value || (counts[window] ?: 0) > 0
+        // Một nguồn sự thật: cài đặt "Bảo vệ màn hình" của người dùng (appWide), hoặc có màn nhạy cảm đang yêu cầu. Riêng bản debug có thể cho
+        // màn nhạy cảm theo appWide (sensitiveScreensFollowAppWide, ADR-0031); mặc định thì màn nhạy cảm luôn chặn.
+        val secure = _appWide.value || (!sensitiveScreensFollowAppWide && (counts[window] ?: 0) > 0)
         if (secure) {
             window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         } else {

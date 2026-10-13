@@ -139,6 +139,9 @@ private fun HomeContent(
     var settingsReselect by rememberSaveable { mutableIntStateOf(0) }
     var shortReselect by rememberSaveable { mutableIntStateOf(0) }
     val stateHolder = rememberSaveableStateHolder()
+    // Đổi tab do đổi tài khoản (TA-06 bước 3) thì chuyển ngay, không cross-fade: tab cũ đang mờ đi bị dựng lại theo `scopeEpoch` mới (khóa
+    // SaveableStateProvider đổi) nên sẽ lộ trạng thái đang tải, và tab mới cũng đang nạp; cả hai cùng nhìn thấy là cái nháy người dùng báo.
+    var instantTabSwitch by remember { mutableStateOf(false) }
 
     // Nhiều tài khoản (Lát T, TA-03, TA-04, TA-06): sheet Chọn tài khoản, Snackbar và việc bỏ trạng thái các tab khi phạm vi xem đổi.
     var showAccountPicker by rememberSaveable { mutableStateOf(false) }
@@ -153,7 +156,10 @@ private fun HomeContent(
             // U-L7: bỏ trạng thái giao diện đã lưu của epoch trước cho các tab theo phạm vi (khóa mới sẽ không bao giờ dùng lại chúng).
             listOf(HomeTab.Folders, HomeTab.Library, HomeTab.Short).forEach { stateHolder.removeState("${it.name}#$oldEpoch") }
             // TA-06 bước 3: đang ở Thư mục, Thư viện hoặc Short thì về gốc tab Thư mục; đang ở Cài đặt thì ở lại.
-            if (selected != HomeTab.Settings) selected = HomeTab.Folders
+            if (selected != HomeTab.Settings && selected != HomeTab.Folders) {
+                instantTabSwitch = true
+                selected = HomeTab.Folders
+            }
         }
     }
     val snackbarHost = remember { SnackbarHostState() }
@@ -187,7 +193,11 @@ private fun HomeContent(
     }
 
     // DH-06: nhớ tab danh sách dùng gần nhất (Short và Cài đặt bị bỏ qua trong ViewModel).
-    LaunchedEffect(selected) { viewModel.onTabSelected(selected) }
+    // `instantTabSwitch` đã được `transitionSpec` đọc trong lần dựng khi `selected` đổi, nên hạ cờ ở đây không ảnh hưởng lần chuyển đó.
+    LaunchedEffect(selected) {
+        instantTabSwitch = false
+        viewModel.onTabSelected(selected)
+    }
     // DH-03: ở gốc tab Thư viện, Short hoặc Cài đặt thì Back về tab Thư mục (giữ nguyên trạng thái Thư mục).
     BackHandler(enabled = selected != HomeTab.Folders) { selected = HomeTab.Folders }
 
@@ -247,7 +257,7 @@ private fun HomeContent(
                     targetState = selected,
                     modifier = Modifier.fillMaxSize(),
                     transitionSpec = {
-                        if (initialState == HomeTab.Short || targetState == HomeTab.Short) ODVTransitions.none() else ODVTransitions.crossFade()
+                        if (instantTabSwitch || initialState == HomeTab.Short || targetState == HomeTab.Short) ODVTransitions.none() else ODVTransitions.crossFade()
                     },
                     label = "homeTab",
                 ) { tab ->

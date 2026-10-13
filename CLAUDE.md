@@ -10,7 +10,7 @@ App Android chỉ đọc OneDrive for Business qua Microsoft Graph: xem video, �
 | `.claude/docs/thiet-ke-ui.md` + `odv-tokens.json` | Giao diện: token, component, màn hình. Mục 1 là quy tắc bắt buộc khi dựng. Thanh điều hướng đáy và tab Short (Lát 8) đã có mô tả (mục 4.7, 4.8, 5.5) và **đã có artboard** (Foundations board 20, page Short SH1 đến SH9, Danh sách D1 đến D9, Cài đặt C1 đến C7 và O6); mục 11 là danh sách việc vẽ, còn lại 11.5 và 11.6 (nhiều tài khoản, mục 4.9, chưa có artboard) |
 | `.claude/docs/onedrive-graph-api.md` | Endpoint Graph, token, delta, mã lỗi |
 | `.claude/docs/onedrive-graph-responses.md` | Mẫu response thật (giá trị đã thay bằng mẫu) |
-| `.claude/adr/` | 30 quyết định kiến trúc (mục lục ở `README.md`). Muốn đổi thì viết ADR mới, không sửa ADR cũ |
+| `.claude/adr/` | 31 quyết định kiến trúc (mục lục ở `README.md`). Muốn đổi thì viết ADR mới, không sửa ADR cũ |
 | `.claude/docs/ke-hoach-mvp1.md` | Kế hoạch triển khai MVP1 theo lát cắt dọc, thứ tự Lát hiện hành, thư viện đã chọn |
 | `.claude/docs/ke-hoach-refactor-kien-truc.md` | Refactor nền móng R0 đến R7 và nợ kỹ thuật A1 đến A3: **đã xong** (2026-10-07). Đọc để biết lý do cấu trúc hiện tại |
 | `.claude/docs/tien-do-mvp1.md` | Đang ở lát nào, bước nào. Đọc đầu mỗi phiên, cập nhật khi bắt đầu hoặc xong một bước |
@@ -67,7 +67,7 @@ Khi mâu thuẫn: đặc tả nghiệp vụ quyết định hành vi, tài liệ
 ## Quy tắc bắt buộc
 
 - **Bí mật:** không ghi Client Secret, access token, header `Authorization` vào log (CH-06). Ktor Logging phải che bằng `sanitizeHeader`, không log body request lấy token.
-- **Riêng tư:** màn Kết nối, Khóa, Thiết lập bảo mật, nhập PIN luôn đặt `FLAG_SECURE` và ẩn nội dung ở danh sách app gần đây; Cài đặt chỉ chặn khi bật "Bảo vệ màn hình" (ADR-0022). Từ Lát 8, Cài đặt là tab nên cờ được áp lại mỗi lần đổi tab (DH-08).
+- **Riêng tư:** màn Kết nối, Khóa, Thiết lập bảo mật, nhập PIN luôn đặt `FLAG_SECURE` và ẩn nội dung ở danh sách app gần đây; Cài đặt chỉ chặn khi bật "Bảo vệ màn hình" (ADR-0022). **Riêng bản debug**, tắt "Bảo vệ màn hình" thì các màn nhạy cảm cũng chụp được (ADR-0031); release luôn chặn. Từ Lát 8, Cài đặt là tab nên cờ được áp lại mỗi lần đổi tab (DH-08).
 - **Chỉ đọc:** app không xóa, đổi tên hay upload tệp trên OneDrive. Quyền `Files.Read.All`.
 - **UI:** màu lấy từ token, không viết hex trong màn hình. Chỉ dùng icon bộ OneDriveVibe (không Material Icons, không emoji), font Be Vietnam Pro và JetBrains Mono. Vùng chạm ≥ 48dp. Màn xem video/ảnh/PDF và tab Short luôn nền đen. Số, ngày, giờ, dung lượng theo ngôn ngữ đang dùng (CD-10, `odvLocale()`; bản tiếng Việt ra `12.480`, `4,9 MB`, `23/05/2026`), không cố định vi-VN.
 - **Dữ liệu mẫu:** tài liệu trong `.claude/docs` có UPN, tenant và GUID thật của người dùng. Không đưa thêm giá trị thật vào code, log hay commit message.

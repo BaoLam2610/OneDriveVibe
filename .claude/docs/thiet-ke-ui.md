@@ -279,8 +279,8 @@ Ba token `nav-bar`, `nav-indicator-*`, `nav-dot` của thanh điều hướng đ
 
 **Quy tắc chuyển động:**
 - Không nảy, không đàn hồi.
-- Không có chuyển động lặp vô hạn, trừ chỉ báo đang tải.
-- Đổi tab trên thanh đáy: nội dung cross-fade, **không trượt ngang** (các tab không có thứ tự không gian). Viên chọn hiện bằng fade + giãn ngang từ giữa. Cặp có tab Short (vào hoặc ra) đổi ngay, không hoạt ảnh, để player và thanh hệ thống của Short không chạy chồng với tab kia.
+- Không có chuyển động lặp vô hạn, trừ chỉ báo đang tải (spinner và khung chờ shimmer, xem "Khung chờ" ở mục 4.2).
+- Đổi tab trên thanh đáy: nội dung cross-fade, **không trượt ngang** (các tab không có thứ tự không gian). Viên chọn hiện bằng fade + giãn ngang từ giữa. Cặp có tab Short (vào hoặc ra) đổi ngay, không hoạt ảnh, để player và thanh hệ thống của Short không chạy chồng với tab kia. **Đổi tab do đổi tài khoản (TA-06) cũng đổi ngay, không hoạt ảnh** (thêm 2026-10-13), vì tab cũ bị dựng lại theo phạm vi mới ngay lúc đang mờ đi.
 - **Chuyển màn (thêm 2026-10-13):** chỉ fade, không trượt, không scale. Vào màn mới: màn mới fade in `base` (`ease-out`), màn cũ đứng yên bên dưới. Back và vuốt Back: màn trên cùng fade out `base` (`ease-in`) để lộ màn dưới. Không mờ cả hai cùng lúc vì nền cửa sổ lộ ra giữa chừng (chớp sáng khi vào màn xem nền đen). **Màn Khóa hiện ngay, không hoạt ảnh**, để không lộ nội dung bên dưới khi app vừa bị khóa (CH-03).
 - **Đổi nội dung cùng vị trí (thêm 2026-10-13):** cross-fade `fast` cho AppBar thường ↔ thanh tìm kiếm cùng nội dung bên dưới, và đang tải ↔ lỗi ↔ trống ↔ danh sách ở tab Thư mục. Thanh đáy hiện lại bằng fade in `fast` khi bàn phím đóng; lúc bàn phím mở thanh ẩn ngay để bố cục không giật.
 - Khi hệ thống bật Giảm hiệu ứng:
@@ -395,6 +395,7 @@ Board Icon có đủ 46 icon (đã thêm `users`, `user-plus`, `trash` ngày 202
 
 ### 4.2 Thông báo và lớp phủ
 
+- **Khung chờ (Skeleton, thêm 2026-10-13, chưa có artboard):** thay vòng quay giữa màn ở vùng nội dung của tab Thư mục (Danh sách, Lưới 2 cột) và tab Thư viện (lưới 4 cột). Cùng bố cục với nội dung thật để khi dữ liệu về, màn không nhảy chỗ: Danh sách là hàng giống FileRow (thumbnail 56 bo `sm`, hai thanh chữ), Lưới là thẻ (ô thumbnail cao `fileCardThumb` và hai thanh chữ), Thư viện là một thanh tiêu đề ngày và các ô vuông khe 2dp. Mọi khối nền `surface-2`, bo `sm`. **Shimmer:** vệt sáng rộng bằng nửa chiều rộng khối, màu `ink` độ đậm 6% (sáng lên ở giao diện tối, sẫm đi ở giao diện sáng), quét ngang một vòng 1.200ms tuyến tính, cả khối quét cùng nhịp và chỉ phủ lên chỗ có khối (không phủ khe). **Chỉ hiện sau 200ms chờ**: tải xong trước đó thì đi thẳng sang nội dung, 200ms đầu giữ bố cục hiện tại (không hoạt ảnh) để không chớp. Giảm hiệu ứng bật thì khung đứng yên, không quét. TalkBack đọc "Đang tải" một lần cho cả khối. Spinner giữ nguyên ở nút đang tải, màn xem và Short.
 - **Banner:** padding 12, bo `sm`, icon 20 + chữ `body-sm` 500.
     - Năm tông màu:
 

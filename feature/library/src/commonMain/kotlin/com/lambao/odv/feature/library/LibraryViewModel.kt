@@ -100,8 +100,9 @@ class LibraryViewModel(
         when (intent) {
             is LibraryIntent.SelectFilter ->
                 if (intent.filter != currentState.filter) {
-                    // Bỏ số mục của bộ lọc cũ ngay: lưới cũ không khớp luồng trang mới.
-                    setState { copy(filter = intent.filter, days = emptyList(), daysLoaded = false) }
+                    // Không xóa số mục của bộ lọc cũ: lưới cũ giữ nguyên cho tới khi `observeDays` phát số mục mới (vài mili giây từ Room), nếu
+                    // xóa thì lưới biến mất rồi hiện lại, màn khựng một nhịp. Lưới tự đưa về đầu khi bộ lọc đổi (xem ODVLibraryContent).
+                    setState { copy(filter = intent.filter) }
                 }
             // Mở từ kết quả tìm (TV-07) thì màn xem chỉ vuốt trong các mục khớp từ khóa đang hiện trên lưới (appliedQuery).
             is LibraryIntent.Open -> sendEffect(

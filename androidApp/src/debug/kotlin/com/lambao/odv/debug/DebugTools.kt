@@ -58,6 +58,9 @@ object DebugTools {
     fun install(application: Application) {
         DebugLogging.install()
         DebugSettings.install(application)
+        // ADR-0031: ở bản debug, tắt "Bảo vệ màn hình" (Cài đặt hoặc tab Khác của màn Debug) thì chụp được cả các màn nhạy cảm (Kết nối, Khóa,
+        // nhập PIN...). Bản release (src/release) không có dòng này nên các màn đó luôn chặn chụp màn hình (ADR-0022).
+        ODVSecureWindowPolicy.sensitiveScreensFollowAppWide = true
         // Tab Lưu trữ: "Xóa dữ liệu local" = Ngắt kết nối (DisconnectUseCase xóa config, khóa Keystore, PIN, sinh trắc học, token,
         // dữ liệu các lát sau) rồi khởi động lại app ở một task mới để back stack và trạng thái trong bộ nhớ về ban đầu: Splash
         // thấy chưa có config nên sang màn Kết nối. Koin chỉ có sau startKoin nên lấy lúc bấm, không lấy ở đây.

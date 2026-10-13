@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -33,8 +34,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
@@ -50,11 +49,12 @@ import com.lambao.odv.core.designsystem.component.ODVFastScroller
 import com.lambao.odv.core.designsystem.component.ODVIconButton
 import com.lambao.odv.core.designsystem.component.ODVPhotoCell
 import com.lambao.odv.core.designsystem.component.ODVPhotoCellPlaceholder
+import com.lambao.odv.core.designsystem.component.ODVPhotoGridSkeleton
 import com.lambao.odv.core.designsystem.component.ODVRemoteImage
 import com.lambao.odv.core.designsystem.component.ODVReselectEffect
 import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSearchBar
-import com.lambao.odv.core.designsystem.component.ODVSpinner
+import com.lambao.odv.core.designsystem.component.rememberODVDelayed
 import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.icon.ODVIcon
@@ -114,6 +114,12 @@ internal fun ODVLibraryContent(
     // Trạng thái cuộn của lưới theo ngày nằm ở đây, không trong LibraryGrid: mở tìm kiếm làm LibraryGrid rời composition, nếu để trong đó thì
     // đóng tìm kiếm xong lưới về đầu (mất vị trí cuộn, trái DH-02). Ở đây nó sống suốt vòng đời tab và vẫn được SaveableStateProvider của Màn chính lưu.
     val gridState = rememberLazyGridState()
+    // Đổi chip lọc thì lưới đứng nguyên tại chỗ (không xóa số mục, tránh khựng) nên phải đưa về đầu bằng tay. `drop(1)` bỏ lần đọc đầu để
+    // không ghi đè vị trí cuộn vừa được khôi phục khi quay lại tab.
+    val currentFilter by rememberUpdatedState(state.filter)
+    LaunchedEffect(gridState) {
+        snapshotFlow { currentFilter }.drop(1).collect { gridState.scrollToItem(0) }
+    }
     ODVScaffold(
         modifier = modifier,
         // Mở/đóng tìm kiếm (TV-07): AppBar và nội dung cross-fade `fast` (mục 2.8). `contentKey` chỉ phân biệt "đang tìm" với "không tìm" nên
@@ -160,7 +166,8 @@ internal fun ODVLibraryContent(
                             layout.total > 0 -> LibraryGrid(state, pages, layout, gridState, contentPadding, onIntent, reselectSignal)
                             // Quét lần đầu đang chạy: banner D7 đã nói rõ, chưa có gì để hiện (TV-06).
                             !state.sync.initialSyncDone && state.sync.isSyncing -> Unit
-                            !state.daysLoaded -> Loading()
+                            // Chưa nạp xong số mục: để trống 200ms đầu, quá hạn mới hiện khung chờ (đổi tài khoản xong trong vài mili giây thì không chớp).
+                            !state.daysLoaded -> LoadingSkeleton()
                             else -> ODVEmptyState(
                                 icon = ODVIcon.Image,
                                 title = stringResource(R.string.library_empty_title),
@@ -206,8 +213,8 @@ private fun SearchBody(
     val locale = odvLocale()
     val dates = remember(locale) { LibraryDateFormatter(locale) }
     val gridState = rememberLazyGridState()
-    // Đổi từ khóa thì lưới nạp lại từ đầu: đưa về đầu để không đứng giữa một danh sách mới.
-    LaunchedEffect(search.appliedQuery) { gridState.scrollToItem(0) }
+    // Đổi từ khóa hoặc chip lọc thì lưới nạp lại từ đầu: đưa về đầu để không đứng giữa một danh sách mới.
+    LaunchedEffect(search.appliedQuery, state.filter) { gridState.scrollToItem(0) }
     Column(Modifier.fillMaxSize()) {
         if (state.showFilters) FilterRow(state.filter, onIntent)
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -234,7 +241,7 @@ private fun SearchBody(
                         }
                     }
                 }
-                results.loadState.refresh is LoadState.Loading -> Loading()
+                results.loadState.refresh is LoadState.Loading -> LoadingSkeleton()
                 else -> ODVEmptyState(
                     icon = ODVIcon.Search,
                     title = stringResource(R.string.library_search_empty_title),
@@ -340,12 +347,10 @@ private fun FilterRow(selected: LibraryFilter, onIntent: (LibraryIntent) -> Unit
     }
 }
 
+/** Khung chờ shimmer của lưới (thay vòng quay), chỉ hiện sau 200ms chờ; trước đó để trống để tải nhanh không chớp khung. */
 @Composable
-private fun Loading() {
-    val description = stringResource(R.string.library_loading)
-    Box(Modifier.fillMaxSize().semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
-        ODVSpinner(size = 36.dp)
-    }
+private fun LoadingSkeleton() {
+    if (rememberODVDelayed(active = true)) ODVPhotoGridSkeleton(stringResource(R.string.library_loading))
 }
 
 @Composable

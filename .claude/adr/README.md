@@ -38,6 +38,7 @@ Mỗi ADR ghi **một quyết định kiến trúc**: bối cảnh, quyết đ�
 | [0028](0028-tai-truoc-video-ke-tiep-vao-ram-bang-defaultpreloadmanager.md) | Chuẩn bị sẵn video +1 của tab Short trong RAM bằng `DefaultPreloadManager` (stage `SPECIFIED_RANGE_LOADED`, không `setCache`), giữ `CacheWriter` cho cache đĩa ±1; bổ sung ADR-0026, giữ lại nếu số đo cải thiện (trung vị 301ms so với 963ms) | accepted | 2026-10-12 |
 | [0029](0029-link-phat-dung-chung-mot-yeu-cau-cho-mot-id.md) | Link phát của tab Short dùng chung (`SharedStreamUrls`, cũng là `ConnectionResetter`) và chỉ một yêu cầu cho một id (single-flight, `epoch` chống ghi link sau khi khóa app); màn Xem video giữ provider riêng; thay mục 3 của ADR-0026 và phần provider riêng của ADR-0025 cho đường Short | accepted | 2026-10-12 |
 | [0030](0030-nhieu-tai-khoan-chung-token.md) | Nhiều tài khoản cùng tenant: một token dùng chung, dữ liệu theo tài khoản (khóa `accountId` = drive id), phạm vi xem là một tài khoản hoặc Tất cả, đồng bộ mọi tài khoản lần lượt; bổ sung ADR-0005 và ADR-0007 | accepted | 2026-10-12 |
+| [0031](0031-man-nhay-cam-theo-bao-ve-man-hinh-o-ban-debug.md) | Chỉ bản debug: các màn nhạy cảm (Kết nối, Khóa, nhập PIN, Thiết lập bảo mật, Cập nhật secret, Thêm tài khoản) theo công tắc "Bảo vệ màn hình" thay vì luôn chặn chụp (`ODVSecureWindowPolicy.sensitiveScreensFollowAppWide`); release giữ nguyên ADR-0022; bổ sung ADR-0022 và ADR-0020 | accepted | 2026-10-13 |
 
 ## Quy ước
 - Đánh số tăng dần, không dùng lại số. Tên file: `NNNN-tieu-de-khong-dau.md`.

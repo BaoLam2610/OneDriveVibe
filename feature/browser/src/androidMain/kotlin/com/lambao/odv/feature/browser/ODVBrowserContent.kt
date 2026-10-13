@@ -29,8 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.lambao.odv.core.designsystem.component.ODVAccountAvatar
@@ -44,6 +42,7 @@ import com.lambao.odv.core.designsystem.component.ODVBottomSheet
 import com.lambao.odv.core.designsystem.component.ODVBreadcrumb
 import com.lambao.odv.core.designsystem.component.ODVButton
 import com.lambao.odv.core.designsystem.component.ODVButtonStyle
+import com.lambao.odv.core.designsystem.component.ODVCardGridSkeleton
 import com.lambao.odv.core.designsystem.component.ODVContinueCard
 import com.lambao.odv.core.designsystem.component.ODVEmptyState
 import com.lambao.odv.core.designsystem.component.ODVFileCard
@@ -51,6 +50,7 @@ import com.lambao.odv.core.designsystem.component.ODVFileKind
 import com.lambao.odv.core.designsystem.component.ODVFileRow
 import com.lambao.odv.core.designsystem.component.ODVFolderCard
 import com.lambao.odv.core.designsystem.component.ODVIconButton
+import com.lambao.odv.core.designsystem.component.ODVListSkeleton
 import com.lambao.odv.core.designsystem.component.ODVOptionRow
 import com.lambao.odv.core.designsystem.component.ODVRemoteImage
 import com.lambao.odv.core.designsystem.component.ODVReselectEffect
@@ -58,9 +58,9 @@ import com.lambao.odv.core.designsystem.component.ODVScaffold
 import com.lambao.odv.core.designsystem.component.ODVSearchBar
 import com.lambao.odv.core.designsystem.component.ODVSectionHeader
 import com.lambao.odv.core.designsystem.component.ODVSortBar
-import com.lambao.odv.core.designsystem.component.ODVSpinner
 import com.lambao.odv.core.designsystem.component.ODVThumbnailDefaults
 import com.lambao.odv.core.designsystem.component.ODVThumbnailPlaceholder
+import com.lambao.odv.core.designsystem.component.rememberODVDelayed
 import com.lambao.odv.core.designsystem.format.odvFormatDuration
 import com.lambao.odv.core.designsystem.format.odvFormatFileSize
 import com.lambao.odv.core.designsystem.icon.ODVIcon
@@ -242,9 +242,12 @@ private fun BrowseBody(
             // chỉ ở gốc, kể cả gốc Tất cả tài khoản (D10).
             val continueItems = if (state.path.isEmpty()) state.continueItems else emptyList()
             // Đang tải → danh sách / trống / lỗi cross-fade `fast` (mục 2.8). Đổi thư mục mà vẫn cùng loại thì giữ nguyên (không hoạt ảnh).
+            // Đang tải mà chưa quá 200ms thì giữ nguyên loại thân (danh sách rỗng, không hoạt ảnh) thay vì nhảy sang khung chờ rồi nhảy lại: đổi tài khoản
+            // hay mở thư mục đã có trong Room xong trong vài mili giây, nếu đổi loại thì cross-fade làm màn chớp. Quá 200ms mới hiện khung chờ.
+            val loadingShown = rememberODVDelayed(state.isLoading && state.error == null)
             val bodyKind = when {
                 accountRoot -> BrowseBodyKind.AccountRoot
-                state.isLoading || state.error != null || state.items.isEmpty() -> BrowseBodyKind.Placeholder
+                (state.isLoading && loadingShown) || state.error != null || (!state.isLoading && state.items.isEmpty()) -> BrowseBodyKind.Placeholder
                 isGrid -> BrowseBodyKind.Grid
                 else -> BrowseBodyKind.List
             }
@@ -273,7 +276,7 @@ private fun BrowseBody(
                         ) { which ->
                             Box(Modifier.fillMaxSize()) {
                                 when (which) {
-                                    BrowsePlaceholder.Loading -> Loading()
+                                    BrowsePlaceholder.Loading -> Skeleton(isGrid)
                                     BrowsePlaceholder.Error -> state.error?.let { ErrorState(it, onRetry = { onIntent(BrowserIntent.Retry) }) }
                                     BrowsePlaceholder.Empty -> ODVEmptyState(
                                         icon = ODVIcon.Folder,
@@ -360,12 +363,11 @@ private enum class BrowseBodyKind { AccountRoot, Placeholder, Grid, List }
 /** Ba trạng thái không có danh sách để cuộn; cross-fade với nhau bên trong [BrowseBodyKind.Placeholder]. */
 private enum class BrowsePlaceholder { Loading, Error, Empty }
 
+/** Khung chờ shimmer (thay vòng quay): cùng bố cục với chế độ xem đang chọn để khi dữ liệu về, nội dung không nhảy chỗ. */
 @Composable
-private fun BoxScope.Loading() {
+private fun Skeleton(isGrid: Boolean) {
     val description = stringResource(R.string.browser_loading)
-    Box(Modifier.align(Alignment.Center).semantics { contentDescription = description }) {
-        ODVSpinner(size = 36.dp)
-    }
+    if (isGrid) ODVCardGridSkeleton(description) else ODVListSkeleton(description)
 }
 
 @Composable
